@@ -155,6 +155,7 @@ const inventorySearch = document.querySelector("#inventorySearch");
 const inventoryPanel = document.querySelector("#inventoryPanel");
 const inventoryCount = document.querySelector("#inventoryCount");
 const replaceHint = document.querySelector("#replaceHint");
+const clearReplaceFilterBtn = document.querySelector("#clearReplaceFilterBtn");
 const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
@@ -209,7 +210,7 @@ function migrateState(savedState) {
 
 function enrichCard(card) {
   const fullCard = cardPool.find((item) => item.name === card.name);
-  return fullCard ? { ...fullCard, ...card } : card;
+  return fullCard ? { ...card, ...fullCard, id: card.id } : card;
 }
 
 function slotIdFromSave(slot, card) {
@@ -471,8 +472,9 @@ function renderInventory() {
   inventory.className = `inventory ${state.inventory.length ? "" : "empty-state"}`;
   const selectedSpot = formation.find((spot) => spot.id === state.replaceSlot);
   const searchTerm = inventorySearch.value.trim().toLowerCase();
+  clearReplaceFilterBtn.hidden = !selectedSpot;
   replaceHint.textContent = selectedSpot
-    ? `Replacing ${selectedSpot.slot}: use the rolled card or choose a saved card.`
+    ? `Showing cards that can play ${selectedSpot.slot}. Use Show all cards to find players like Son.`
     : "Roll a card, then become it, save it, or click a pitch player to replace.";
 
   if (!state.inventory.length) {
@@ -491,7 +493,9 @@ function renderInventory() {
 
   if (!visibleCards.length) {
     inventory.className = "inventory empty-state";
-    inventory.textContent = searchTerm ? "No players found" : `No saved cards can play ${selectedSpot.slot} yet. Spin more players.`;
+    inventory.textContent = searchTerm && selectedSpot
+      ? `No players found for ${selectedSpot.slot}`
+      : searchTerm ? "No players found" : `No saved cards can play ${selectedSpot.slot} yet. Spin more players.`;
     return;
   }
 
@@ -580,7 +584,22 @@ function placeCardOnTeam(card, forcedSlot) {
 }
 
 function canPlaySlot(card, slot) {
-  return fallbackSlot(card.position) === slot || card.position === slot;
+  return playableSlots(card.position).includes(slot);
+}
+
+function playableSlots(position) {
+  const map = {
+    CAM: ["CM"],
+    CDM: ["CM"],
+    CF: ["ST"],
+    LB: ["CB"],
+    RB: ["CB"],
+    LM: ["LM", "LW"],
+    LW: ["LW", "LM"],
+    RM: ["RM", "RW"],
+    RW: ["RW", "RM"]
+  };
+  return map[position] || [position];
 }
 
 function availableSpotFor(position) {
@@ -669,6 +688,11 @@ function render() {
 
 topSpinBtn.addEventListener("click", spinCard);
 inventorySearch.addEventListener("input", renderInventory);
+clearReplaceFilterBtn.addEventListener("click", () => {
+  state.replaceSlot = null;
+  saveState();
+  render();
+});
 inventoryToggleBtn.addEventListener("click", () => {
   state.inventoryOpen = !state.inventoryOpen;
   saveState();

@@ -621,6 +621,33 @@ h3 {
   opacity: 0.68;
 }
 
+.rarity-mythic {
+  animation: mythicAura 7s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
+    conic-gradient(from 120deg, #fff2a8, #ffffff, #79f7ff, #c58cff, #ff88c8, #fff2a8);
+  border-color: #ffffff;
+  box-shadow:
+    0 22px 58px rgba(255, 242, 168, 0.34),
+    0 0 34px rgba(121, 247, 255, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+  color: #fff;
+}
+
+.rarity-mythic::before {
+  animation: mythicPattern 6s linear infinite;
+  background:
+    linear-gradient(115deg, transparent 16%, rgba(255, 255, 255, 0.34) 30%, transparent 46%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 14px);
+  background-size: 220% 220%, 42px 42px;
+  mix-blend-mode: screen;
+}
+
+.rarity-mythic::after {
+  animation: cardShine 3s ease-in-out infinite;
+  opacity: 0.82;
+}
+
 .inventory-actions {
   display: grid;
   gap: 8px;
@@ -653,6 +680,12 @@ h3 {
   color: var(--muted);
   font-size: 0.86rem;
   margin: -6px 0 12px;
+}
+
+.inventory-clear-filter {
+  margin: -4px 0 12px;
+  min-height: 38px;
+  width: 100%;
 }
 
 .empty-state {
@@ -712,6 +745,27 @@ h3 {
 
   to {
     background-position: 72px 0, 140% 50%;
+  }
+}
+
+@keyframes mythicAura {
+  0%,
+  100% {
+    filter: saturate(1.04) brightness(1);
+  }
+
+  50% {
+    filter: saturate(1.2) brightness(1.08);
+  }
+}
+
+@keyframes mythicPattern {
+  from {
+    background-position: 0% 50%, 0 0;
+  }
+
+  to {
+    background-position: 220% 50%, 48px 48px;
   }
 }
 
