@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FC Stars</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow">Career football card game</p>
+          <h1>FC Stars</h1>
+        </div>
+        <div class="profile">
+          <span id="selectedPlayerLabel">Spin your player</span>
+          <strong id="levelLabel">Level 1</strong>
+          <div class="top-main-actions">
+            <button id="topSpinBtn">Spin Player</button>
+            <button id="inventoryToggleBtn" class="secondary">Inventory</button>
+          </div>
+          <div class="top-latest-card" aria-label="Latest rolled card">
+            <span>Latest</span>
+            <strong id="topCurrentCardName">No card yet</strong>
+            <small id="topCurrentCardMeta">Spin to roll.</small>
+          </div>
+          <div class="top-actions" aria-label="Latest card actions">
+            <button id="becomeCardBtn">Become</button>
+            <button id="saveCardBtn" class="secondary">Save</button>
+            <button id="replaceCardBtn" class="secondary">Replace</button>
+            <button id="cancelCardBtn" class="secondary danger-btn">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel roster-panel">
+          <div class="panel-title">
+            <h2>Player Pool</h2>
+            <button id="resetBtn" class="icon-btn" title="Reset save">Reset</button>
+          </div>
+          <div id="starList" class="star-list"></div>
+
+          <div class="card-box current-card">
+            <p class="eyebrow">Latest card</p>
+            <h3 id="currentCardName">No card yet</h3>
+            <p id="currentCardMeta">Spin at the top to roll your player.</p>
+          </div>
+        </aside>
+
+        <section class="match-zone">
+          <div class="pitch" id="pitch" aria-label="Football pitch with positions">
+            <div class="half-line"></div>
+            <div class="center-circle"></div>
+            <div class="box top-box"></div>
+            <div class="box bottom-box"></div>
+          </div>
+        </section>
+
+        <aside class="panel side-panel" id="inventoryPanel">
+          <div class="panel-title">
+            <h2>Inventory</h2>
+            <span id="inventoryCount">0 cards</span>
+          </div>
+          <p id="replaceHint" class="replace-hint">Roll a card, then become it, save it, or click a pitch player to replace.</p>
+          <div id="inventory" class="inventory empty-state">No saved cards yet.</div>
+
+          <div class="card-box">
+            <p class="eyebrow">Selector report</p>
+            <h3 id="reportTitle">Waiting for kickoff</h3>
+            <p id="reportText">Spin a player to start. Named cards fill the team until real players join.</p>
+          </div>
+
+          <div class="card-box">
+            <p class="eyebrow">Next unlock</p>
+            <h3 id="unlockTitle">Real-player trials</h3>
+            <p id="unlockText">Reach Level 5 to unlock stronger rival teams.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
