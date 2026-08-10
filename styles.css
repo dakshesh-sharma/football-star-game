@@ -622,30 +622,40 @@ h3 {
 }
 
 .rarity-legend {
-  animation: legendAura 7s ease-in-out infinite;
+  animation: legendAura 5.5s ease-in-out infinite, legendFoil 8s linear infinite;
   background:
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
-    conic-gradient(from 120deg, #fff2a8, #ffffff, #79f7ff, #c58cff, #ff88c8, #fff2a8);
-  border-color: #ffffff;
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.78), transparent 16%),
+    radial-gradient(circle at 15% 82%, rgba(255, 217, 92, 0.52), transparent 22%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.22), transparent 22%, rgba(255, 255, 255, 0.3) 48%, transparent 68%),
+    conic-gradient(from 120deg, #fff8bc, #ffffff, #67f2ff, #a36cff, #ff66bd, #ffcf4d, #fff8bc),
+    linear-gradient(145deg, #060714 0%, #181029 34%, #4a1f5f 62%, #101522 100%);
+  background-size: 180% 180%, auto, 240% 240%, 360% 360%, auto;
+  border-color: #fff8c9;
   box-shadow:
-    0 22px 58px rgba(255, 242, 168, 0.34),
-    0 0 34px rgba(121, 247, 255, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+    0 24px 70px rgba(255, 205, 64, 0.42),
+    0 0 44px rgba(113, 240, 255, 0.38),
+    0 0 28px rgba(255, 104, 198, 0.32),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
+    inset 0 0 34px rgba(255, 255, 255, 0.16);
   color: #fff;
 }
 
 .rarity-legend::before {
-  animation: legendPattern 6s linear infinite;
+  animation: legendPattern 4.8s linear infinite;
   background:
-    linear-gradient(115deg, transparent 16%, rgba(255, 255, 255, 0.34) 30%, transparent 46%),
-    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 14px);
-  background-size: 220% 220%, 42px 42px;
+    linear-gradient(115deg, transparent 10%, rgba(255, 255, 255, 0.44) 24%, transparent 42%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.34) 0 2px, transparent 2px 15px),
+    repeating-linear-gradient(55deg, transparent 0 11px, rgba(255, 255, 255, 0.12) 11px 13px);
+  background-size: 240% 240%, 38px 38px, auto;
   mix-blend-mode: screen;
 }
 
 .rarity-legend::after {
-  animation: cardShine 3s ease-in-out infinite;
-  opacity: 0.82;
+  animation: legendSweep 2.8s ease-in-out infinite;
+  background:
+    linear-gradient(105deg, transparent 4%, rgba(255, 255, 255, 0.74) 17%, transparent 34%),
+    linear-gradient(72deg, transparent 28%, rgba(255, 232, 119, 0.44) 50%, transparent 72%);
+  opacity: 0.9;
 }
 
 .inventory-actions {
@@ -751,21 +761,43 @@ h3 {
 @keyframes legendAura {
   0%,
   100% {
-    filter: saturate(1.04) brightness(1);
+    filter: saturate(1.16) brightness(1);
   }
 
   50% {
-    filter: saturate(1.2) brightness(1.08);
+    filter: saturate(1.45) brightness(1.15);
+  }
+}
+
+@keyframes legendFoil {
+  from {
+    background-position: 0% 50%, 0 0, 0% 50%, 0% 50%, 0 0;
+  }
+
+  to {
+    background-position: 180% 50%, 0 0, 240% 50%, 360% 50%, 0 0;
   }
 }
 
 @keyframes legendPattern {
   from {
-    background-position: 0% 50%, 0 0;
+    background-position: 0% 50%, 0 0, 0 0;
   }
 
   to {
-    background-position: 220% 50%, 48px 48px;
+    background-position: 240% 50%, 54px 54px, 48px 0;
+  }
+}
+
+@keyframes legendSweep {
+  0%,
+  46% {
+    transform: translateX(-145%) skewX(-18deg);
+  }
+
+  74%,
+  100% {
+    transform: translateX(145%) skewX(-18deg);
   }
 }
 
