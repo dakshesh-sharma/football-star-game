@@ -246,15 +246,17 @@ function buildTeam() {
   return formation.map((spot, index) => {
     const star = state.selectedStar;
     if (star && spot.id === selectedStarSlot) {
-      return { ...spot, slot: star.position, ...star, controlled: true };
+      return { ...spot, ...star, id: spot.id, cardId: star.id, slot: star.position, controlled: true };
     }
 
     const savedCard = state.teamCards[spot.id];
     if (savedCard) {
       return {
         ...spot,
-        slot: savedCard.position,
         ...savedCard,
+        id: spot.id,
+        cardId: savedCard.id,
+        slot: savedCard.position,
         controlled: false
       };
     }
@@ -476,7 +478,7 @@ function renderInventory() {
   const searchTerm = inventorySearch.value.trim().toLowerCase();
   clearReplaceFilterBtn.hidden = !selectedSpot;
   replaceHint.textContent = selectedSpot
-    ? `Showing cards that can play ${selectedSpot.slot}. Use Show all cards to find players like Son.`
+    ? `Replacing ${selectedSpot.slot}. Matching cards are shown first, but all saved cards stay visible.`
     : "Roll a card, then become it, save it, or click a pitch player to replace.";
 
   if (!state.inventory.length) {
@@ -485,19 +487,19 @@ function renderInventory() {
   }
 
   inventory.innerHTML = "";
-  const positionCards = selectedSpot
-    ? state.inventory.filter((card) => canPlaySlot(card, selectedSpot.slot))
-    : state.inventory;
-  const visibleCards = positionCards
+  const visibleCards = state.inventory
     .filter((card) => card.name.toLowerCase().includes(searchTerm))
     .slice()
-    .sort((a, b) => Number(chancePercent(a)) - Number(chancePercent(b)) || b.rating - a.rating);
+    .sort((a, b) => {
+      const aMatchesSlot = selectedSpot && canPlaySlot(a, selectedSpot.slot);
+      const bMatchesSlot = selectedSpot && canPlaySlot(b, selectedSpot.slot);
+      if (aMatchesSlot !== bMatchesSlot) return aMatchesSlot ? -1 : 1;
+      return Number(chancePercent(a)) - Number(chancePercent(b)) || b.rating - a.rating;
+    });
 
   if (!visibleCards.length) {
     inventory.className = "inventory empty-state";
-    inventory.textContent = searchTerm && selectedSpot
-      ? `No players found for ${selectedSpot.slot}`
-      : searchTerm ? "No players found" : `No saved cards can play ${selectedSpot.slot} yet. Spin more players.`;
+    inventory.textContent = searchTerm ? "No players found" : "No saved cards yet. Roll a player, then press Save.";
     return;
   }
 
@@ -519,7 +521,7 @@ function renderInventory() {
       </div>
       <div class="inventory-actions">
         <button data-become="${card.id}">Become</button>
-        <button class="secondary" data-card="${card.id}">${selectedSpot ? `Put at ${selectedSpot.slot}` : "Choose pitch spot"}</button>
+        <button class="secondary" data-card="${card.id}">${selectedSpot && canPlaySlot(card, selectedSpot.slot) ? `Put at ${selectedSpot.slot}` : "Choose pitch spot"}</button>
       </div>
     `;
     item.querySelector("[data-card]").addEventListener("click", () => useCard(card.id));
@@ -558,6 +560,16 @@ function useCard(id) {
   const cardIndex = state.inventory.findIndex((item) => item.id === id);
   const card = state.inventory[cardIndex];
   if (!card) return;
+
+  const selectedSpot = formation.find((spot) => spot.id === state.replaceSlot);
+  if (selectedSpot && !canPlaySlot(card, selectedSpot.slot)) {
+    state.replaceSlot = null;
+    reportTitle.textContent = `Choose a ${card.position} spot`;
+    reportText.textContent = `${card.name} cannot play ${selectedSpot.slot}. Pick a matching pitch player, then place the card.`;
+    saveState();
+    render();
+    return;
+  }
 
   const placed = placeCardOnTeam(card, state.replaceSlot);
   if (placed.oldCard) {
