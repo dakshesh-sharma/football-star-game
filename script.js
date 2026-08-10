@@ -151,6 +151,7 @@ const replaceCardBtn = document.querySelector("#replaceCardBtn");
 const saveCardBtn = document.querySelector("#saveCardBtn");
 const cancelCardBtn = document.querySelector("#cancelCardBtn");
 const inventory = document.querySelector("#inventory");
+const inventorySearch = document.querySelector("#inventorySearch");
 const inventoryPanel = document.querySelector("#inventoryPanel");
 const inventoryCount = document.querySelector("#inventoryCount");
 const replaceHint = document.querySelector("#replaceHint");
@@ -462,6 +463,7 @@ function renderInventory() {
   inventoryCount.textContent = `${state.inventory.length} card${state.inventory.length === 1 ? "" : "s"}`;
   inventory.className = `inventory ${state.inventory.length ? "" : "empty-state"}`;
   const selectedSpot = formation.find((spot) => spot.id === state.replaceSlot);
+  const searchTerm = inventorySearch.value.trim().toLowerCase();
   replaceHint.textContent = selectedSpot
     ? `Replacing ${selectedSpot.slot}: use the rolled card or choose a saved card.`
     : "Roll a card, then become it, save it, or click a pitch player to replace.";
@@ -472,25 +474,36 @@ function renderInventory() {
   }
 
   inventory.innerHTML = "";
-  const visibleCards = (selectedSpot
+  const positionCards = selectedSpot
     ? state.inventory.filter((card) => canPlaySlot(card, selectedSpot.slot))
-    : state.inventory).slice().sort((a, b) => Number(chancePercent(a)) - Number(chancePercent(b)) || b.rating - a.rating);
+    : state.inventory;
+  const visibleCards = positionCards
+    .filter((card) => card.name.toLowerCase().includes(searchTerm))
+    .slice()
+    .sort((a, b) => Number(chancePercent(a)) - Number(chancePercent(b)) || b.rating - a.rating);
 
   if (!visibleCards.length) {
     inventory.className = "inventory empty-state";
-    inventory.textContent = `No saved cards can play ${selectedSpot.slot} yet. Spin more players.`;
+    inventory.textContent = searchTerm ? "No players found" : `No saved cards can play ${selectedSpot.slot} yet. Spin more players.`;
     return;
   }
 
   visibleCards.forEach((card) => {
     const item = document.createElement("div");
-    item.className = "inventory-card";
+    item.className = `inventory-card rarity-${rarityClass(card.rarity)}`;
     item.innerHTML = `
-      <img class="card-photo" src="${playerPhoto(card)}" alt="${card.name}" loading="lazy">
-      <span>
+      <div class="card-rating">
+        <strong>${card.rating}</strong>
+        <span>${card.position}</span>
+      </div>
+      <div class="card-image-wrap">
+        <img class="card-photo" src="${playerPhoto(card)}" alt="${card.name}" loading="lazy">
+      </div>
+      <div class="card-details">
         <strong>${card.name}</strong>
-        <span class="meta">${card.position} · ${card.rarity} · ${card.team} · ${chancePercent(card)}% chance</span>
-      </span>
+        <span>${card.team}</span>
+        <small>${card.rarity}</small>
+      </div>
       <div class="inventory-actions">
         <button data-become="${card.id}">Become</button>
         <button class="secondary" data-card="${card.id}">${selectedSpot ? `Put at ${selectedSpot.slot}` : "Choose pitch spot"}</button>
@@ -501,6 +514,10 @@ function renderInventory() {
     inventory.appendChild(item);
     loadPlayerPhoto(item.querySelector("img"), card);
   });
+}
+
+function rarityClass(rarity) {
+  return rarity.toLowerCase();
 }
 
 function becomeInventoryCard(id) {
@@ -640,6 +657,7 @@ function render() {
 }
 
 topSpinBtn.addEventListener("click", spinCard);
+inventorySearch.addEventListener("input", renderInventory);
 inventoryToggleBtn.addEventListener("click", () => {
   state.inventoryOpen = !state.inventoryOpen;
   saveState();
