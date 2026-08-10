@@ -1,10 +1,11 @@
 const cardPool = [
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1 },
-  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: 93, rarity: "Icon", chance: 0.1 },
+  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: 93, rarity: "Legend", chance: 0.1 },
+  { name: "Mbappu", position: "ST", team: "India", rating: 99, rarity: "Legend", chance: 0.1, image: "assets/mbappu.png" },
   { name: "Lionel Messi", position: "RW", team: "Argentina", rating: 93, rarity: "Icon", chance: 2 },
   { name: "Sunil Chhetri", position: "ST", team: "India", rating: 84, rarity: "Hero", chance: 6 },
-  { name: "Lamine Yamal", position: "RW", team: "Barcelona", rating: 88, rarity: "Gold", chance: 0.1 },
+  { name: "Lamine Yamal", position: "RW", team: "Barcelona", rating: 88, rarity: "Legend", chance: 0.1 },
   { name: "Kylian Mbappe", position: "ST", team: "Real Madrid", rating: 92, rarity: "Elite", chance: 3 },
   { name: "Erling Haaland", position: "ST", team: "Man City", rating: 91, rarity: "Elite", chance: 4 },
   { name: "Rodri", position: "CDM", team: "Man City", rating: 91, rarity: "Elite", chance: 4 },
@@ -99,6 +100,7 @@ const cardPool = [
 const selectablePlayers = cardPool;
 const exactChancePlayers = {
   "Cristiano Ronaldo": 0.1,
+  Mbappu: 0.1,
   "Lamine Yamal": 0.1
 };
 const normalRollPool = cardPool.filter((card) => exactChancePlayers[card.name] === undefined);
@@ -636,16 +638,19 @@ function chancePercent(card) {
     return exactChancePlayers[card.name].toFixed(1);
   }
   const remainingChance = 100 - Object.values(exactChancePlayers).reduce((sum, chance) => sum + chance, 0);
-  return ((card.chance / totalChance) * remainingChance).toFixed(1);
+  const displayChance = (card.chance / totalChance) * remainingChance;
+  return Math.max(displayChance, 0.2).toFixed(1);
 }
 
 function playerPhoto(card) {
+  if (card.image) return card.image;
   const initials = encodeURIComponent(card.name);
   return `https://ui-avatars.com/api/?name=${initials}&background=111816&color=f2c14e&bold=true&size=128`;
 }
 
 
 function loadPlayerPhoto(image, card) {
+  if (card.image) return;
   const page = encodeURIComponent(wikiPageName(card.name));
   fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${page}`)
     .then((response) => response.ok ? response.json() : null)

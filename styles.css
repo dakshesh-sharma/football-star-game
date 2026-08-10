@@ -621,8 +621,8 @@ h3 {
   opacity: 0.68;
 }
 
-.rarity-mythic {
-  animation: mythicAura 7s ease-in-out infinite;
+.rarity-legend {
+  animation: legendAura 7s ease-in-out infinite;
   background:
     radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
     conic-gradient(from 120deg, #fff2a8, #ffffff, #79f7ff, #c58cff, #ff88c8, #fff2a8);
@@ -634,8 +634,8 @@ h3 {
   color: #fff;
 }
 
-.rarity-mythic::before {
-  animation: mythicPattern 6s linear infinite;
+.rarity-legend::before {
+  animation: legendPattern 6s linear infinite;
   background:
     linear-gradient(115deg, transparent 16%, rgba(255, 255, 255, 0.34) 30%, transparent 46%),
     repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 14px);
@@ -643,7 +643,7 @@ h3 {
   mix-blend-mode: screen;
 }
 
-.rarity-mythic::after {
+.rarity-legend::after {
   animation: cardShine 3s ease-in-out infinite;
   opacity: 0.82;
 }
@@ -748,7 +748,7 @@ h3 {
   }
 }
 
-@keyframes mythicAura {
+@keyframes legendAura {
   0%,
   100% {
     filter: saturate(1.04) brightness(1);
@@ -759,7 +759,7 @@ h3 {
   }
 }
 
-@keyframes mythicPattern {
+@keyframes legendPattern {
   from {
     background-position: 0% 50%, 0 0;
   }
