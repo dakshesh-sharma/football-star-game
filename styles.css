@@ -468,7 +468,9 @@ h3 {
 .card-image-wrap {
   align-items: center;
   align-self: stretch;
-  background: rgba(0, 0, 0, 0.22);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.12), transparent 34%),
+    rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   display: flex;
@@ -709,9 +711,9 @@ h3 {
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 8px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  height: 116px;
-  object-fit: cover;
-  object-position: center;
+  height: 142px;
+  object-fit: contain;
+  object-position: center top;
   width: 100%;
 }
 
@@ -883,6 +885,6 @@ h3 {
   }
 
   .card-photo {
-    height: 104px;
+    height: 128px;
   }
 }
