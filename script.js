@@ -196,7 +196,9 @@ function migrateState(savedState) {
   );
   savedState.inventory = uniqueCards([
     ...savedState.inventory,
-    ...Object.values(savedState.teamCards)
+    ...Object.values(savedState.teamCards),
+    savedState.selectedStar,
+    savedState.currentCard
   ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
@@ -375,6 +377,8 @@ function saveCurrentCard() {
 
 function becomeCurrentCard() {
   if (!state.currentCard) return;
+  state.inventory = addCardToInventory(state.inventory, state.currentCard);
+  state.currentCardSaved = true;
   state.selectedStar = state.currentCard;
   state.selectedStarSlot = bestSlotIdForPosition(state.currentCard.position);
   state.replaceSlot = null;
@@ -398,10 +402,8 @@ function replaceSelectedSlotWithCurrentCard() {
   }
 
   const placed = placeCardOnTeam(state.currentCard, state.replaceSlot);
-  if (!state.currentCardSaved) {
-    state.inventory = addCardToInventory(state.inventory, state.currentCard);
-    state.currentCardSaved = true;
-  }
+  state.inventory = addCardToInventory(state.inventory, state.currentCard);
+  state.currentCardSaved = true;
   state.replaceSlot = null;
   reportTitle.textContent = `${state.currentCard.name} joined your XI`;
   reportText.textContent = `${state.currentCard.name} replaced the player at ${placed.targetSlot}.`;
@@ -429,6 +431,7 @@ function addCardToInventory(cards, card) {
 function uniqueCards(cards) {
   const seen = new Set();
   return cards.filter((card) => {
+    if (!card) return false;
     if (seen.has(card.name)) return false;
     seen.add(card.name);
     return true;
