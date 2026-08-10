@@ -194,6 +194,10 @@ function migrateState(savedState) {
       return [slotIdFromSave(slot, enrichedCard), enrichedCard];
     })
   );
+  savedState.inventory = uniqueCards([
+    ...savedState.inventory,
+    ...Object.values(savedState.teamCards)
+  ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
   }
@@ -547,7 +551,6 @@ function useCard(id) {
   if (!card) return;
 
   const placed = placeCardOnTeam(card, state.replaceSlot);
-  state.inventory.splice(cardIndex, 1);
   if (placed.oldCard) {
     state.inventory = addCardToInventory(state.inventory, placed.oldCard);
   }
@@ -564,6 +567,11 @@ function placeCardOnTeam(card, forcedSlot) {
     ? formation.find((spot) => spot.id === forcedSlot)
     : availableSpotFor(card.position);
   const oldCard = state.teamCards[targetSpot.id];
+  Object.entries(state.teamCards).forEach(([slot, teamCard]) => {
+    if (slot !== targetSpot.id && teamCard.name === card.name) {
+      delete state.teamCards[slot];
+    }
+  });
   state.teamCards[targetSpot.id] = card;
   return { ...card, targetSlot: targetSpot.slot, oldCard };
 }
