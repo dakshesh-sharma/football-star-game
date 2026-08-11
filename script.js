@@ -97,6 +97,10 @@ const cardPool = [
   { name: "David Beckham", position: "RM", team: "England", rating: 90, rarity: "Icon", chance: 1 }
 ];
 
+const codeOnlyCards = [
+  { name: "IshowSpeed", position: "ST", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true }
+];
+
 const selectablePlayers = cardPool;
 const exactChancePlayers = {
   Mbappu: 0.1,
@@ -157,6 +161,7 @@ const defaultState = {
   currentCard: null,
   currentCardSaved: false,
   deletedCardNames: [],
+  redeemedCodes: [],
   playerStats: {},
   joinRequest: null,
   activeMatch: null
@@ -180,6 +185,7 @@ const currentCardMeta = document.querySelector("#currentCardMeta");
 const topCurrentCardName = document.querySelector("#topCurrentCardName");
 const topCurrentCardMeta = document.querySelector("#topCurrentCardMeta");
 const topSpinBtn = document.querySelector("#topSpinBtn");
+const redeemCodeBtn = document.querySelector("#redeemCodeBtn");
 const inventoryToggleBtn = document.querySelector("#inventoryToggleBtn");
 const becomeCardBtn = document.querySelector("#becomeCardBtn");
 const replaceCardBtn = document.querySelector("#replaceCardBtn");
@@ -325,12 +331,13 @@ function isDeveloperUsername(username) {
 }
 
 function hasFullInventoryUsername(username) {
-  return ["Noxify_Vo1d", "THEgoat"].includes(String(username || "").trim());
+  return ["Noxify_Vo1d", "THEgoat", "robloxTHEGoat", "1029384756"].includes(String(username || "").trim());
 }
 
 function migrateState(savedState, hasDevInventory = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
+  savedState.redeemedCodes = savedState.redeemedCodes || [];
   savedState.playerStats = savedState.playerStats || {};
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
@@ -382,7 +389,7 @@ function isDevGrantedCard(card) {
 
 function enrichCard(card) {
   if (!card?.name) return null;
-  const fullCard = cardPool.find((item) => item.name === card.name);
+  const fullCard = [...cardPool, ...codeOnlyCards].find((item) => item.name === card.name);
   return fullCard ? { ...card, ...fullCard, id: card.id } : card;
 }
 
@@ -1075,6 +1082,43 @@ function addCardToInventory(cards, card) {
   return [card, ...cards];
 }
 
+function redeemCode() {
+  if (!activeAccount()) {
+    showQuickLogin();
+    return;
+  }
+
+  const code = prompt("Enter code:");
+  const trimmedCode = code?.trim();
+  if (!trimmedCode) return;
+
+  if (trimmedCode !== "CR7theGoat") {
+    reportTitle.textContent = "Invalid code";
+    reportText.textContent = "That code did not unlock a player.";
+    render();
+    return;
+  }
+
+  if (state.redeemedCodes.includes(trimmedCode) || ownedPlayerNames().has("IshowSpeed")) {
+    reportTitle.textContent = "Code already used";
+    reportText.textContent = "IshowSpeed is already in this account.";
+    render();
+    return;
+  }
+
+  const speedCard = {
+    ...codeOnlyCards[0],
+    id: `code-ishowspeed-${Date.now()}`
+  };
+  state.inventory = addCardToInventory(state.inventory, speedCard);
+  state.redeemedCodes = uniqueNames([...state.redeemedCodes, trimmedCode]);
+  state.inventoryOpen = true;
+  reportTitle.textContent = "Code redeemed";
+  reportText.textContent = "IshowSpeed joined your inventory as a Legend Portugal card.";
+  saveState();
+  render();
+}
+
 function uniqueCards(cards) {
   const seen = new Set();
   return cards.filter((card) => {
@@ -1533,6 +1577,7 @@ function render() {
 }
 
 topSpinBtn.addEventListener("click", spinCard);
+redeemCodeBtn.addEventListener("click", redeemCode);
 endMatchBtn.addEventListener("click", endMatch);
 acceptJoinBtn.addEventListener("click", acceptJoinRequest);
 rejectJoinBtn.addEventListener("click", rejectJoinRequest);
