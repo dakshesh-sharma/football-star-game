@@ -762,8 +762,8 @@ function poolNameLabel(card) {
 function displayNameLabel(cardOrName) {
   const name = typeof cardOrName === "string" ? cardOrName : cardOrName.name;
   const labels = {
-    "Cristiano Ronaldo": "C.RONALDO",
-    "Lamine Yamal": "L.YAMAL"
+    "Cristiano Ronaldo": "Ronaldo",
+    "Lamine Yamal": "Yamal"
   };
   return labels[name] || name;
 }
