@@ -1,7 +1,7 @@
 const cardPool = [
+  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: 93, rarity: "G.O.A.T", chance: 0, specialAccess: true },
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1 },
-  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: 93, rarity: "Legend", chance: 0.1 },
   { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.1, image: "assets/mbappu.png" },
   { name: "Lionel Messi", position: "RW", team: "Argentina", rating: 93, rarity: "Icon", chance: 2 },
   { name: "Sunil Chhetri", position: "ST", team: "India", rating: 84, rarity: "Hero", chance: 6 },
@@ -99,11 +99,10 @@ const cardPool = [
 
 const selectablePlayers = cardPool;
 const exactChancePlayers = {
-  "Cristiano Ronaldo": 0.1,
   Mbappu: 0.1,
   "Lamine Yamal": 0.2
 };
-const normalRollPool = cardPool.filter((card) => exactChancePlayers[card.name] === undefined);
+const normalRollPool = cardPool.filter((card) => !card.specialAccess && exactChancePlayers[card.name] === undefined);
 const totalChance = normalRollPool.reduce((sum, card) => sum + card.chance, 0);
 
 const formation = [
@@ -133,7 +132,8 @@ const defaultState = {
   replaceSlot: null,
   inventoryOpen: true,
   currentCard: null,
-  currentCardSaved: false
+  currentCardSaved: false,
+  deletedCardNames: []
 };
 
 let state = loadState();
@@ -173,7 +173,8 @@ function freshState() {
   return {
     ...defaultState,
     inventory: guaranteedInventoryCards(),
-    teamCards: {}
+    teamCards: {},
+    deletedCardNames: []
   };
 }
 
@@ -183,6 +184,7 @@ function saveState() {
 
 function migrateState(savedState) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
+  savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
   if (!savedState.currentCard && savedState.selectedStar) {
@@ -204,7 +206,7 @@ function migrateState(savedState) {
     savedState.selectedStar,
     savedState.currentCard,
     ...guaranteedInventoryCards()
-  ]);
+  ]).filter((card) => !savedState.deletedCardNames.includes(card.name));
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
   }
@@ -242,7 +244,7 @@ function renderStars() {
     card.innerHTML = `
       <span>
         <strong>${star.name}</strong>
-        <span class="meta">${star.position} · ${star.rarity} · ${star.team} · ${chancePercent(star)}% chance</span>
+        <span class="meta">${star.position} · ${star.rarity} · ${star.team} · ${chanceLabel(star)}</span>
       </span>
       <span class="rating">${star.rating}</span>
     `;
@@ -335,7 +337,7 @@ function spinCard() {
   state.currentCard = { ...card, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` };
   state.currentCardSaved = false;
   reportTitle.textContent = `${card.name} rolled`;
-  reportText.textContent = `${card.rarity} ${card.position}. Chance: ${chancePercent(card)}%. Choose Become, Save, or click a pitch player and Replace Slot.`;
+  reportText.textContent = `${card.rarity} ${card.position}. ${chanceLabel(card)}. Choose Become, Save, or click a pitch player and Replace Slot.`;
   saveState();
   render();
 }
@@ -452,6 +454,10 @@ function uniqueCards(cards) {
   });
 }
 
+function uniqueNames(names) {
+  return [...new Set(names.filter(Boolean))];
+}
+
 function renderCurrentCard() {
   if (!state.currentCard) {
     currentCardName.textContent = "No card yet";
@@ -467,9 +473,9 @@ function renderCurrentCard() {
   }
 
   currentCardName.textContent = state.currentCard.name;
-  currentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${state.currentCard.team} · ${chancePercent(state.currentCard)}% chance`;
+  currentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${state.currentCard.team} · ${chanceLabel(state.currentCard)}`;
   topCurrentCardName.textContent = state.currentCard.name;
-  topCurrentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${chancePercent(state.currentCard)}% chance`;
+  topCurrentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${chanceLabel(state.currentCard)}`;
   becomeCardBtn.disabled = false;
   replaceCardBtn.disabled = !state.replaceSlot;
   cancelCardBtn.disabled = false;
@@ -503,7 +509,7 @@ function renderInventory() {
       const aMatchesSlot = selectedSpot && canPlaySlot(a, selectedSpot.slot);
       const bMatchesSlot = selectedSpot && canPlaySlot(b, selectedSpot.slot);
       if (aMatchesSlot !== bMatchesSlot) return aMatchesSlot ? -1 : 1;
-      return Number(chancePercent(a)) - Number(chancePercent(b)) || b.rating - a.rating;
+      return chanceSortValue(a) - chanceSortValue(b) || b.rating - a.rating;
     });
 
   if (!visibleCards.length) {
@@ -515,6 +521,7 @@ function renderInventory() {
   visibleCards.forEach((card) => {
     const item = document.createElement("div");
     item.className = `inventory-card rarity-${rarityClass(card.rarity)}`;
+    const canPlaceAtSelectedSpot = selectedSpot && canPlaySlot(card, selectedSpot.slot);
     item.innerHTML = `
       <div class="card-rating">
         <strong>${card.rating}</strong>
@@ -530,10 +537,16 @@ function renderInventory() {
       </div>
       <div class="inventory-actions">
         <button data-become="${card.id}">Become</button>
-        <button class="secondary" data-card="${card.id}">${selectedSpot && canPlaySlot(card, selectedSpot.slot) ? `Put at ${selectedSpot.slot}` : "Choose pitch spot"}</button>
+        <button class="${canPlaceAtSelectedSpot ? "secondary" : "danger-btn"}" data-card="${card.id}" data-action="${canPlaceAtSelectedSpot ? "place" : "delete"}">${canPlaceAtSelectedSpot ? `Put at ${selectedSpot.slot}` : "Delete"}</button>
       </div>
     `;
-    item.querySelector("[data-card]").addEventListener("click", () => useCard(card.id));
+    item.querySelector("[data-card]").addEventListener("click", (event) => {
+      if (event.currentTarget.dataset.action === "delete") {
+        deleteInventoryCard(card.id);
+        return;
+      }
+      useCard(card.id);
+    });
     item.querySelector("[data-become]").addEventListener("click", () => becomeInventoryCard(card.id));
     inventory.appendChild(item);
     loadPlayerPhoto(item.querySelector("img"), card);
@@ -541,7 +554,31 @@ function renderInventory() {
 }
 
 function rarityClass(rarity) {
-  return rarity.toLowerCase();
+  return rarity.toLowerCase().replaceAll(".", "").replaceAll(" ", "-");
+}
+
+function deleteInventoryCard(id) {
+  const card = state.inventory.find((item) => item.id === id);
+  if (!card) return;
+
+  state.inventory = state.inventory.filter((item) => item.id !== id);
+  state.deletedCardNames = uniqueNames([...state.deletedCardNames, card.name]);
+  Object.entries(state.teamCards).forEach(([slot, teamCard]) => {
+    if (teamCard.name === card.name) delete state.teamCards[slot];
+  });
+  if (state.selectedStar?.name === card.name) {
+    state.selectedStar = null;
+    state.selectedStarSlot = null;
+  }
+  if (state.currentCard?.name === card.name) {
+    state.currentCard = null;
+    state.currentCardSaved = false;
+  }
+  state.replaceSlot = null;
+  reportTitle.textContent = `${card.name} deleted`;
+  reportText.textContent = `${card.name} was removed from your inventory.`;
+  saveState();
+  render();
 }
 
 function becomeInventoryCard(id) {
@@ -661,6 +698,16 @@ function chancePercent(card) {
   const remainingChance = 100 - Object.values(exactChancePlayers).reduce((sum, chance) => sum + chance, 0);
   const displayChance = (card.chance / totalChance) * remainingChance;
   return Math.max(displayChance, 0.2).toFixed(1);
+}
+
+function chanceLabel(card) {
+  if (card.specialAccess) return "only special guest and devs";
+  return `${chancePercent(card)}% chance`;
+}
+
+function chanceSortValue(card) {
+  if (card.specialAccess) return -1;
+  return Number(chancePercent(card));
 }
 
 function playerPhoto(card) {
