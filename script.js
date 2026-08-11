@@ -319,7 +319,7 @@ function normalizeAccount(account, index, devAccountId = null) {
 }
 
 function isDeveloperUsername(username) {
-  return ["THEgoat", "Shiva"].includes(String(username || "").trim());
+  return String(username || "").trim() === "Noxify_Vo1d";
 }
 
 function migrateState(savedState, hasDevInventory = false) {
@@ -329,7 +329,18 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
+  if (!hasDevInventory) {
+    savedState.inventory = savedState.inventory.filter((card) => !isDevGrantedCard(card));
+  }
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
+  if (!hasDevInventory && isDevGrantedCard(savedState.selectedStar)) {
+    savedState.selectedStar = null;
+    savedState.selectedStarSlot = null;
+  }
+  if (!hasDevInventory && isDevGrantedCard(savedState.currentCard)) {
+    savedState.currentCard = null;
+    savedState.currentCardSaved = false;
+  }
   if (!savedState.currentCard && savedState.selectedStar) {
     savedState.currentCard = {
       ...savedState.selectedStar,
@@ -340,6 +351,7 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.teamCards = Object.fromEntries(
     Object.entries(savedState.teamCards || {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
+      if (!hasDevInventory && isDevGrantedCard(enrichedCard)) return [];
       return enrichedCard ? [[slotIdFromSave(slot, enrichedCard), enrichedCard]] : [];
     })
   );
@@ -355,6 +367,11 @@ function migrateState(savedState, hasDevInventory = false) {
   }
   savedState.inventory = uniqueCards(savedState.inventory);
   return savedState;
+}
+
+function isDevGrantedCard(card) {
+  const id = String(card?.id || "");
+  return card?.specialAccess || id.startsWith("owned-") || id.startsWith("guaranteed-");
 }
 
 function enrichCard(card) {
