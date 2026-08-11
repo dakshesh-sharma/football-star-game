@@ -67,6 +67,22 @@ button:disabled {
   min-width: 0;
 }
 
+.settings-block {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.settings-block .eyebrow {
+  color: var(--muted);
+}
+
+.settings-block button {
+  min-height: 38px;
+  padding: 0 16px;
+}
+
 h1,
 h2,
 h3,
