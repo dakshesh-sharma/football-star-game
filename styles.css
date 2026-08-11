@@ -1395,17 +1395,6 @@ h3 {
   text-align: center;
 }
 
-.quick-login-logo {
-  aspect-ratio: 1;
-  border: 1px solid rgba(247, 211, 107, 0.55);
-  border-radius: 8px;
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38), 0 0 24px rgba(247, 211, 107, 0.2);
-  height: 84px;
-  justify-self: center;
-  object-fit: cover;
-  width: 84px;
-}
-
 .account-list {
   display: grid;
   gap: 10px;

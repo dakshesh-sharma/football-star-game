@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="FC Stars">
+  <defs>
+    <linearGradient id="bg" x1="16" x2="112" y1="12" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173d31"/>
+      <stop offset="1" stop-color="#07100d"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="25" x2="104" y1="20" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff1a8"/>
+      <stop offset="0.46" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#9f690d"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <path d="M64 14 78.2 45.5 112 49.2 86.8 72.3 94 106 64 88.8 34 106l7.2-33.7L16 49.2l33.8-3.7L64 14Z" fill="url(#gold)" stroke="#fff3b8" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="64" cy="61" r="25" fill="#101816" stroke="#f6d56b" stroke-width="4"/>
+  <path d="M50 45h28v9H60v8h15v9H60v18H50V45Z" fill="#fff7d2"/>
+  <path d="M83 87c-9 4-21 4-29-2" fill="none" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/>
+</svg>
