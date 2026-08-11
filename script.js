@@ -293,13 +293,17 @@ function renderPitch() {
 
 function playerNode(player) {
   const node = document.createElement("div");
-  node.className = `player-dot ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
+  const rarity = player.rarity || "Silver";
+  node.className = `player-dot rarity-${rarityClass(rarity)} ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
-    <span class="pos">${player.slot}</span>
+    <span class="pitch-card-rating">
+      <strong>${ratingLabel(player)}</strong>
+      <span>${player.slot}</span>
+    </span>
     <span class="name">${shortName(player.name)}</span>
-    <span class="tag">${player.controlled ? "YOU" : "CARD"}</span>
+    <span class="tag">${player.controlled ? "YOU" : rarity}</span>
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
   return node;

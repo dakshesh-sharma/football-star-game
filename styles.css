@@ -325,51 +325,98 @@ h3 {
 }
 
 .player-dot {
-  align-items: center;
-  background: #f7f2e7;
-  border: 2px solid #111;
+  align-items: stretch;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.48), transparent 24%),
+    linear-gradient(145deg, #f7f2e7, #d7d0c1);
+  border: 2px solid rgba(17, 17, 17, 0.78);
   border-radius: 8px;
   color: #101414;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  justify-content: center;
-  min-height: 54px;
-  padding: 5px;
+  gap: 3px;
+  isolation: isolate;
+  justify-content: space-between;
+  min-height: 76px;
+  overflow: hidden;
+  padding: 6px;
   position: absolute;
   text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.48);
   transform: translate(-50%, -50%);
   width: min(98px, 18vw);
   z-index: 2;
 }
 
-.player-dot:not(.controlled) {
-  cursor: pointer;
+.player-dot::before,
+.player-dot::after {
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
 }
 
 .player-dot.selected-slot {
   outline: 3px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .player-dot.controlled {
-  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(53, 169, 255, 0.95), 0 0 26px rgba(53, 169, 255, 0.56);
 }
 
-.player-dot .pos {
-  font-size: 0.72rem;
-  font-weight: 900;
+.pitch-card-rating {
+  align-items: center;
+  background: rgba(4, 7, 7, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 6px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  line-height: 1;
+  padding: 4px 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.pitch-card-rating strong {
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.pitch-card-rating span {
+  font-size: 0.64rem;
+  font-weight: 950;
 }
 
 .player-dot .name {
-  font-size: 0.76rem;
+  background: rgba(5, 8, 8, 0.58);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.72rem;
   font-weight: 900;
   line-height: 1.05;
+  min-height: 24px;
+  overflow-wrap: anywhere;
+  padding: 4px 3px;
+  position: relative;
+  z-index: 1;
 }
 
 .player-dot .tag {
-  color: rgba(0, 0, 0, 0.65);
-  font-size: 0.64rem;
-  font-weight: 800;
+  background: rgba(0, 0, 0, 0.48);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.56rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 3px 4px;
+  position: relative;
+  text-transform: uppercase;
+  z-index: 1;
 }
 
 .sr-only {
@@ -975,7 +1022,30 @@ h3 {
   }
 
   .player-dot {
-    width: 76px;
+    min-height: 70px;
+    padding: 5px;
+    width: 78px;
+  }
+
+  .pitch-card-rating {
+    padding: 3px 4px;
+  }
+
+  .pitch-card-rating strong {
+    font-size: 0.9rem;
+  }
+
+  .pitch-card-rating span {
+    font-size: 0.58rem;
+  }
+
+  .player-dot .name {
+    font-size: 0.66rem;
+    min-height: 22px;
+  }
+
+  .player-dot .tag {
+    font-size: 0.5rem;
   }
 
   .card-actions {
