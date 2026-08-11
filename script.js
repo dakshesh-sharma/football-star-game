@@ -499,7 +499,7 @@ function hydrateFromLocalDatabase() {
 
 function renderStars() {
   starList.innerHTML = "";
-  selectablePlayers.forEach((star) => {
+  selectablePlayers.slice().sort(compareCardsByRarity).forEach((star) => {
     const card = document.createElement("div");
     card.className = `star-card ${state.selectedStar?.name === star.name ? "active" : ""}`;
     card.innerHTML = `
