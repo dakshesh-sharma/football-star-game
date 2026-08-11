@@ -581,6 +581,18 @@ function buildTeam() {
     }
 
     const player = starterNames[index] || cardPool[index % cardPool.length].name;
+    const starterCard = starterCardForName(player);
+    if (starterCard) {
+      return {
+        ...spot,
+        ...starterCard,
+        id: spot.id,
+        cardId: `starter-${starterCard.name.toLowerCase().replaceAll(" ", "-")}`,
+        slot: starterCard.position,
+        controlled: false
+      };
+    }
+
     return {
       ...spot,
       name: player,
@@ -589,6 +601,19 @@ function buildTeam() {
       controlled: false
     };
   });
+}
+
+function starterCardForName(name) {
+  const map = {
+    Maignan: "Mike Maignan",
+    Saliba: "William Saliba",
+    Son: "Son Heung-min",
+    Modric: "Luka Modric",
+    Salah: "Mohamed Salah",
+    Mbappe: "Kylian Mbappe",
+    Yamal: "Lamine Yamal"
+  };
+  return cardPool.find((card) => card.name === (map[name] || name));
 }
 
 function renderPitch() {
@@ -826,6 +851,8 @@ function renderInventory() {
 
   inventory.innerHTML = "";
   const visibleCards = state.inventory
+    .map(enrichCard)
+    .filter(Boolean)
     .filter((card) => card.name.toLowerCase().includes(searchTerm))
     .slice()
     .sort((a, b) => {
