@@ -1315,6 +1315,50 @@ h3 {
   font-size: 0.92rem;
 }
 
+.start-splash {
+  align-items: center;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(242, 193, 78, 0.18), transparent 26%),
+    linear-gradient(145deg, #11241e, #050908);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  text-align: center;
+  z-index: 60;
+}
+
+.start-splash[hidden] {
+  display: none;
+}
+
+.start-splash-mark {
+  align-items: center;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.28), transparent 22%),
+    linear-gradient(145deg, #fbe28a, #c58419);
+  border: 3px solid #fff2b1;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 42px rgba(242, 193, 78, 0.34);
+  color: #07100d;
+  display: grid;
+  font-size: 2.2rem;
+  font-weight: 950;
+  justify-content: center;
+  width: 96px;
+}
+
+.start-splash h2 {
+  color: #fff7d2;
+  font-size: clamp(2.4rem, 7vw, 5.4rem);
+  letter-spacing: 0;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.46);
+}
+
 .quick-login-overlay {
   align-items: center;
   background: rgba(5, 8, 8, 0.8);

@@ -133,6 +133,7 @@ const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelo
 let databasePromise = null;
 let databaseReady = false;
 let matchTimer = null;
+let startSplashActive = true;
 
 const formation = [
   { id: "gk", slot: "GK", x: 50, y: 91 },
@@ -209,6 +210,7 @@ const settingsMenu = document.querySelector("#settingsMenu");
 const accountToggleBtn = document.querySelector("#accountToggleBtn");
 const changeUsernameBtn = document.querySelector("#changeUsernameBtn");
 const resetBtn = document.querySelector("#resetBtn");
+const startSplash = document.querySelector("#startSplash");
 const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
 const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
 const quickLoginTitle = document.querySelector("#quickLoginTitle");
@@ -492,7 +494,7 @@ function hydrateFromLocalDatabase() {
       storageSet(saveKey, JSON.stringify(state));
       saveAccounts();
       render();
-      if (!activeAccount()) showQuickLogin();
+      showQuickLoginAfterSplash();
     })
     .catch(() => {});
 }
@@ -586,6 +588,11 @@ function showQuickLogin() {
   createAccountBtn.textContent = accounts.length ? "Create Account" : "Create Username";
   renderAccounts();
   quickLoginOverlay.hidden = false;
+}
+
+function showQuickLoginAfterSplash() {
+  if (startSplashActive || activeAccount()) return;
+  showQuickLogin();
 }
 
 function hideQuickLogin() {
@@ -1660,4 +1667,8 @@ resetBtn.addEventListener("click", () => {
 
 render();
 hydrateFromLocalDatabase();
-if (!activeAccount()) showQuickLogin();
+window.setTimeout(() => {
+  startSplashActive = false;
+  startSplash.hidden = true;
+  showQuickLoginAfterSplash();
+}, 1500);
