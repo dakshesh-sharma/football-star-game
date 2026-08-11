@@ -130,6 +130,7 @@ const formation = [
 ];
 
 const starterNames = ["Maignan", "Ruben Dias", "Araujo", "Saliba", "Son", "Pedri", "Modric", "Salah", "Neymar Jr", "Mbappe", "Yamal"];
+const guaranteedInventoryNames = ["Mbappu", "Son Heung-min"];
 const defaultState = {
   selectedStar: null,
   level: 1,
@@ -187,13 +188,10 @@ const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
 
 function loadAccounts() {
+  const storedActiveAccountId = storageGet(activeAccountKey);
   const savedAccounts = safeJson(storageGet(accountsKey));
   if (Array.isArray(savedAccounts) && savedAccounts.length) {
-    return savedAccounts.map((account, index) => ({
-      id: account.id || `account-${Date.now()}-${index}`,
-      username: account.username || `Player ${index + 1}`,
-      state: migrateState({ ...defaultState, ...(account.state || {}) })
-    }));
+    return savedAccounts.map((account, index) => normalizeAccount(account, index, storedActiveAccountId));
   }
 
   const legacySave = safeJson(storageGet(saveKey));
@@ -201,7 +199,8 @@ function loadAccounts() {
     const account = {
       id: `account-${Date.now()}`,
       username: legacySave.username || legacySave.selectedStar?.name || "Player 1",
-      state: migrateState({ ...defaultState, ...legacySave })
+      isDev: true,
+      state: migrateState({ ...defaultState, ...legacySave }, true)
     };
     storageSet(accountsKey, JSON.stringify([account]));
     storageSet(activeAccountKey, account.id);
@@ -211,7 +210,8 @@ function loadAccounts() {
   const firstAccount = {
     id: `account-${Date.now()}`,
     username: "Player 1",
-    state: freshState()
+    isDev: true,
+    state: freshState(true)
   };
   storageSet(accountsKey, JSON.stringify([firstAccount]));
   storageSet(activeAccountKey, firstAccount.id);
@@ -247,13 +247,14 @@ function safeJson(value) {
 }
 
 function loadState() {
-  return activeAccount()?.state || freshState();
+  const account = activeAccount();
+  return account?.state || freshState(false);
 }
 
-function freshState() {
+function freshState(hasDevInventory = false) {
   return {
     ...defaultState,
-    inventory: allInventoryCards(),
+    inventory: hasDevInventory ? allInventoryCards() : guaranteedInventoryCards(),
     teamCards: {},
     deletedCardNames: []
   };
@@ -277,7 +278,23 @@ function activeAccount() {
   return accounts.find((account) => account.id === activeAccountId) || null;
 }
 
-function migrateState(savedState) {
+function normalizeAccount(account, index, devAccountId = null) {
+  const id = account.id || `account-${Date.now()}-${index}`;
+  const inferredDev = index === 0 || id === devAccountId || isDeveloperUsername(account.username);
+  const isDev = account.isDev ?? inferredDev;
+  return {
+    id,
+    username: account.username || `Player ${index + 1}`,
+    isDev,
+    state: migrateState({ ...defaultState, ...(account.state || {}) }, isDev)
+  };
+}
+
+function isDeveloperUsername(username) {
+  return ["dakshesh", "dev", "developer", "admin"].includes(String(username || "").trim().toLowerCase());
+}
+
+function migrateState(savedState, hasDevInventory = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
@@ -300,7 +317,7 @@ function migrateState(savedState) {
     ...Object.values(savedState.teamCards),
     savedState.selectedStar,
     savedState.currentCard,
-    ...allInventoryCards()
+    ...(hasDevInventory ? allInventoryCards() : guaranteedInventoryCards())
   ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
@@ -320,6 +337,13 @@ function allInventoryCards() {
     ...card,
     id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
   }));
+}
+
+function guaranteedInventoryCards() {
+  return guaranteedInventoryNames
+    .map((name) => cardPool.find((card) => card.name === name))
+    .filter(Boolean)
+    .map((card) => ({ ...card, id: `guaranteed-${card.name.toLowerCase().replaceAll(" ", "-")}` }));
 }
 
 function slotIdFromSave(slot, card) {
@@ -400,11 +424,7 @@ function hydrateFromLocalDatabase() {
         return;
       }
 
-      accounts = databaseAccounts.map((account, index) => ({
-        id: account.id || `account-${Date.now()}-${index}`,
-        username: account.username || `Player ${index + 1}`,
-        state: migrateState({ ...defaultState, ...(account.state || {}) })
-      }));
+      accounts = databaseAccounts.map((account, index) => normalizeAccount(account, index, databaseActiveAccountId));
       activeAccountId = databaseActiveAccountId && accounts.some((account) => account.id === databaseActiveAccountId)
         ? databaseActiveAccountId
         : null;
@@ -416,6 +436,7 @@ function hydrateFromLocalDatabase() {
         storageRemove(activeAccountKey);
       }
       storageSet(saveKey, JSON.stringify(state));
+      saveAccounts();
       render();
       if (!activeAccount()) showQuickLogin();
     })
@@ -462,13 +483,13 @@ function renderAccounts() {
   accountList.className = "account-list";
   accounts.forEach((account) => {
     const accountButton = document.createElement("button");
-    const accountState = account.state || freshState();
+    const accountState = account.state || freshState(account.isDev);
     const selectedName = accountState.selectedStar?.name || "No player yet";
     accountButton.className = "account-card secondary";
     accountButton.type = "button";
     accountButton.innerHTML = `
       <strong>${account.username}</strong>
-      <span>${selectedName} · Level ${accountState.level || 1}</span>
+      <span>${selectedName} · Level ${accountState.level || 1}${account.isDev ? " · Dev" : ""}</span>
     `;
     accountButton.addEventListener("click", () => loginAccount(account.id));
     accountList.appendChild(accountButton);
@@ -490,7 +511,7 @@ function loginAccount(id) {
   if (!account) return;
   activeAccountId = account.id;
   storageSet(activeAccountKey, activeAccountId);
-  state = migrateState({ ...defaultState, ...(account.state || {}) });
+  state = migrateState({ ...defaultState, ...(account.state || {}) }, account.isDev);
   account.state = state;
   saveAccounts();
   hideQuickLogin();
@@ -518,7 +539,8 @@ function createAccount() {
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     username: trimmedUsername.slice(0, 24),
-    state: freshState()
+    isDev: isDeveloperUsername(trimmedUsername),
+    state: freshState(isDeveloperUsername(trimmedUsername))
   };
   accounts = [account, ...accounts];
   saveAccounts();
@@ -1140,7 +1162,7 @@ settingsBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", () => {
   const account = activeAccount();
-  state = freshState();
+  state = freshState(account?.isDev);
   if (account) {
     account.state = state;
     saveAccounts();
