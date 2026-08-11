@@ -107,6 +107,13 @@ const totalChance = normalRollPool.reduce((sum, card) => sum + card.chance, 0);
 const saveKey = "star-xi-trial";
 const accountsKey = "fc-stars-accounts";
 const activeAccountKey = "fc-stars-active-account";
+const databaseName = "fc-stars-local-save";
+const databaseVersion = 1;
+const databaseStoreName = "state";
+const accountsDatabaseKey = "accounts";
+const activeAccountDatabaseKey = "active-account";
+let databasePromise = null;
+let databaseReady = false;
 
 const formation = [
   { id: "gk", slot: "GK", x: 50, y: 91 },
@@ -264,6 +271,8 @@ function saveState() {
 
 function saveAccounts() {
   storageSet(accountsKey, JSON.stringify(accounts));
+  saveToLocalDatabase(accountsDatabaseKey, accounts);
+  saveToLocalDatabase(activeAccountDatabaseKey, activeAccountId);
 }
 
 function activeAccount() {
@@ -283,9 +292,9 @@ function migrateState(savedState) {
     savedState.currentCardSaved = true;
   }
   savedState.teamCards = Object.fromEntries(
-    Object.entries(savedState.teamCards || {}).map(([slot, card]) => {
+    Object.entries(savedState.teamCards || {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
-      return [slotIdFromSave(slot, enrichedCard), enrichedCard];
+      return enrichedCard ? [[slotIdFromSave(slot, enrichedCard), enrichedCard]] : [];
     })
   );
   savedState.inventory = uniqueCards([
@@ -323,6 +332,96 @@ function slotIdFromSave(slot, card) {
   if (slot === "cdm") return "cm-left";
   if (slot === "cm-right") return "cm-left";
   return formation.find((spot) => spot.slot === slot)?.id || slot;
+}
+
+function openLocalDatabase() {
+  if (databasePromise) return databasePromise;
+  if (!("indexedDB" in window)) {
+    databasePromise = Promise.resolve(null);
+    return databasePromise;
+  }
+
+  databasePromise = new Promise((resolve) => {
+    const request = indexedDB.open(databaseName, databaseVersion);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(databaseStoreName)) {
+        database.createObjectStore(databaseStoreName);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+    request.onblocked = () => resolve(null);
+  });
+  return databasePromise;
+}
+
+function databaseRequest(mode, callback) {
+  return openLocalDatabase().then((database) => new Promise((resolve) => {
+    if (!database) {
+      resolve(null);
+      return;
+    }
+
+    try {
+      const transaction = database.transaction(databaseStoreName, mode);
+      const store = transaction.objectStore(databaseStoreName);
+      const request = callback(store);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  }));
+}
+
+function loadFromLocalDatabase(key) {
+  return databaseRequest("readonly", (store) => store.get(key));
+}
+
+function saveToLocalDatabase(key, value) {
+  if (!databaseReady) return;
+  databaseRequest("readwrite", (store) => store.put(value, key));
+}
+
+function hydrateFromLocalDatabase() {
+  openLocalDatabase()
+    .then((database) => {
+      databaseReady = Boolean(database);
+      if (!databaseReady) return Promise.resolve();
+      return Promise.all([
+        loadFromLocalDatabase(accountsDatabaseKey),
+        loadFromLocalDatabase(activeAccountDatabaseKey)
+      ]);
+    })
+    .then((saved) => {
+      if (!Array.isArray(saved)) return;
+      const [databaseAccounts, databaseActiveAccountId] = saved;
+      if (!Array.isArray(databaseAccounts) || !databaseAccounts.length) {
+        saveAccounts();
+        return;
+      }
+
+      accounts = databaseAccounts.map((account, index) => ({
+        id: account.id || `account-${Date.now()}-${index}`,
+        username: account.username || `Player ${index + 1}`,
+        state: migrateState({ ...defaultState, ...(account.state || {}) })
+      }));
+      activeAccountId = databaseActiveAccountId && accounts.some((account) => account.id === databaseActiveAccountId)
+        ? databaseActiveAccountId
+        : null;
+      state = loadState();
+      storageSet(accountsKey, JSON.stringify(accounts));
+      if (activeAccountId) {
+        storageSet(activeAccountKey, activeAccountId);
+      } else {
+        storageRemove(activeAccountKey);
+      }
+      storageSet(saveKey, JSON.stringify(state));
+      render();
+      if (!activeAccount()) showQuickLogin();
+    })
+    .catch(() => {});
 }
 
 function renderStars() {
@@ -406,6 +505,7 @@ function logoutAccount() {
   saveState();
   activeAccountId = null;
   storageRemove(activeAccountKey);
+  saveToLocalDatabase(activeAccountDatabaseKey, null);
   settingsMenu.hidden = true;
   settingsBtn.setAttribute("aria-expanded", "false");
   render();
@@ -1054,4 +1154,5 @@ resetBtn.addEventListener("click", () => {
 });
 
 render();
+hydrateFromLocalDatabase();
 if (!activeAccount()) showQuickLogin();
