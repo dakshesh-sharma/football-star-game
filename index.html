@@ -60,20 +60,22 @@
         <section class="match-zone">
           <section id="matchPanel" class="match-panel" hidden>
             <div class="match-scoreboard">
-              <span>FC Stars</span>
+              <span id="homeLeaderLabel">FC Stars</span>
               <strong id="matchScoreLabel">0 - 0</strong>
-              <span>Rival XI</span>
+              <span id="awayLeaderLabel">Rival XI</span>
             </div>
             <div id="matchScene" class="match-scene" aria-live="polite">
               <div class="scene-stand"></div>
+              <div class="scene-crowd"></div>
+              <div id="sceneTeammateLeft" class="scene-person scene-teammate scene-teammate-left"></div>
+              <div id="sceneOpponent" class="scene-person scene-opponent"></div>
               <div id="scenePlayer" class="scene-player">Ready</div>
+              <div id="sceneTeammateRight" class="scene-person scene-teammate scene-teammate-right"></div>
               <div id="sceneBall" class="scene-ball"></div>
               <div id="sceneGoalText" class="scene-goal-text">Kickoff</div>
             </div>
             <div class="match-actions">
-              <button id="attackBtn" type="button">Attack</button>
-              <button id="ankaraBtn" class="secondary" type="button">Ankara Run</button>
-              <button id="siuuBtn" class="secondary" type="button">Siuu</button>
+              <span id="matchClockLabel" class="match-clock">Waiting for kickoff</span>
               <button id="endMatchBtn" class="secondary danger-btn" type="button">End</button>
             </div>
             <div class="goal-feed-wrap">
@@ -101,6 +103,16 @@
           <p id="replaceHint" class="replace-hint">Roll a card, then become it, save it, or click a pitch player to replace.</p>
           <button id="clearReplaceFilterBtn" class="secondary inventory-clear-filter" hidden>Show all cards</button>
           <div id="inventory" class="inventory empty-state">No saved cards yet.</div>
+
+          <div class="card-box join-request-card">
+            <p class="eyebrow">Team request</p>
+            <h3 id="joinRequestTitle">No request yet</h3>
+            <p id="joinRequestText">Real players can ask to replace bots in your team.</p>
+            <div class="join-request-actions">
+              <button id="acceptJoinBtn" type="button">Accept</button>
+              <button id="rejectJoinBtn" class="secondary" type="button">Reject</button>
+            </div>
+          </div>
 
           <div class="card-box">
             <p class="eyebrow">Selector report</p>

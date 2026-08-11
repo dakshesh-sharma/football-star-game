@@ -112,8 +112,10 @@ const databaseVersion = 1;
 const databaseStoreName = "state";
 const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
+const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelona Ace", "Legend XI"];
 let databasePromise = null;
 let databaseReady = false;
+let matchTimer = null;
 
 const formation = [
   { id: "gk", slot: "GK", x: 50, y: 91 },
@@ -144,6 +146,7 @@ const defaultState = {
   currentCardSaved: false,
   deletedCardNames: [],
   playerStats: {},
+  joinRequest: null,
   activeMatch: null
 };
 
@@ -180,6 +183,10 @@ const clearReplaceFilterBtn = document.querySelector("#clearReplaceFilterBtn");
 const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
+const joinRequestTitle = document.querySelector("#joinRequestTitle");
+const joinRequestText = document.querySelector("#joinRequestText");
+const acceptJoinBtn = document.querySelector("#acceptJoinBtn");
+const rejectJoinBtn = document.querySelector("#rejectJoinBtn");
 const settingsBtn = document.querySelector("#settingsBtn");
 const settingsMenu = document.querySelector("#settingsMenu");
 const accountToggleBtn = document.querySelector("#accountToggleBtn");
@@ -190,13 +197,13 @@ const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
 const matchPanel = document.querySelector("#matchPanel");
+const homeLeaderLabel = document.querySelector("#homeLeaderLabel");
+const awayLeaderLabel = document.querySelector("#awayLeaderLabel");
 const matchScoreLabel = document.querySelector("#matchScoreLabel");
 const scenePlayer = document.querySelector("#scenePlayer");
 const sceneBall = document.querySelector("#sceneBall");
 const sceneGoalText = document.querySelector("#sceneGoalText");
-const attackBtn = document.querySelector("#attackBtn");
-const ankaraBtn = document.querySelector("#ankaraBtn");
-const siuuBtn = document.querySelector("#siuuBtn");
+const matchClockLabel = document.querySelector("#matchClockLabel");
 const endMatchBtn = document.querySelector("#endMatchBtn");
 const goalFeed = document.querySelector("#goalFeed");
 
@@ -271,6 +278,7 @@ function freshState(hasDevInventory = false) {
     teamCards: {},
     deletedCardNames: [],
     playerStats: {},
+    joinRequest: null,
     activeMatch: null
   };
 }
@@ -313,6 +321,7 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.playerStats = savedState.playerStats || {};
+  savedState.joinRequest = savedState.joinRequest ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
@@ -643,18 +652,23 @@ function startMatch() {
     home: 0,
     away: 0,
     minute: 1,
-    goals: []
+    goals: [],
+    homeLeader: teamLeaderName(),
+    awayLeader: opponentLeaders[Math.floor(Math.random() * opponentLeaders.length)]
   };
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
-  reportText.textContent = "Use Attack, Ankara Run, or Siuu to create chances.";
+  reportText.textContent = `${state.activeMatch.homeLeader} leads FC Stars against ${state.activeMatch.awayLeader}.`;
   saveState();
   render();
-  playMatchMoment("kickoff");
+  animateChance(state.selectedStar || buildTeam()[9], "Kickoff");
+  speakCommentary(`${state.activeMatch.homeLeader} versus ${state.activeMatch.awayLeader}. Kickoff.`);
+  scheduleNextMatchMoment();
 }
 
 function endMatch() {
   if (!state.activeMatch) return;
+  clearMatchTimer();
   const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
@@ -664,11 +678,36 @@ function endMatch() {
   render();
 }
 
-function playMatchMoment(type) {
-  if (!state.activeMatch) startMatch();
-  const scorer = chooseScorer(type);
-  const didScore = type !== "kickoff" && (type === "ankara" || type === "siuu" || Math.random() > 0.28);
-  state.activeMatch.minute = Math.min(90, state.activeMatch.minute + randomInt(4, 12));
+function scheduleNextMatchMoment() {
+  clearMatchTimer();
+  if (!state.activeMatch) return;
+  matchTimer = window.setTimeout(playAutoMatchMoment, randomInt(2600, 4300));
+}
+
+function clearMatchTimer() {
+  if (!matchTimer) return;
+  window.clearTimeout(matchTimer);
+  matchTimer = null;
+}
+
+function playAutoMatchMoment() {
+  if (!state.activeMatch) return;
+  state.activeMatch.minute = Math.min(90, state.activeMatch.minute + randomInt(5, 11));
+
+  if (state.activeMatch.minute >= 90) {
+    endMatch();
+    return;
+  }
+
+  const opponentChance = Math.random() < 0.24;
+  if (opponentChance) {
+    playOpponentMoment();
+    scheduleNextMatchMoment();
+    return;
+  }
+
+  const scorer = chooseScorer();
+  const didScore = Math.random() > 0.38;
 
   if (!didScore) {
     animateChance(scorer, "Saved");
@@ -677,6 +716,7 @@ function playMatchMoment(type) {
     reportText.textContent = `${scorer.name} forced a save in minute ${state.activeMatch.minute}.`;
     saveState();
     render();
+    scheduleNextMatchMoment();
     return;
   }
 
@@ -686,7 +726,7 @@ function playMatchMoment(type) {
     scorer: scorer.name,
     minute: state.activeMatch.minute,
     goalNumber,
-    celebration: type === "siuu" ? "Siuu" : type === "ankara" ? "Ankara Messi" : celebrationFor(scorer)
+    celebration: celebrationFor(scorer)
   };
   state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
   animateChance(scorer, "GOAL!");
@@ -695,17 +735,48 @@ function playMatchMoment(type) {
   reportText.textContent = `${goal.celebration}. Goal no. ${goalNumber} for ${scorer.name}.`;
   saveState();
   render();
+  scheduleNextMatchMoment();
 }
 
-function chooseScorer(type) {
+function playOpponentMoment() {
+  const didScore = Math.random() > 0.58;
+  const opponentName = state.activeMatch.awayLeader || "Rival Captain";
+
+  if (!didScore) {
+    scenePlayer.textContent = shortName(opponentName);
+    animateChance({ name: opponentName }, "Blocked");
+    speakCommentary(`${opponentName} attacks, but FC Stars blocks it.`);
+    reportTitle.textContent = "Defended";
+    reportText.textContent = `${opponentName} was stopped in minute ${state.activeMatch.minute}.`;
+    saveState();
+    render();
+    return;
+  }
+
+  state.activeMatch.away += 1;
+  const goal = {
+    scorer: opponentName,
+    minute: state.activeMatch.minute,
+    goalNumber: state.activeMatch.away,
+    celebration: "Rival goal"
+  };
+  state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
+  animateChance({ name: opponentName }, "Rival Goal");
+  speakCommentary(`${opponentName} scores for Rival XI.`);
+  reportTitle.textContent = `${opponentName} scores`;
+  reportText.textContent = `Rival XI makes it ${state.activeMatch.home}-${state.activeMatch.away}.`;
+  saveState();
+  render();
+}
+
+function chooseScorer() {
   const team = buildTeam().filter((player) => player.name && player.slot !== "GK");
-  if (type === "ankara") {
-    return team.find((player) => player.name.includes("Messi")) || state.selectedStar || team[0];
-  }
-  if (type === "siuu") {
-    return team.find((player) => player.name.includes("Ronaldo")) || state.selectedStar || team[0];
-  }
+  if (state.selectedStar && Math.random() < 0.28) return state.selectedStar;
   return team[Math.floor(Math.random() * team.length)] || state.selectedStar || cardPool[0];
+}
+
+function teamLeaderName() {
+  return state.selectedStar?.name || activeAccount()?.username || "FC Stars";
 }
 
 function addGoalForPlayer(name) {
@@ -730,9 +801,13 @@ function animateChance(player, text) {
   sceneGoalText.textContent = text;
   sceneBall.classList.remove("ball-shot");
   scenePlayer.classList.remove("player-run");
+  scenePlayer.classList.remove("scene-celebrate");
   void sceneBall.offsetWidth;
   sceneBall.classList.add("ball-shot");
   scenePlayer.classList.add("player-run");
+  if (text.toLowerCase().includes("goal")) {
+    window.setTimeout(() => scenePlayer.classList.add("scene-celebrate"), 760);
+  }
 }
 
 function speakGoal(player, celebration) {
@@ -748,8 +823,10 @@ function speakCommentary(line) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(line);
-  utterance.rate = 1.08;
-  utterance.pitch = 1.08;
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find((voice) => voice.lang.startsWith("en") && /Daniel|Thomas|Google|Microsoft/i.test(voice.name)) || voices.find((voice) => voice.lang.startsWith("en")) || null;
+  utterance.rate = 1;
+  utterance.pitch = 0.95;
   window.speechSynthesis.speak(utterance);
 }
 
@@ -1137,6 +1214,46 @@ function useCard(id) {
   render();
 }
 
+function ensureJoinRequest() {
+  if (state.joinRequest) return;
+  const teamNames = new Set(buildTeam().map((player) => player.name));
+  const candidates = cardPool.filter((card) => !teamNames.has(card.name) && !card.specialAccess);
+  const request = candidates[Math.floor(Math.random() * candidates.length)] || cardPool[0];
+  state.joinRequest = { ...request, id: `request-${request.name.toLowerCase().replaceAll(" ", "-")}` };
+}
+
+function acceptJoinRequest() {
+  ensureJoinRequest();
+  const request = enrichCard(state.joinRequest);
+  if (!request) return;
+  const targetSpot = firstBotSpot() || availableSpotFor(request.position);
+  placeCardOnTeam(request, targetSpot.id);
+  state.inventory = addCardToInventory(state.inventory, request);
+  state.joinRequest = null;
+  reportTitle.textContent = `${request.name} joined`;
+  reportText.textContent = `${request.name} replaced a bot at ${targetSpot.slot}.`;
+  saveState();
+  render();
+}
+
+function rejectJoinRequest() {
+  const rejectedName = state.joinRequest?.name || "The player";
+  state.joinRequest = null;
+  ensureJoinRequest();
+  reportTitle.textContent = `${rejectedName} rejected`;
+  reportText.textContent = "A new real-player request is ready.";
+  saveState();
+  render();
+}
+
+function firstBotSpot() {
+  return formation.find((spot, index) => {
+    if (state.teamCards[spot.id]) return false;
+    if (isControlledSlot(spot.id)) return false;
+    return Boolean(starterNames[index]);
+  });
+}
+
 function placeCardOnTeam(card, forcedSlot) {
   const targetSpot = forcedSlot
     ? formation.find((spot) => spot.id === forcedSlot)
@@ -1284,18 +1401,19 @@ function renderMatch() {
   matchPanel.hidden = !match;
   playMatchBtn.textContent = match ? "Match Live" : "Play";
   playMatchBtn.disabled = Boolean(match);
-  attackBtn.disabled = !match;
-  ankaraBtn.disabled = !match;
-  siuuBtn.disabled = !match;
   endMatchBtn.disabled = !match;
 
   if (!match) return;
 
+  homeLeaderLabel.textContent = match.homeLeader || teamLeaderName();
+  awayLeaderLabel.textContent = match.awayLeader || "Rival XI";
   matchScoreLabel.textContent = `${match.home} - ${match.away}`;
+  matchClockLabel.textContent = `${match.minute}' · Watching live`;
   if (!scenePlayer.textContent || scenePlayer.textContent === "Ready") {
     scenePlayer.textContent = state.selectedStar ? shortName(state.selectedStar.name) : "FC Stars";
   }
   renderGoalFeed();
+  if (!matchTimer) scheduleNextMatchMoment();
 }
 
 function renderGoalFeed() {
@@ -1319,6 +1437,23 @@ function renderGoalFeed() {
   });
 }
 
+function renderJoinRequest() {
+  ensureJoinRequest();
+  const request = enrichCard(state.joinRequest);
+  if (!request) {
+    joinRequestTitle.textContent = "No request yet";
+    joinRequestText.textContent = "Real players can ask to replace bots in your team.";
+    acceptJoinBtn.disabled = true;
+    rejectJoinBtn.disabled = true;
+    return;
+  }
+
+  joinRequestTitle.textContent = request.name;
+  joinRequestText.textContent = `${request.position} · ${request.rarity} · ${request.team} wants to join your team.`;
+  acceptJoinBtn.disabled = false;
+  rejectJoinBtn.disabled = false;
+}
+
 function render() {
   renderStars();
   renderPitch();
@@ -1326,14 +1461,14 @@ function render() {
   renderInventory();
   renderStatus();
   renderMatch();
+  renderJoinRequest();
 }
 
 topSpinBtn.addEventListener("click", spinCard);
 playMatchBtn.addEventListener("click", startMatch);
-attackBtn.addEventListener("click", () => playMatchMoment("attack"));
-ankaraBtn.addEventListener("click", () => playMatchMoment("ankara"));
-siuuBtn.addEventListener("click", () => playMatchMoment("siuu"));
 endMatchBtn.addEventListener("click", endMatch);
+acceptJoinBtn.addEventListener("click", acceptJoinRequest);
+rejectJoinBtn.addEventListener("click", rejectJoinRequest);
 inventorySearch.addEventListener("input", renderInventory);
 pitch.addEventListener("click", (event) => {
   if (event.target.closest(".player-dot")) return;
