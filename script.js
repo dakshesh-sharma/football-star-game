@@ -303,7 +303,7 @@ function playerNode(player) {
       <strong>${ratingLabel(player)}</strong>
       <span>${player.slot}</span>
     </span>
-    <span class="name">${shortName(displayNameLabel(player.name))}</span>
+    <span class="name">${shortName(player.name)}</span>
     <span class="tag">${player.controlled ? `YOU${isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
@@ -314,8 +314,8 @@ function selectReplaceSlot(player) {
   state.replaceSlot = player.id;
   reportTitle.textContent = `${player.slot} selected`;
   reportText.textContent = state.currentCard
-    ? `Press Replace Slot to put ${displayNameLabel(state.currentCard.name)} at ${player.slot}, or choose a saved card from inventory.`
-    : `Choose a saved ${player.slot} card from inventory to replace ${displayNameLabel(player.name)}.`;
+    ? `Press Replace Slot to put ${state.currentCard.name} at ${player.slot}, or choose a saved card from inventory.`
+    : `Choose a saved ${player.slot} card from inventory to replace ${player.name}.`;
   saveState();
   render();
 }
@@ -335,7 +335,7 @@ function spinCard() {
   }
   state.currentCard = { ...card, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` };
   state.currentCardSaved = false;
-  reportTitle.textContent = `${displayNameLabel(card.name)} rolled`;
+  reportTitle.textContent = `${card.name} rolled`;
   reportText.textContent = `${card.rarity} ${card.position}. ${chanceLabel(card)}. Choose Become, Save, or click a pitch player and Replace Slot.`;
   saveState();
   render();
@@ -385,7 +385,7 @@ function saveCurrentCard() {
   state.inventory = addCardToInventory(state.inventory, state.currentCard);
   state.currentCardSaved = true;
   reportTitle.textContent = "Card saved";
-  reportText.textContent = `${displayNameLabel(state.currentCard.name)} stayed as your latest rolled card and was added to inventory.`;
+  reportText.textContent = `${state.currentCard.name} stayed as your latest rolled card and was added to inventory.`;
   saveState();
   render();
 }
@@ -397,8 +397,8 @@ function becomeCurrentCard() {
   state.selectedStar = state.currentCard;
   state.selectedStarSlot = bestSlotIdForPosition(state.currentCard.position);
   state.replaceSlot = null;
-  reportTitle.textContent = `You became ${displayNameLabel(state.currentCard.name)}`;
-  reportText.textContent = `${displayNameLabel(state.currentCard.name)} is now the player you control.`;
+  reportTitle.textContent = `You became ${state.currentCard.name}`;
+  reportText.textContent = `${state.currentCard.name} is now the player you control.`;
   saveState();
   render();
 }
@@ -425,8 +425,8 @@ function replaceSelectedSlotWithCurrentCard() {
     state.selectedStar = state.currentCard;
     state.selectedStarSlot = state.replaceSlot;
     state.replaceSlot = null;
-    reportTitle.textContent = `You became ${displayNameLabel(state.currentCard.name)}`;
-    reportText.textContent = `${displayNameLabel(state.currentCard.name)} replaced your controlled player.`;
+    reportTitle.textContent = `You became ${state.currentCard.name}`;
+    reportText.textContent = `${state.currentCard.name} replaced your controlled player.`;
     saveState();
     render();
     return;
@@ -436,15 +436,15 @@ function replaceSelectedSlotWithCurrentCard() {
   state.inventory = addCardToInventory(state.inventory, state.currentCard);
   state.currentCardSaved = true;
   state.replaceSlot = null;
-  reportTitle.textContent = `${displayNameLabel(state.currentCard.name)} joined your XI`;
-  reportText.textContent = `${displayNameLabel(state.currentCard.name)} replaced the player at ${placed.targetSlot}.`;
+  reportTitle.textContent = `${state.currentCard.name} joined your XI`;
+  reportText.textContent = `${state.currentCard.name} replaced the player at ${placed.targetSlot}.`;
   saveState();
   render();
 }
 
 function cancelCurrentCard() {
   if (!state.currentCard) return;
-  const cancelledName = displayNameLabel(state.currentCard.name);
+  const cancelledName = state.currentCard.name;
   state.currentCard = null;
   state.currentCardSaved = false;
   state.replaceSlot = null;
@@ -487,9 +487,9 @@ function renderCurrentCard() {
     return;
   }
 
-  currentCardName.textContent = displayNameLabel(state.currentCard.name);
+  currentCardName.textContent = state.currentCard.name;
   currentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${state.currentCard.team} · ${chanceLabel(state.currentCard)}`;
-  topCurrentCardName.textContent = displayNameLabel(state.currentCard.name);
+  topCurrentCardName.textContent = state.currentCard.name;
   topCurrentCardMeta.textContent = `${state.currentCard.position} · ${state.currentCard.rarity} · ${chanceLabel(state.currentCard)}`;
   becomeCardBtn.disabled = false;
   replaceCardBtn.disabled = !state.replaceSlot;
@@ -547,7 +547,7 @@ function renderInventory() {
         <img class="card-photo" src="${playerPhoto(card)}" alt="${card.name}" loading="lazy">
       </div>
       <div class="card-details">
-        <strong>${displayNameLabel(card.name)}</strong>
+        <strong>${card.name}</strong>
         <span>${card.team}</span>
         <small>${card.rarity}</small>
       </div>
@@ -591,8 +591,8 @@ function deleteInventoryCard(id) {
     state.currentCardSaved = false;
   }
   state.replaceSlot = null;
-  reportTitle.textContent = `${displayNameLabel(card.name)} deleted`;
-  reportText.textContent = `${displayNameLabel(card.name)} was removed from your inventory.`;
+  reportTitle.textContent = `${card.name} deleted`;
+  reportText.textContent = `${card.name} was removed from your inventory.`;
   saveState();
   render();
 }
@@ -606,8 +606,8 @@ function becomeInventoryCard(id) {
   state.currentCard = card;
   state.currentCardSaved = true;
   state.replaceSlot = null;
-  reportTitle.textContent = `You became ${displayNameLabel(card.name)}`;
-  reportText.textContent = `${displayNameLabel(card.name)} is now the player you control from inventory.`;
+  reportTitle.textContent = `You became ${card.name}`;
+  reportText.textContent = `${card.name} is now the player you control from inventory.`;
   saveState();
   render();
 }
@@ -627,7 +627,7 @@ function useCard(id) {
   if (selectedSpot && !canPlaySlot(card, selectedSpot.slot)) {
     state.replaceSlot = null;
     reportTitle.textContent = `Choose a ${card.position} spot`;
-    reportText.textContent = `${displayNameLabel(card.name)} cannot play ${selectedSpot.slot}. Pick a matching pitch player, then place the card.`;
+    reportText.textContent = `${card.name} cannot play ${selectedSpot.slot}. Pick a matching pitch player, then place the card.`;
     saveState();
     render();
     return;
@@ -642,8 +642,8 @@ function useCard(id) {
     state.currentCard = card;
     state.currentCardSaved = true;
     state.replaceSlot = null;
-    reportTitle.textContent = `You became ${displayNameLabel(card.name)}`;
-    reportText.textContent = `${displayNameLabel(card.name)} replaced your controlled player.`;
+    reportTitle.textContent = `You became ${card.name}`;
+    reportText.textContent = `${card.name} replaced your controlled player.`;
     saveState();
     render();
     return;
@@ -655,8 +655,8 @@ function useCard(id) {
   }
   state.replaceSlot = null;
 
-  reportTitle.textContent = `${displayNameLabel(card.name)} joined your XI`;
-  reportText.textContent = `${displayNameLabel(card.name)} replaced the named card player at ${placed.targetSlot}. Real players can replace these cards later.`;
+  reportTitle.textContent = `${card.name} joined your XI`;
+  reportText.textContent = `${card.name} replaced the named card player at ${placed.targetSlot}. Real players can replace these cards later.`;
   saveState();
   render();
 }
@@ -756,16 +756,11 @@ function ratingLabel(card) {
 }
 
 function poolNameLabel(card) {
-  return displayNameLabel(card.name);
-}
-
-function displayNameLabel(cardOrName) {
-  const name = typeof cardOrName === "string" ? cardOrName : cardOrName.name;
   const labels = {
     "Cristiano Ronaldo": "Ronaldo",
     "Lamine Yamal": "Yamal"
   };
-  return labels[name] || name;
+  return labels[card.name] || card.name;
 }
 
 function playerPhoto(card) {
@@ -801,7 +796,7 @@ function wikiPageName(name) {
 
 function renderStatus() {
   selectedPlayerLabel.textContent = state.selectedStar
-    ? `${displayNameLabel(state.selectedStar.name)} · ${state.selectedStar.team}`
+    ? `${state.selectedStar.name} · ${state.selectedStar.team}`
     : "Spin your player";
   levelLabel.textContent = `Level ${state.level}`;
   unlockText.textContent = state.level >= 5
