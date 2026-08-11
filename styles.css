@@ -855,6 +855,62 @@ h3 {
   text-shadow: none;
 }
 
+.player-dot.pitch-goat-card {
+  animation: pitchGoatAura 2s ease-in-out infinite, pitchGoatGoldMove 2.8s linear infinite !important;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 1), transparent 18%),
+    radial-gradient(circle at 50% 38%, rgba(255, 220, 57, 0.92), transparent 38%),
+    linear-gradient(112deg, transparent 0 10%, rgba(255, 255, 255, 0.86) 19%, transparent 31% 100%),
+    repeating-linear-gradient(45deg, rgba(255, 225, 91, 0.24) 0 2px, transparent 2px 12px),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 9px),
+    linear-gradient(145deg, #000 0%, #080808 28%, #3b2a05 52%, #060606 74%, #191300 100%) !important;
+  background-size: auto, auto, 220% 220%, auto, auto, auto !important;
+  border: 3px solid #fff2a8 !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 245, 190, 0.98),
+    0 0 34px rgba(255, 222, 68, 0.98),
+    0 0 86px rgba(255, 202, 33, 0.78),
+    0 0 140px rgba(255, 222, 68, 0.38),
+    inset 0 0 24px rgba(255, 234, 128, 0.36) !important;
+  color: #fff !important;
+  min-height: 86px;
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 4;
+}
+
+.player-dot.pitch-goat-card::before {
+  animation: goatDiamond 1.9s linear infinite !important;
+  background:
+    linear-gradient(110deg, transparent 2%, rgba(255, 255, 255, 0.92) 18%, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(255, 235, 121, 0.3) 0 2px, transparent 2px 12px),
+    repeating-linear-gradient(60deg, transparent 0 8px, rgba(255, 255, 255, 0.28) 8px 10px),
+    repeating-linear-gradient(120deg, transparent 0 8px, rgba(255, 215, 73, 0.26) 8px 10px) !important;
+  background-size: 220% 220%, 22px 22px, auto, auto !important;
+}
+
+.player-dot.pitch-goat-card::after {
+  animation: pitchGoatSweep 1.2s ease-in-out infinite !important;
+  background:
+    linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 1) 14%, transparent 30%),
+    linear-gradient(70deg, transparent 18%, rgba(255, 224, 71, 1) 48%, transparent 72%) !important;
+  opacity: 1 !important;
+}
+
+.player-dot.pitch-goat-card .pitch-card-rating,
+.player-dot.pitch-goat-card .name {
+  background: rgba(0, 0, 0, 0.82) !important;
+  border-color: rgba(255, 238, 153, 0.9) !important;
+  color: #fff5bf !important;
+  text-shadow: 0 0 12px rgba(255, 224, 71, 1), 0 1px 2px rgba(0, 0, 0, 0.95) !important;
+}
+
+.player-dot.pitch-goat-card .tag {
+  background: linear-gradient(135deg, #fff8c9, #ffce2c, #b57b00) !important;
+  color: #050505 !important;
+  font-size: 0.5rem;
+  text-shadow: none !important;
+}
+
 .inventory-actions {
   display: grid;
   gap: 8px;
@@ -1027,6 +1083,28 @@ h3 {
       0 0 92px rgba(255, 210, 52, 0.62),
       inset 0 0 24px rgba(255, 235, 145, 0.28);
     filter: saturate(1.7) brightness(1.22);
+  }
+}
+
+@keyframes pitchGoatGoldMove {
+  from {
+    background-position: 0 0, 0 0, 0% 50%, 0 0, 0 0, 0 0;
+  }
+
+  to {
+    background-position: 0 0, 0 0, 220% 50%, 28px 0, -28px 0, 0 0;
+  }
+}
+
+@keyframes pitchGoatSweep {
+  0%,
+  28% {
+    transform: translateX(-160%) skewX(-18deg);
+  }
+
+  58%,
+  100% {
+    transform: translateX(160%) skewX(-18deg);
   }
 }
 

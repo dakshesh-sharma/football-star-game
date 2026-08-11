@@ -294,7 +294,8 @@ function renderPitch() {
 function playerNode(player) {
   const node = document.createElement("div");
   const rarity = player.rarity || "Silver";
-  node.className = `player-dot rarity-${rarityClass(rarity)} ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
+  const isGoat = rarityClass(rarity) === "goat" || player.specialAccess || player.rating === "∞";
+  node.className = `player-dot rarity-${rarityClass(rarity)} ${isGoat ? "pitch-goat-card" : ""} ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
@@ -303,7 +304,7 @@ function playerNode(player) {
       <span>${player.slot}</span>
     </span>
     <span class="name">${shortName(player.name)}</span>
-    <span class="tag">${player.controlled ? "YOU" : rarity}</span>
+    <span class="tag">${player.controlled ? `YOU${isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
   return node;
