@@ -132,7 +132,6 @@ const formation = [
 ];
 
 const starterNames = ["Maignan", "Ruben Dias", "Araujo", "Saliba", "Son", "Pedri", "Modric", "Salah", "Neymar Jr", "Mbappe", "Yamal"];
-const guaranteedInventoryNames = ["Mbappu", "Son Heung-min"];
 const defaultState = {
   selectedStar: null,
   level: 1,
@@ -153,8 +152,8 @@ const defaultState = {
 let accounts = loadAccounts();
 let activeAccountId = storageGet(activeAccountKey);
 if (activeAccountId && !accounts.some((account) => account.id === activeAccountId)) {
-  activeAccountId = accounts[0]?.id || null;
-  if (activeAccountId) storageSet(activeAccountKey, activeAccountId);
+  activeAccountId = null;
+  storageRemove(activeAccountKey);
 }
 let state = loadState();
 
@@ -168,7 +167,6 @@ const currentCardMeta = document.querySelector("#currentCardMeta");
 const topCurrentCardName = document.querySelector("#topCurrentCardName");
 const topCurrentCardMeta = document.querySelector("#topCurrentCardMeta");
 const topSpinBtn = document.querySelector("#topSpinBtn");
-const playMatchBtn = document.querySelector("#playMatchBtn");
 const inventoryToggleBtn = document.querySelector("#inventoryToggleBtn");
 const becomeCardBtn = document.querySelector("#becomeCardBtn");
 const replaceCardBtn = document.querySelector("#replaceCardBtn");
@@ -194,6 +192,7 @@ const changeUsernameBtn = document.querySelector("#changeUsernameBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
 const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
+const quickLoginTitle = document.querySelector("#quickLoginTitle");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
 const matchPanel = document.querySelector("#matchPanel");
@@ -216,26 +215,20 @@ function loadAccounts() {
 
   const legacySave = safeJson(storageGet(saveKey));
   if (legacySave) {
+    const username = legacySave.username || legacySave.selectedStar?.name || "Player 1";
+    const isDev = isDeveloperUsername(username);
     const account = {
       id: `account-${Date.now()}`,
-      username: legacySave.username || legacySave.selectedStar?.name || "Player 1",
-      isDev: true,
-      state: migrateState({ ...defaultState, ...legacySave }, true)
+      username,
+      isDev,
+      state: migrateState({ ...defaultState, ...legacySave }, isDev)
     };
     storageSet(accountsKey, JSON.stringify([account]));
     storageSet(activeAccountKey, account.id);
     return [account];
   }
 
-  const firstAccount = {
-    id: `account-${Date.now()}`,
-    username: "Player 1",
-    isDev: true,
-    state: freshState(true)
-  };
-  storageSet(accountsKey, JSON.stringify([firstAccount]));
-  storageSet(activeAccountKey, firstAccount.id);
-  return [firstAccount];
+  return [];
 }
 
 function storageGet(key) {
@@ -274,7 +267,7 @@ function loadState() {
 function freshState(hasDevInventory = false) {
   return {
     ...defaultState,
-    inventory: hasDevInventory ? allInventoryCards() : guaranteedInventoryCards(),
+    inventory: hasDevInventory ? allInventoryCards() : [],
     teamCards: {},
     deletedCardNames: [],
     playerStats: {},
@@ -303,8 +296,7 @@ function activeAccount() {
 
 function normalizeAccount(account, index, devAccountId = null) {
   const id = account.id || `account-${Date.now()}-${index}`;
-  const inferredDev = index === 0 || id === devAccountId || isDeveloperUsername(account.username);
-  const isDev = account.isDev ?? inferredDev;
+  const isDev = isDeveloperUsername(account.username);
   return {
     id,
     username: account.username || `Player ${index + 1}`,
@@ -314,14 +306,14 @@ function normalizeAccount(account, index, devAccountId = null) {
 }
 
 function isDeveloperUsername(username) {
-  return ["dakshesh", "dev", "developer", "admin"].includes(String(username || "").trim().toLowerCase());
+  return ["THEgoat", "Shiva"].includes(String(username || "").trim());
 }
 
 function migrateState(savedState, hasDevInventory = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.playerStats = savedState.playerStats || {};
-  savedState.joinRequest = savedState.joinRequest ? enrichCard(savedState.joinRequest) : null;
+  savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
@@ -343,7 +335,7 @@ function migrateState(savedState, hasDevInventory = false) {
     ...Object.values(savedState.teamCards),
     savedState.selectedStar,
     savedState.currentCard,
-    ...(hasDevInventory ? allInventoryCards() : guaranteedInventoryCards())
+    ...(hasDevInventory ? allInventoryCards() : [])
   ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
@@ -363,13 +355,6 @@ function allInventoryCards() {
     ...card,
     id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
   }));
-}
-
-function guaranteedInventoryCards() {
-  return guaranteedInventoryNames
-    .map((name) => cardPool.find((card) => card.name === name))
-    .filter(Boolean)
-    .map((card) => ({ ...card, id: `guaranteed-${card.name.toLowerCase().replaceAll(" ", "-")}` }));
 }
 
 function slotIdFromSave(slot, card) {
@@ -502,28 +487,58 @@ function renderAccounts() {
   accountList.innerHTML = "";
   if (!accounts.length) {
     accountList.className = "account-list empty-state";
-    accountList.textContent = "No accounts yet.";
+    accountList.textContent = "Create your username to start.";
     return;
   }
 
   accountList.className = "account-list";
   accounts.forEach((account) => {
+    const accountRow = document.createElement("div");
     const accountButton = document.createElement("button");
+    const deleteButton = document.createElement("button");
     const accountState = account.state || freshState(account.isDev);
     const selectedName = accountState.selectedStar?.name || "No player yet";
+    accountRow.className = "account-row";
     accountButton.className = "account-card secondary";
     accountButton.type = "button";
     accountButton.innerHTML = `
       <strong>${account.username}</strong>
       <span>${selectedName} · Level ${accountState.level || 1}${account.isDev ? " · Dev" : ""}</span>
     `;
+    deleteButton.className = "account-delete-btn secondary danger-btn";
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.setAttribute("aria-label", `Delete ${account.username}`);
     accountButton.addEventListener("click", () => loginAccount(account.id));
-    accountList.appendChild(accountButton);
+    deleteButton.addEventListener("click", () => deleteAccount(account.id));
+    accountRow.append(accountButton, deleteButton);
+    accountList.appendChild(accountRow);
   });
+}
+
+function deleteAccount(id) {
+  const account = accounts.find((item) => item.id === id);
+  if (!account) return;
+  const confirmed = confirm(`Delete ${account.username}? This cannot be undone.`);
+  if (!confirmed) return;
+
+  accounts = accounts.filter((item) => item.id !== id);
+  if (activeAccountId === id) {
+    activeAccountId = null;
+    state = freshState(false);
+    storageRemove(activeAccountKey);
+    storageRemove(saveKey);
+    saveToLocalDatabase(activeAccountDatabaseKey, null);
+  }
+  saveAccounts();
+  renderAccounts();
+  if (activeAccount()) render();
 }
 
 function showQuickLogin() {
   renderLoginBackdrop();
+  quickLoginTitle.textContent = accounts.length ? "Quick Login" : "Create your username";
+  createAccountBtn.textContent = accounts.length ? "Create Account" : "Create Username";
   renderAccounts();
   quickLoginOverlay.hidden = false;
 }
@@ -535,9 +550,11 @@ function hideQuickLogin() {
 function loginAccount(id) {
   const account = accounts.find((item) => item.id === id);
   if (!account) return;
+  const hasFullInventory = isDeveloperUsername(account.username);
   activeAccountId = account.id;
+  account.isDev = hasFullInventory;
   storageSet(activeAccountKey, activeAccountId);
-  state = migrateState({ ...defaultState, ...(account.state || {}) }, account.isDev);
+  state = migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory);
   account.state = state;
   saveAccounts();
   hideQuickLogin();
@@ -562,11 +579,13 @@ function createAccount() {
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
 
+  const savedUsername = trimmedUsername.slice(0, 24);
+  const hasFullInventory = isDeveloperUsername(savedUsername);
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    username: trimmedUsername.slice(0, 24),
-    isDev: isDeveloperUsername(trimmedUsername),
-    state: freshState(isDeveloperUsername(trimmedUsername))
+    username: savedUsername,
+    isDev: hasFullInventory,
+    state: freshState(hasFullInventory)
   };
   accounts = [account, ...accounts];
   saveAccounts();
@@ -580,6 +599,9 @@ function changeUsername() {
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
   account.username = trimmedUsername.slice(0, 24);
+  account.isDev = isDeveloperUsername(account.username);
+  state = migrateState({ ...defaultState, ...state }, account.isDev);
+  account.state = state;
   saveAccounts();
   settingsMenu.hidden = true;
   settingsBtn.setAttribute("aria-expanded", "false");
@@ -606,9 +628,9 @@ function buildTeam() {
       };
     }
 
-    const player = starterNames[index] || cardPool[index % cardPool.length].name;
-    const starterCard = starterCardForName(player);
-    if (starterCard) {
+    const player = activeAccount()?.isDev ? starterNames[index] : null;
+    const starterCard = player ? starterCardForName(player) : null;
+    if (player && starterCard) {
       return {
         ...spot,
         ...starterCard,
@@ -621,12 +643,17 @@ function buildTeam() {
 
     return {
       ...spot,
-      name: player,
-      team: "Card XI",
-      rating: 78 + Math.min(state.level, 10),
+      name: botName(spot),
+      team: "Starter Bots",
+      rating: 60 + Math.min(state.level, 10),
+      rarity: "Bronze",
       controlled: false
     };
   });
+}
+
+function botName(spot) {
+  return `Bot ${spot.id.toUpperCase().replaceAll("-", " ")}`;
 }
 
 function starterCardForName(name) {
@@ -1215,16 +1242,15 @@ function useCard(id) {
 }
 
 function ensureJoinRequest() {
-  if (state.joinRequest) return;
-  const teamNames = new Set(buildTeam().map((player) => player.name));
-  const candidates = cardPool.filter((card) => !teamNames.has(card.name) && !card.specialAccess);
-  const request = candidates[Math.floor(Math.random() * candidates.length)] || cardPool[0];
-  state.joinRequest = { ...request, id: `request-${request.name.toLowerCase().replaceAll(" ", "-")}` };
+  return state.joinRequest;
+}
+
+function isRealJoinRequest(request) {
+  return Boolean(request?.realPlayer);
 }
 
 function acceptJoinRequest() {
-  ensureJoinRequest();
-  const request = enrichCard(state.joinRequest);
+  const request = isRealJoinRequest(state.joinRequest) ? enrichCard(state.joinRequest) : null;
   if (!request) return;
   const targetSpot = firstBotSpot() || availableSpotFor(request.position);
   placeCardOnTeam(request, targetSpot.id);
@@ -1239,9 +1265,8 @@ function acceptJoinRequest() {
 function rejectJoinRequest() {
   const rejectedName = state.joinRequest?.name || "The player";
   state.joinRequest = null;
-  ensureJoinRequest();
   reportTitle.textContent = `${rejectedName} rejected`;
-  reportText.textContent = "A new real-player request is ready.";
+  reportText.textContent = "No real-player request is active.";
   saveState();
   render();
 }
@@ -1399,8 +1424,6 @@ function renderStatus() {
 function renderMatch() {
   const match = state.activeMatch;
   matchPanel.hidden = !match;
-  playMatchBtn.textContent = match ? "Match Live" : "Play";
-  playMatchBtn.disabled = Boolean(match);
   endMatchBtn.disabled = !match;
 
   if (!match) return;
@@ -1438,13 +1461,14 @@ function renderGoalFeed() {
 }
 
 function renderJoinRequest() {
-  ensureJoinRequest();
-  const request = enrichCard(state.joinRequest);
+  const request = isRealJoinRequest(state.joinRequest) ? enrichCard(state.joinRequest) : null;
   if (!request) {
     joinRequestTitle.textContent = "No request yet";
     joinRequestText.textContent = "Real players can ask to replace bots in your team.";
     acceptJoinBtn.disabled = true;
     rejectJoinBtn.disabled = true;
+    acceptJoinBtn.hidden = true;
+    rejectJoinBtn.hidden = true;
     return;
   }
 
@@ -1452,6 +1476,8 @@ function renderJoinRequest() {
   joinRequestText.textContent = `${request.position} · ${request.rarity} · ${request.team} wants to join your team.`;
   acceptJoinBtn.disabled = false;
   rejectJoinBtn.disabled = false;
+  acceptJoinBtn.hidden = false;
+  rejectJoinBtn.hidden = false;
 }
 
 function render() {
@@ -1465,7 +1491,6 @@ function render() {
 }
 
 topSpinBtn.addEventListener("click", spinCard);
-playMatchBtn.addEventListener("click", startMatch);
 endMatchBtn.addEventListener("click", endMatch);
 acceptJoinBtn.addEventListener("click", acceptJoinRequest);
 rejectJoinBtn.addEventListener("click", rejectJoinRequest);

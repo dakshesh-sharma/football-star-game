@@ -1325,6 +1325,13 @@ h3 {
   gap: 10px;
 }
 
+.account-row {
+  align-items: stretch;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .account-card {
   display: grid;
   gap: 3px;
@@ -1345,6 +1352,11 @@ h3 {
   font-size: 0.82rem;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.account-delete-btn {
+  min-height: 62px;
+  padding-inline: 12px;
 }
 
 @keyframes cardShine {
