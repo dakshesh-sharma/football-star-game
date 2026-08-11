@@ -130,8 +130,6 @@ const formation = [
 ];
 
 const starterNames = ["Maignan", "Ruben Dias", "Araujo", "Saliba", "Son", "Pedri", "Modric", "Salah", "Neymar Jr", "Mbappe", "Yamal"];
-const guaranteedInventoryNames = ["Mbappu", "Son Heung-min"];
-
 const defaultState = {
   selectedStar: null,
   level: 1,
@@ -255,7 +253,7 @@ function loadState() {
 function freshState() {
   return {
     ...defaultState,
-    inventory: guaranteedInventoryCards(),
+    inventory: allInventoryCards(),
     teamCards: {},
     deletedCardNames: []
   };
@@ -302,8 +300,8 @@ function migrateState(savedState) {
     ...Object.values(savedState.teamCards),
     savedState.selectedStar,
     savedState.currentCard,
-    ...guaranteedInventoryCards()
-  ]).filter((card) => !savedState.deletedCardNames.includes(card.name));
+    ...allInventoryCards()
+  ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
   }
@@ -317,11 +315,11 @@ function enrichCard(card) {
   return fullCard ? { ...card, ...fullCard, id: card.id } : card;
 }
 
-function guaranteedInventoryCards() {
-  return guaranteedInventoryNames
-    .map((name) => cardPool.find((card) => card.name === name))
-    .filter(Boolean)
-    .map((card) => ({ ...card, id: `guaranteed-${card.name.toLowerCase().replaceAll(" ", "-")}` }));
+function allInventoryCards() {
+  return cardPool.map((card) => ({
+    ...card,
+    id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
+  }));
 }
 
 function slotIdFromSave(slot, card) {
