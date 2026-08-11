@@ -1,5 +1,5 @@
 const cardPool = [
-  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: 93, rarity: "G.O.A.T", chance: 0, specialAccess: true },
+  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: "∞", rarity: "G.O.A.T", chance: 0, specialAccess: true },
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.1, image: "assets/mbappu.png" },
@@ -246,7 +246,7 @@ function renderStars() {
         <strong>${star.name}</strong>
         <span class="meta">${star.position} · ${star.rarity} · ${star.team} · ${chanceLabel(star)}</span>
       </span>
-      <span class="rating">${star.rating}</span>
+      <span class="rating">${ratingLabel(star)}</span>
     `;
     starList.appendChild(card);
   });
@@ -509,7 +509,7 @@ function renderInventory() {
       const aMatchesSlot = selectedSpot && canPlaySlot(a, selectedSpot.slot);
       const bMatchesSlot = selectedSpot && canPlaySlot(b, selectedSpot.slot);
       if (aMatchesSlot !== bMatchesSlot) return aMatchesSlot ? -1 : 1;
-      return chanceSortValue(a) - chanceSortValue(b) || b.rating - a.rating;
+      return chanceSortValue(a) - chanceSortValue(b) || ratingSortValue(b) - ratingSortValue(a);
     });
 
   if (!visibleCards.length) {
@@ -524,7 +524,7 @@ function renderInventory() {
     const canPlaceAtSelectedSpot = selectedSpot && canPlaySlot(card, selectedSpot.slot);
     item.innerHTML = `
       <div class="card-rating">
-        <strong>${card.rating}</strong>
+        <strong>${ratingLabel(card)}</strong>
         <span>${card.position}</span>
       </div>
       <div class="card-image-wrap">
@@ -708,6 +708,14 @@ function chanceLabel(card) {
 function chanceSortValue(card) {
   if (card.specialAccess) return -1;
   return Number(chancePercent(card));
+}
+
+function ratingSortValue(card) {
+  return card.rating === "∞" ? Number.POSITIVE_INFINITY : Number(card.rating) || 0;
+}
+
+function ratingLabel(card) {
+  return card.rating === "∞" ? "∞" : card.rating;
 }
 
 function playerPhoto(card) {
