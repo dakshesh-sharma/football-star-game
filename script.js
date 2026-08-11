@@ -756,11 +756,7 @@ function ratingLabel(card) {
 }
 
 function poolNameLabel(card) {
-  const labels = {
-    "Cristiano Ronaldo": "Ronaldo",
-    "Lamine Yamal": "Yamal"
-  };
-  return labels[card.name] || card.name;
+  return card.name;
 }
 
 function playerPhoto(card) {
