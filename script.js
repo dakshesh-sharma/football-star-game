@@ -98,7 +98,7 @@ const cardPool = [
 ];
 
 const codeOnlyCards = [
-  { name: "IshowSpeed", position: "ST", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true, image: "assets/ishowspeed.png" }
+  { name: "IshowSpeed", position: "RM", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true, image: "assets/ishowspeed.png" }
 ];
 
 const selectablePlayers = [...cardPool, ...codeOnlyCards];
