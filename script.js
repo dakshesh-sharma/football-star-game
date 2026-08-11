@@ -516,6 +516,7 @@ function renderInventory() {
     .filter((card) => card.name.toLowerCase().includes(searchTerm))
     .slice()
     .sort((a, b) => {
+      if (!selectedSpot) return ratingSortValue(b) - ratingSortValue(a);
       const aMatchesSlot = selectedSpot && canPlaySlot(a, selectedSpot.slot);
       const bMatchesSlot = selectedSpot && canPlaySlot(b, selectedSpot.slot);
       if (aMatchesSlot !== bMatchesSlot) return aMatchesSlot ? -1 : 1;
@@ -800,6 +801,15 @@ function render() {
 
 topSpinBtn.addEventListener("click", spinCard);
 inventorySearch.addEventListener("input", renderInventory);
+pitch.addEventListener("click", (event) => {
+  if (event.target.closest(".player-dot")) return;
+  state.replaceSlot = null;
+  state.inventoryOpen = true;
+  reportTitle.textContent = "Full inventory";
+  reportText.textContent = "Showing every saved card from highest rating to lowest.";
+  saveState();
+  render();
+});
 clearReplaceFilterBtn.addEventListener("click", () => {
   state.replaceSlot = null;
   saveState();
