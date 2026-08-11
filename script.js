@@ -98,10 +98,10 @@ const cardPool = [
 ];
 
 const codeOnlyCards = [
-  { name: "IshowSpeed", position: "ST", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true }
+  { name: "IshowSpeed", position: "ST", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true, image: "assets/ishowspeed.png" }
 ];
 
-const selectablePlayers = cardPool;
+const selectablePlayers = [...cardPool, ...codeOnlyCards];
 const exactChancePlayers = {
   Mbappu: 0.1,
   "Lamine Yamal": 0.2,
@@ -499,7 +499,7 @@ function hydrateFromLocalDatabase() {
 
 function renderStars() {
   starList.innerHTML = "";
-  selectablePlayers.forEach((star) => {
+  selectablePlayers.slice().sort(compareCardsByRarity).forEach((star) => {
     const card = document.createElement("div");
     card.className = `star-card ${state.selectedStar?.name === star.name ? "active" : ""}`;
     card.innerHTML = `
@@ -1183,11 +1183,11 @@ function renderInventory() {
     .filter((card) => card.name.toLowerCase().includes(searchTerm))
     .slice()
     .sort((a, b) => {
-      if (!selectedSpot) return ratingSortValue(b) - ratingSortValue(a);
+      if (!selectedSpot) return compareCardsByRarity(a, b);
       const aMatchesSlot = selectedSpot && canPlaySlot(a, selectedSpot.slot);
       const bMatchesSlot = selectedSpot && canPlaySlot(b, selectedSpot.slot);
       if (aMatchesSlot !== bMatchesSlot) return aMatchesSlot ? -1 : 1;
-      return chanceSortValue(a) - chanceSortValue(b) || ratingSortValue(b) - ratingSortValue(a);
+      return compareCardsByRarity(a, b);
     });
 
   if (!visibleCards.length) {
@@ -1443,12 +1443,35 @@ function formatChance(chance) {
 
 function chanceLabel(card) {
   if (card.specialAccess) return "only special guest and devs";
+  if (card.codeOnly) return "code only";
   return `${chancePercent(card)}% chance`;
 }
 
 function chanceSortValue(card) {
   if (card.specialAccess) return -1;
+  if (card.codeOnly) return -0.5;
   return Number(chancePercent(card));
+}
+
+function raritySortValue(card) {
+  const order = {
+    "G.O.A.T": 0,
+    Legend: 1,
+    Icon: 2,
+    Elite: 3,
+    Hero: 4,
+    Gold: 5,
+    Silver: 6,
+    Bronze: 7
+  };
+  return order[card.rarity] ?? 99;
+}
+
+function compareCardsByRarity(a, b) {
+  return raritySortValue(a) - raritySortValue(b)
+    || ratingSortValue(b) - ratingSortValue(a)
+    || chanceSortValue(a) - chanceSortValue(b)
+    || a.name.localeCompare(b.name);
 }
 
 function ratingSortValue(card) {
