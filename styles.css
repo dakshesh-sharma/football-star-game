@@ -642,9 +642,84 @@ h3 {
 }
 
 .player-dot.selected-slot {
-  border-color: #000 !important;
-  outline: 3px solid #000;
+  border-color: #f7f2e7 !important;
+  box-shadow:
+    0 0 0 3px rgba(247, 242, 231, 0.92),
+    0 0 22px rgba(247, 242, 231, 0.44);
+  outline: 2px solid rgba(17, 17, 17, 0.82);
   outline-offset: 2px;
+  z-index: 6;
+}
+
+.player-dot.rarity-bronze.selected-slot {
+  border-color: #a66a32 !important;
+  box-shadow:
+    0 0 0 3px rgba(166, 106, 50, 0.9),
+    0 0 24px rgba(166, 106, 50, 0.5);
+  outline-color: #3a2110;
+}
+
+.player-dot.rarity-silver.selected-slot {
+  border-color: #f1fbff !important;
+  box-shadow:
+    0 0 0 3px rgba(223, 232, 236, 0.96),
+    0 0 26px rgba(220, 239, 247, 0.62);
+  outline-color: #7f8b91;
+}
+
+.player-dot.rarity-gold.selected-slot {
+  border-color: #ffe58a !important;
+  box-shadow:
+    0 0 0 3px rgba(247, 211, 107, 0.96),
+    0 0 30px rgba(255, 198, 58, 0.7);
+  outline-color: #8c570d;
+}
+
+.player-dot.rarity-hero.selected-slot {
+  border-color: #fff07a !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 240, 122, 0.98),
+    0 0 34px rgba(255, 191, 31, 0.74);
+  outline-color: #9b6500;
+}
+
+.player-dot.rarity-elite.selected-slot {
+  border-color: #d9b6ff !important;
+  box-shadow:
+    0 0 0 3px rgba(201, 156, 255, 0.98),
+    0 0 36px rgba(140, 72, 216, 0.78);
+  outline-color: #4a1e78;
+}
+
+.player-dot.rarity-icon.selected-slot {
+  border-color: #fff !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.98),
+    0 0 26px rgba(129, 214, 255, 0.76),
+    0 0 42px rgba(255, 133, 173, 0.52);
+  outline-color: #73d8ff;
+}
+
+.player-dot.rarity-legend.selected-slot {
+  border-color: #fff8c9 !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 248, 201, 0.98),
+    0 0 32px rgba(113, 240, 255, 0.68),
+    0 0 52px rgba(255, 104, 198, 0.5);
+  outline-color: #ff80cf;
+}
+
+.player-dot.rarity-goat.selected-slot,
+.player-dot.pitch-goat-card.selected-slot {
+  animation: pitchGoatAura 2s ease-in-out infinite, pitchGoatGoldMove 2.8s linear infinite, selectedGoatTap 1.35s ease-in-out infinite !important;
+  border-color: #050505 !important;
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.98),
+    0 0 0 5px rgba(255, 242, 168, 0.9),
+    0 0 38px rgba(255, 222, 68, 0.98),
+    0 0 86px rgba(255, 202, 33, 0.72),
+    inset 0 0 24px rgba(255, 234, 128, 0.36) !important;
+  outline-color: #000;
 }
 
 .player-dot.controlled {
@@ -1508,6 +1583,17 @@ h3 {
   58%,
   100% {
     transform: translateX(160%) skewX(-18deg);
+  }
+}
+
+@keyframes selectedGoatTap {
+  0%,
+  100% {
+    outline-offset: 2px;
+  }
+
+  50% {
+    outline-offset: 5px;
   }
 }
 
