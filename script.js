@@ -100,7 +100,20 @@ const cardPool = [
 const selectablePlayers = cardPool;
 const exactChancePlayers = {
   Mbappu: 0.1,
-  "Lamine Yamal": 0.2
+  "Lamine Yamal": 0.2,
+  Pele: 0.05,
+  "Diego Maradona": 0.05,
+  "Lionel Messi": 0.05,
+  "Gianluigi Buffon": 0.05,
+  "Zinedine Zidane": 0.05,
+  "Ronaldo Nazario": 0.05,
+  Ronaldinho: 0.05,
+  "Thierry Henry": 0.05,
+  "Andres Iniesta": 0.05,
+  Xavi: 0.05,
+  "Iker Casillas": 0.05,
+  "Wayne Rooney": 0.05,
+  "David Beckham": 0.05
 };
 const normalRollPool = cardPool.filter((card) => !card.specialAccess && exactChancePlayers[card.name] === undefined);
 const totalChance = normalRollPool.reduce((sum, card) => sum + card.chance, 0);
@@ -1348,11 +1361,15 @@ function fallbackSlot(position) {
 
 function chancePercent(card) {
   if (exactChancePlayers[card.name] !== undefined) {
-    return exactChancePlayers[card.name].toFixed(1);
+    return formatChance(exactChancePlayers[card.name]);
   }
   const remainingChance = 100 - Object.values(exactChancePlayers).reduce((sum, chance) => sum + chance, 0);
   const displayChance = (card.chance / totalChance) * remainingChance;
-  return Math.max(displayChance, 0.2).toFixed(1);
+  return formatChance(displayChance);
+}
+
+function formatChance(chance) {
+  return chance < 0.1 ? chance.toFixed(2) : chance.toFixed(1);
 }
 
 function chanceLabel(card) {
