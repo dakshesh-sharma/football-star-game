@@ -15,6 +15,8 @@
           <div class="settings-block">
             <button id="settingsBtn" class="secondary" type="button" aria-expanded="false" aria-controls="settingsMenu">Settings</button>
             <div id="settingsMenu" class="settings-menu" hidden>
+              <button id="accountToggleBtn" class="secondary" type="button">Logout</button>
+              <button id="changeUsernameBtn" class="secondary" type="button">Change Username</button>
               <button id="resetBtn" class="secondary" type="button" title="Reset save">Reset</button>
             </div>
           </div>
@@ -90,6 +92,15 @@
         </aside>
       </section>
     </main>
+
+    <section id="quickLoginOverlay" class="quick-login-overlay" hidden>
+      <div id="loginCardBackdrop" class="login-card-backdrop" aria-hidden="true"></div>
+      <div class="quick-login-box" role="dialog" aria-modal="true" aria-labelledby="quickLoginTitle">
+        <h2 id="quickLoginTitle">Quick Login</h2>
+        <div id="accountList" class="account-list"></div>
+        <button id="createAccountBtn" type="button">Create Account</button>
+      </div>
+    </section>
 
     <script src="script.js"></script>
   </body>

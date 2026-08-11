@@ -86,7 +86,7 @@ button:disabled {
   border-radius: 8px;
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
   left: 0;
-  min-width: 132px;
+  min-width: 190px;
   padding: 8px;
   position: absolute;
   top: calc(100% + 8px);
@@ -94,7 +94,12 @@ button:disabled {
 }
 
 .settings-menu button {
+  margin-top: 8px;
   width: 100%;
+}
+
+.settings-menu button:first-child {
+  margin-top: 0;
 }
 
 h1,
@@ -389,7 +394,8 @@ h3 {
 }
 
 .player-dot.selected-slot {
-  outline: 3px solid var(--blue);
+  border-color: #000 !important;
+  outline: 3px solid #000;
   outline-offset: 2px;
 }
 
@@ -984,6 +990,113 @@ h3 {
 .empty-state {
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.quick-login-overlay {
+  align-items: center;
+  background: rgba(5, 8, 8, 0.8);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px;
+  position: fixed;
+  z-index: 40;
+}
+
+.quick-login-overlay[hidden] {
+  display: none;
+}
+
+.login-card-backdrop {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  inset: 0;
+  opacity: 0.48;
+  padding: 20px;
+  position: absolute;
+  transform: rotate(-4deg) scale(1.08);
+}
+
+.login-mini-card {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-end;
+  min-height: 116px;
+  overflow: hidden;
+  padding: 10px;
+  position: relative;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.62);
+}
+
+.login-mini-card strong,
+.login-mini-card span {
+  position: relative;
+  z-index: 1;
+}
+
+.login-mini-card strong {
+  color: #fff;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.login-mini-card span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.quick-login-box {
+  background: rgba(18, 26, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48);
+  display: grid;
+  gap: 14px;
+  max-height: min(620px, 88vh);
+  max-width: 430px;
+  overflow: auto;
+  padding: 22px;
+  position: relative;
+  width: min(430px, 100%);
+  z-index: 1;
+}
+
+.quick-login-box h2 {
+  font-size: 1.45rem;
+  text-align: center;
+}
+
+.account-list {
+  display: grid;
+  gap: 10px;
+}
+
+.account-card {
+  display: grid;
+  gap: 3px;
+  min-height: 62px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.account-card strong {
+  color: var(--text);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.account-card span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 @keyframes cardShine {

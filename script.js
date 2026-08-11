@@ -104,6 +104,9 @@ const exactChancePlayers = {
 };
 const normalRollPool = cardPool.filter((card) => !card.specialAccess && exactChancePlayers[card.name] === undefined);
 const totalChance = normalRollPool.reduce((sum, card) => sum + card.chance, 0);
+const saveKey = "star-xi-trial";
+const accountsKey = "fc-stars-accounts";
+const activeAccountKey = "fc-stars-active-account";
 
 const formation = [
   { id: "gk", slot: "GK", x: 50, y: 91 },
@@ -136,6 +139,12 @@ const defaultState = {
   deletedCardNames: []
 };
 
+let accounts = loadAccounts();
+let activeAccountId = storageGet(activeAccountKey);
+if (activeAccountId && !accounts.some((account) => account.id === activeAccountId)) {
+  activeAccountId = accounts[0]?.id || null;
+  if (activeAccountId) storageSet(activeAccountKey, activeAccountId);
+}
 let state = loadState();
 
 const starList = document.querySelector("#starList");
@@ -164,11 +173,76 @@ const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
 const settingsBtn = document.querySelector("#settingsBtn");
 const settingsMenu = document.querySelector("#settingsMenu");
+const accountToggleBtn = document.querySelector("#accountToggleBtn");
+const changeUsernameBtn = document.querySelector("#changeUsernameBtn");
 const resetBtn = document.querySelector("#resetBtn");
+const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
+const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
+const accountList = document.querySelector("#accountList");
+const createAccountBtn = document.querySelector("#createAccountBtn");
+
+function loadAccounts() {
+  const savedAccounts = safeJson(storageGet(accountsKey));
+  if (Array.isArray(savedAccounts) && savedAccounts.length) {
+    return savedAccounts.map((account, index) => ({
+      id: account.id || `account-${Date.now()}-${index}`,
+      username: account.username || `Player ${index + 1}`,
+      state: migrateState({ ...defaultState, ...(account.state || {}) })
+    }));
+  }
+
+  const legacySave = safeJson(storageGet(saveKey));
+  if (legacySave) {
+    const account = {
+      id: `account-${Date.now()}`,
+      username: legacySave.username || legacySave.selectedStar?.name || "Player 1",
+      state: migrateState({ ...defaultState, ...legacySave })
+    };
+    storageSet(accountsKey, JSON.stringify([account]));
+    storageSet(activeAccountKey, account.id);
+    return [account];
+  }
+
+  const firstAccount = {
+    id: `account-${Date.now()}`,
+    username: "Player 1",
+    state: freshState()
+  };
+  storageSet(accountsKey, JSON.stringify([firstAccount]));
+  storageSet(activeAccountKey, firstAccount.id);
+  return [firstAccount];
+}
+
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
+function storageRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+function safeJson(value) {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
 
 function loadState() {
-  const saved = localStorage.getItem("star-xi-trial");
-  return saved ? migrateState({ ...defaultState, ...JSON.parse(saved) }) : freshState();
+  return activeAccount()?.state || freshState();
 }
 
 function freshState() {
@@ -181,7 +255,19 @@ function freshState() {
 }
 
 function saveState() {
-  localStorage.setItem("star-xi-trial", JSON.stringify(state));
+  const account = activeAccount();
+  if (!account) return;
+  account.state = state;
+  saveAccounts();
+  storageSet(saveKey, JSON.stringify(state));
+}
+
+function saveAccounts() {
+  storageSet(accountsKey, JSON.stringify(accounts));
+}
+
+function activeAccount() {
+  return accounts.find((account) => account.id === activeAccountId) || null;
 }
 
 function migrateState(savedState) {
@@ -217,6 +303,7 @@ function migrateState(savedState) {
 }
 
 function enrichCard(card) {
+  if (!card?.name) return null;
   const fullCard = cardPool.find((item) => item.name === card.name);
   return fullCard ? { ...card, ...fullCard, id: card.id } : card;
 }
@@ -252,6 +339,105 @@ function renderStars() {
     `;
     starList.appendChild(card);
   });
+}
+
+function renderLoginBackdrop() {
+  loginCardBackdrop.innerHTML = "";
+  cardPool.slice(0, 28).forEach((card) => {
+    const tile = document.createElement("div");
+    tile.className = `login-mini-card rarity-${rarityClass(card.rarity)}`;
+    tile.innerHTML = `
+      <strong>${card.name}</strong>
+      <span>${card.position} · ${card.team}</span>
+    `;
+    loginCardBackdrop.appendChild(tile);
+  });
+}
+
+function renderAccounts() {
+  accountList.innerHTML = "";
+  if (!accounts.length) {
+    accountList.className = "account-list empty-state";
+    accountList.textContent = "No accounts yet.";
+    return;
+  }
+
+  accountList.className = "account-list";
+  accounts.forEach((account) => {
+    const accountButton = document.createElement("button");
+    const accountState = account.state || freshState();
+    const selectedName = accountState.selectedStar?.name || "No player yet";
+    accountButton.className = "account-card secondary";
+    accountButton.type = "button";
+    accountButton.innerHTML = `
+      <strong>${account.username}</strong>
+      <span>${selectedName} · Level ${accountState.level || 1}</span>
+    `;
+    accountButton.addEventListener("click", () => loginAccount(account.id));
+    accountList.appendChild(accountButton);
+  });
+}
+
+function showQuickLogin() {
+  renderLoginBackdrop();
+  renderAccounts();
+  quickLoginOverlay.hidden = false;
+}
+
+function hideQuickLogin() {
+  quickLoginOverlay.hidden = true;
+}
+
+function loginAccount(id) {
+  const account = accounts.find((item) => item.id === id);
+  if (!account) return;
+  activeAccountId = account.id;
+  storageSet(activeAccountKey, activeAccountId);
+  state = migrateState({ ...defaultState, ...(account.state || {}) });
+  account.state = state;
+  saveAccounts();
+  hideQuickLogin();
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  render();
+}
+
+function logoutAccount() {
+  saveState();
+  activeAccountId = null;
+  storageRemove(activeAccountKey);
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  render();
+  showQuickLogin();
+}
+
+function createAccount() {
+  const username = prompt("Choose a username:", `Player ${accounts.length + 1}`);
+  const trimmedUsername = username?.trim();
+  if (!trimmedUsername) return;
+
+  const account = {
+    id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    username: trimmedUsername.slice(0, 24),
+    state: freshState()
+  };
+  accounts = [account, ...accounts];
+  saveAccounts();
+  loginAccount(account.id);
+}
+
+function changeUsername() {
+  const account = activeAccount();
+  if (!account) return;
+  const username = prompt("Change username:", account.username);
+  const trimmedUsername = username?.trim();
+  if (!trimmedUsername) return;
+  account.username = trimmedUsername.slice(0, 24);
+  saveAccounts();
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  render();
 }
 
 function buildTeam() {
@@ -793,13 +979,16 @@ function wikiPageName(name) {
 }
 
 function renderStatus() {
+  const account = activeAccount();
   selectedPlayerLabel.textContent = state.selectedStar
-    ? `${state.selectedStar.name} · ${state.selectedStar.team}`
-    : "Spin your player";
+    ? `${account?.username || "Guest"} · ${state.selectedStar.name} · ${state.selectedStar.team}`
+    : `${account?.username || "Guest"} · Spin your player`;
   levelLabel.textContent = `Level ${state.level}`;
   unlockText.textContent = state.level >= 5
     ? "Unlocked: stronger rival teams. Online real players can be added later."
     : "Reach Level 5 to unlock stronger rival teams.";
+  accountToggleBtn.textContent = account ? "Logout" : "Login";
+  changeUsernameBtn.hidden = !account;
 }
 
 function render() {
@@ -835,17 +1024,34 @@ becomeCardBtn.addEventListener("click", becomeCurrentCard);
 replaceCardBtn.addEventListener("click", replaceSelectedSlotWithCurrentCard);
 saveCardBtn.addEventListener("click", saveCurrentCard);
 cancelCardBtn.addEventListener("click", cancelCurrentCard);
+accountToggleBtn.addEventListener("click", () => {
+  if (activeAccount()) {
+    logoutAccount();
+    return;
+  }
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  showQuickLogin();
+});
+changeUsernameBtn.addEventListener("click", changeUsername);
+createAccountBtn.addEventListener("click", createAccount);
 settingsBtn.addEventListener("click", () => {
   const willOpen = settingsMenu.hidden;
   settingsMenu.hidden = !willOpen;
   settingsBtn.setAttribute("aria-expanded", String(willOpen));
 });
 resetBtn.addEventListener("click", () => {
-  localStorage.removeItem("star-xi-trial");
+  const account = activeAccount();
   state = freshState();
+  if (account) {
+    account.state = state;
+    saveAccounts();
+  }
+  storageSet(saveKey, JSON.stringify(state));
   settingsMenu.hidden = true;
   settingsBtn.setAttribute("aria-expanded", "false");
   render();
 });
 
 render();
+if (!activeAccount()) showQuickLogin();
