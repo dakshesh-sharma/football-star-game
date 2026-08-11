@@ -162,6 +162,8 @@ const clearReplaceFilterBtn = document.querySelector("#clearReplaceFilterBtn");
 const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
+const settingsBtn = document.querySelector("#settingsBtn");
+const settingsMenu = document.querySelector("#settingsMenu");
 const resetBtn = document.querySelector("#resetBtn");
 
 function loadState() {
@@ -833,9 +835,16 @@ becomeCardBtn.addEventListener("click", becomeCurrentCard);
 replaceCardBtn.addEventListener("click", replaceSelectedSlotWithCurrentCard);
 saveCardBtn.addEventListener("click", saveCurrentCard);
 cancelCardBtn.addEventListener("click", cancelCurrentCard);
+settingsBtn.addEventListener("click", () => {
+  const willOpen = settingsMenu.hidden;
+  settingsMenu.hidden = !willOpen;
+  settingsBtn.setAttribute("aria-expanded", String(willOpen));
+});
 resetBtn.addEventListener("click", () => {
   localStorage.removeItem("star-xi-trial");
   state = freshState();
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
   render();
 });
 
