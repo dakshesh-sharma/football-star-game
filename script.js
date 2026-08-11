@@ -230,11 +230,12 @@ function loadAccounts() {
   if (legacySave) {
     const username = legacySave.username || legacySave.selectedStar?.name || "Player 1";
     const isDev = isDeveloperUsername(username);
+    const hasFullInventory = hasFullInventoryUsername(username);
     const account = {
       id: `account-${Date.now()}`,
       username,
       isDev,
-      state: migrateState({ ...defaultState, ...legacySave }, isDev)
+      state: migrateState({ ...defaultState, ...legacySave }, hasFullInventory)
     };
     storageSet(accountsKey, JSON.stringify([account]));
     storageSet(activeAccountKey, account.id);
@@ -310,16 +311,21 @@ function activeAccount() {
 function normalizeAccount(account, index, devAccountId = null) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const isDev = isDeveloperUsername(account.username);
+  const hasFullInventory = hasFullInventoryUsername(account.username);
   return {
     id,
     username: account.username || `Player ${index + 1}`,
     isDev,
-    state: migrateState({ ...defaultState, ...(account.state || {}) }, isDev)
+    state: migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory)
   };
 }
 
 function isDeveloperUsername(username) {
   return String(username || "").trim() === "Noxify_Vo1d";
+}
+
+function hasFullInventoryUsername(username) {
+  return ["Noxify_Vo1d", "THEgoat"].includes(String(username || "").trim());
 }
 
 function migrateState(savedState, hasDevInventory = false) {
@@ -526,14 +532,16 @@ function renderAccounts() {
     const accountRow = document.createElement("div");
     const accountButton = document.createElement("button");
     const deleteButton = document.createElement("button");
-    const accountState = account.state || freshState(account.isDev);
+    const hasFullInventory = hasFullInventoryUsername(account.username);
+    const accountState = account.state || freshState(hasFullInventory);
     const selectedName = accountState.selectedStar?.name || "No player yet";
+    const accessLabel = account.isDev ? " · Dev" : hasFullInventory ? " · Special" : "";
     accountRow.className = "account-row";
     accountButton.className = "account-card secondary";
     accountButton.type = "button";
     accountButton.innerHTML = `
       <strong>${account.username}</strong>
-      <span>${selectedName} · Level ${accountState.level || 1}${account.isDev ? " · Dev" : ""}</span>
+      <span>${selectedName} · Level ${accountState.level || 1}${accessLabel}</span>
     `;
     deleteButton.className = "account-delete-btn secondary danger-btn";
     deleteButton.type = "button";
@@ -580,9 +588,9 @@ function hideQuickLogin() {
 function loginAccount(id) {
   const account = accounts.find((item) => item.id === id);
   if (!account) return;
-  const hasFullInventory = isDeveloperUsername(account.username);
+  const hasFullInventory = hasFullInventoryUsername(account.username);
   activeAccountId = account.id;
-  account.isDev = hasFullInventory;
+  account.isDev = isDeveloperUsername(account.username);
   storageSet(activeAccountKey, activeAccountId);
   state = migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory);
   account.state = state;
@@ -610,11 +618,11 @@ function createAccount() {
   if (!trimmedUsername) return;
 
   const savedUsername = trimmedUsername.slice(0, 24);
-  const hasFullInventory = isDeveloperUsername(savedUsername);
+  const hasFullInventory = hasFullInventoryUsername(savedUsername);
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     username: savedUsername,
-    isDev: hasFullInventory,
+    isDev: isDeveloperUsername(savedUsername),
     state: freshState(hasFullInventory)
   };
   accounts = [account, ...accounts];
@@ -630,7 +638,7 @@ function changeUsername() {
   if (!trimmedUsername) return;
   account.username = trimmedUsername.slice(0, 24);
   account.isDev = isDeveloperUsername(account.username);
-  state = migrateState({ ...defaultState, ...state }, account.isDev);
+  state = migrateState({ ...defaultState, ...state }, hasFullInventoryUsername(account.username));
   account.state = state;
   saveAccounts();
   settingsMenu.hidden = true;
@@ -1570,8 +1578,9 @@ settingsBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", () => {
   const account = activeAccount();
-  state = freshState(account?.isDev);
+  state = freshState(hasFullInventoryUsername(account?.username));
   if (account) {
+    account.isDev = isDeveloperUsername(account.username);
     account.state = state;
     saveAccounts();
   }
