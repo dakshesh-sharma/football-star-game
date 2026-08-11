@@ -690,69 +690,71 @@ h3 {
 }
 
 .rarity-goat {
-  animation: goatPulse 3.8s ease-in-out infinite, goatCosmos 6s linear infinite;
+  animation: goatPulse 3.6s ease-in-out infinite, goatCrownLight 5.4s linear infinite;
   background:
-    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.95), transparent 12%),
-    radial-gradient(circle at 18% 76%, rgba(0, 255, 213, 0.5), transparent 24%),
-    radial-gradient(circle at 84% 72%, rgba(255, 55, 196, 0.55), transparent 26%),
-    conic-gradient(from 90deg, #ffffff, #ffe568, #00f5ff, #7d5cff, #ff4fc3, #ffffff),
-    linear-gradient(145deg, #02030a 0%, #151022 36%, #32104d 64%, #050714 100%);
-  background-size: auto, auto, auto, 420% 420%, auto;
-  border-color: #ffffff;
+    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.94), transparent 10%),
+    radial-gradient(circle at 50% 22%, rgba(255, 213, 74, 0.54), transparent 18%),
+    linear-gradient(118deg, transparent 0 18%, rgba(255, 255, 255, 0.3) 28%, transparent 40% 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 14px),
+    linear-gradient(145deg, #010101 0%, #090909 30%, #1c1605 52%, #050505 72%, #121212 100%);
+  background-size: auto, auto, 240% 240%, auto, auto;
+  border-color: #f8e28a;
   box-shadow:
-    0 28px 88px rgba(255, 232, 92, 0.55),
-    0 0 56px rgba(0, 245, 255, 0.52),
-    0 0 46px rgba(255, 79, 195, 0.44),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.72),
-    inset 0 0 42px rgba(255, 255, 255, 0.24);
+    0 30px 92px rgba(255, 206, 55, 0.46),
+    0 0 42px rgba(255, 255, 255, 0.3),
+    0 0 24px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 2px rgba(255, 238, 168, 0.74),
+    inset 0 0 48px rgba(255, 215, 87, 0.18);
   color: #fff;
 }
 
 .rarity-goat::before {
-  animation: goatStars 3.2s linear infinite;
+  animation: goatDiamond 3.8s linear infinite;
   background:
-    linear-gradient(112deg, transparent 8%, rgba(255, 255, 255, 0.65) 22%, transparent 38%),
-    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.48) 0 2px, transparent 2px 12px),
-    repeating-linear-gradient(45deg, transparent 0 9px, rgba(255, 255, 255, 0.16) 9px 11px);
-  background-size: 260% 260%, 34px 34px, auto;
+    linear-gradient(112deg, transparent 10%, rgba(255, 238, 157, 0.68) 22%, transparent 36%),
+    repeating-linear-gradient(60deg, transparent 0 12px, rgba(255, 255, 255, 0.16) 12px 14px),
+    repeating-linear-gradient(120deg, transparent 0 12px, rgba(255, 215, 87, 0.14) 12px 14px),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.46), transparent 24%);
+  background-size: 260% 260%, auto, auto, auto;
   mix-blend-mode: screen;
 }
 
 .rarity-goat::after {
-  animation: goatSweep 2.2s ease-in-out infinite;
+  animation: goatSweep 2s ease-in-out infinite;
   background:
-    linear-gradient(102deg, transparent 2%, rgba(255, 255, 255, 0.95) 16%, transparent 32%),
-    linear-gradient(70deg, transparent 24%, rgba(255, 230, 104, 0.6) 48%, transparent 70%);
-  opacity: 0.95;
+    linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.98) 15%, transparent 29%),
+    linear-gradient(70deg, transparent 22%, rgba(255, 211, 67, 0.72) 46%, transparent 68%);
+  opacity: 1;
 }
 
 .rarity-goat .card-rating {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.44), rgba(4, 5, 12, 0.9)),
-    conic-gradient(from 120deg, #ffffff, #ffe568, #00f5ff, #ff4fc3, #ffffff);
-  border-color: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 0 34px rgba(255, 232, 92, 0.55), inset 0 0 22px rgba(255, 255, 255, 0.22);
+    linear-gradient(145deg, rgba(255, 239, 161, 0.4), rgba(5, 5, 5, 0.94)),
+    linear-gradient(135deg, #f7df86, #ffffff, #a98224);
+  border-color: rgba(255, 233, 146, 0.9);
+  box-shadow: 0 0 36px rgba(255, 206, 55, 0.62), inset 0 0 24px rgba(255, 255, 255, 0.2);
 }
 
 .rarity-goat .card-image-wrap {
   background:
-    conic-gradient(from 140deg, rgba(255, 255, 255, 0.36), rgba(0, 245, 255, 0.24), rgba(255, 79, 195, 0.28), rgba(255, 229, 104, 0.3), rgba(255, 255, 255, 0.36)),
-    rgba(0, 0, 0, 0.34);
-  border-color: rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.18), 0 0 28px rgba(0, 245, 255, 0.32);
+    linear-gradient(135deg, rgba(255, 235, 150, 0.32), rgba(255, 255, 255, 0.16), rgba(99, 76, 17, 0.28)),
+    rgba(0, 0, 0, 0.42);
+  border-color: rgba(255, 235, 150, 0.84);
+  box-shadow: inset 0 0 34px rgba(255, 255, 255, 0.16), 0 0 30px rgba(255, 206, 55, 0.34);
 }
 
 .rarity-goat .card-details {
   background:
-    linear-gradient(135deg, rgba(2, 3, 10, 0.92), rgba(56, 13, 84, 0.78)),
-    rgba(0, 0, 0, 0.62);
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow: inset 0 0 28px rgba(255, 255, 255, 0.14);
+    linear-gradient(135deg, rgba(0, 0, 0, 0.94), rgba(45, 34, 8, 0.84)),
+    rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 225, 124, 0.76);
+  box-shadow: inset 0 0 30px rgba(255, 214, 82, 0.14);
 }
 
 .rarity-goat .card-details small {
-  color: #fff7bc;
-  text-shadow: 0 0 14px rgba(255, 232, 92, 0.9), 0 0 18px rgba(0, 245, 255, 0.48);
+  color: #ffe580;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 14px rgba(255, 221, 92, 0.92), 0 0 24px rgba(255, 255, 255, 0.34);
 }
 
 .inventory-actions {
@@ -909,23 +911,23 @@ h3 {
   }
 }
 
-@keyframes goatCosmos {
+@keyframes goatCrownLight {
   from {
-    background-position: 0 0, 0 0, 0 0, 0% 50%, 0 0;
+    background-position: 0 0, 0 0, 0% 50%, 0 0, 0 0;
   }
 
   to {
-    background-position: 0 0, 0 0, 0 0, 420% 50%, 0 0;
+    background-position: 0 0, 0 0, 240% 50%, 0 0, 0 0;
   }
 }
 
-@keyframes goatStars {
+@keyframes goatDiamond {
   from {
-    background-position: 0% 50%, 0 0, 0 0;
+    background-position: 0% 50%, 0 0, 0 0, 0 0;
   }
 
   to {
-    background-position: 260% 50%, 44px 44px, 52px 0;
+    background-position: 260% 50%, 44px 0, -44px 0, 0 0;
   }
 }
 
