@@ -142,7 +142,9 @@ const defaultState = {
   inventoryOpen: true,
   currentCard: null,
   currentCardSaved: false,
-  deletedCardNames: []
+  deletedCardNames: [],
+  playerStats: {},
+  activeMatch: null
 };
 
 let accounts = loadAccounts();
@@ -163,6 +165,7 @@ const currentCardMeta = document.querySelector("#currentCardMeta");
 const topCurrentCardName = document.querySelector("#topCurrentCardName");
 const topCurrentCardMeta = document.querySelector("#topCurrentCardMeta");
 const topSpinBtn = document.querySelector("#topSpinBtn");
+const playMatchBtn = document.querySelector("#playMatchBtn");
 const inventoryToggleBtn = document.querySelector("#inventoryToggleBtn");
 const becomeCardBtn = document.querySelector("#becomeCardBtn");
 const replaceCardBtn = document.querySelector("#replaceCardBtn");
@@ -186,6 +189,16 @@ const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
 const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
+const matchPanel = document.querySelector("#matchPanel");
+const matchScoreLabel = document.querySelector("#matchScoreLabel");
+const scenePlayer = document.querySelector("#scenePlayer");
+const sceneBall = document.querySelector("#sceneBall");
+const sceneGoalText = document.querySelector("#sceneGoalText");
+const attackBtn = document.querySelector("#attackBtn");
+const ankaraBtn = document.querySelector("#ankaraBtn");
+const siuuBtn = document.querySelector("#siuuBtn");
+const endMatchBtn = document.querySelector("#endMatchBtn");
+const goalFeed = document.querySelector("#goalFeed");
 
 function loadAccounts() {
   const storedActiveAccountId = storageGet(activeAccountKey);
@@ -256,7 +269,9 @@ function freshState(hasDevInventory = false) {
     ...defaultState,
     inventory: hasDevInventory ? allInventoryCards() : guaranteedInventoryCards(),
     teamCards: {},
-    deletedCardNames: []
+    deletedCardNames: [],
+    playerStats: {},
+    activeMatch: null
   };
 }
 
@@ -297,6 +312,8 @@ function isDeveloperUsername(username) {
 function migrateState(savedState, hasDevInventory = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
+  savedState.playerStats = savedState.playerStats || {};
+  savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
   if (!savedState.currentCard && savedState.selectedStar) {
@@ -614,6 +631,130 @@ function starterCardForName(name) {
     Yamal: "Lamine Yamal"
   };
   return cardPool.find((card) => card.name === (map[name] || name));
+}
+
+function startMatch() {
+  if (!activeAccount()) {
+    showQuickLogin();
+    return;
+  }
+
+  state.activeMatch = {
+    home: 0,
+    away: 0,
+    minute: 1,
+    goals: []
+  };
+  state.inventoryOpen = false;
+  reportTitle.textContent = "Match started";
+  reportText.textContent = "Use Attack, Ankara Run, or Siuu to create chances.";
+  saveState();
+  render();
+  playMatchMoment("kickoff");
+}
+
+function endMatch() {
+  if (!state.activeMatch) return;
+  const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
+  state.activeMatch = null;
+  sceneGoalText.textContent = `Final score ${score}`;
+  reportTitle.textContent = "Full time";
+  reportText.textContent = `FC Stars finished ${score} against Rival XI.`;
+  saveState();
+  render();
+}
+
+function playMatchMoment(type) {
+  if (!state.activeMatch) startMatch();
+  const scorer = chooseScorer(type);
+  const didScore = type !== "kickoff" && (type === "ankara" || type === "siuu" || Math.random() > 0.28);
+  state.activeMatch.minute = Math.min(90, state.activeMatch.minute + randomInt(4, 12));
+
+  if (!didScore) {
+    animateChance(scorer, "Saved");
+    speakCommentary(`${scorer.name} shoots. Great save by the keeper.`);
+    reportTitle.textContent = "Chance missed";
+    reportText.textContent = `${scorer.name} forced a save in minute ${state.activeMatch.minute}.`;
+    saveState();
+    render();
+    return;
+  }
+
+  state.activeMatch.home += 1;
+  const goalNumber = addGoalForPlayer(scorer.name);
+  const goal = {
+    scorer: scorer.name,
+    minute: state.activeMatch.minute,
+    goalNumber,
+    celebration: type === "siuu" ? "Siuu" : type === "ankara" ? "Ankara Messi" : celebrationFor(scorer)
+  };
+  state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
+  animateChance(scorer, "GOAL!");
+  speakGoal(scorer, goal.celebration);
+  reportTitle.textContent = `${scorer.name} scores`;
+  reportText.textContent = `${goal.celebration}. Goal no. ${goalNumber} for ${scorer.name}.`;
+  saveState();
+  render();
+}
+
+function chooseScorer(type) {
+  const team = buildTeam().filter((player) => player.name && player.slot !== "GK");
+  if (type === "ankara") {
+    return team.find((player) => player.name.includes("Messi")) || state.selectedStar || team[0];
+  }
+  if (type === "siuu") {
+    return team.find((player) => player.name.includes("Ronaldo")) || state.selectedStar || team[0];
+  }
+  return team[Math.floor(Math.random() * team.length)] || state.selectedStar || cardPool[0];
+}
+
+function addGoalForPlayer(name) {
+  const current = state.playerStats[name]?.goals || 0;
+  state.playerStats[name] = {
+    ...(state.playerStats[name] || {}),
+    goals: current + 1
+  };
+  return state.playerStats[name].goals;
+}
+
+function celebrationFor(player) {
+  if (player.name.includes("Ronaldo")) return "Siuu";
+  if (player.name.includes("Messi")) return "Ankara Messi";
+  if (player.rarity === "Icon") return "Icon moment";
+  if (player.rarity === "Legend" || player.rarity === "G.O.A.T") return "Legend celebration";
+  return "Team celebration";
+}
+
+function animateChance(player, text) {
+  scenePlayer.textContent = shortName(player.name);
+  sceneGoalText.textContent = text;
+  sceneBall.classList.remove("ball-shot");
+  scenePlayer.classList.remove("player-run");
+  void sceneBall.offsetWidth;
+  sceneBall.classList.add("ball-shot");
+  scenePlayer.classList.add("player-run");
+}
+
+function speakGoal(player, celebration) {
+  const line = celebration === "Ankara Messi"
+    ? `Ankara Messi, Ankara Messi, Ankara Messi, goal! ${player.name} scores.`
+    : celebration === "Siuu"
+      ? `Siuu! ${player.name} scores a brilliant goal.`
+      : `Goal! ${player.name} scores for FC Stars.`;
+  speakCommentary(line);
+}
+
+function speakCommentary(line) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(line);
+  utterance.rate = 1.08;
+  utterance.pitch = 1.08;
+  window.speechSynthesis.speak(utterance);
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function renderPitch() {
@@ -1138,15 +1279,61 @@ function renderStatus() {
   changeUsernameBtn.hidden = !account;
 }
 
+function renderMatch() {
+  const match = state.activeMatch;
+  matchPanel.hidden = !match;
+  playMatchBtn.textContent = match ? "Match Live" : "Play";
+  playMatchBtn.disabled = Boolean(match);
+  attackBtn.disabled = !match;
+  ankaraBtn.disabled = !match;
+  siuuBtn.disabled = !match;
+  endMatchBtn.disabled = !match;
+
+  if (!match) return;
+
+  matchScoreLabel.textContent = `${match.home} - ${match.away}`;
+  if (!scenePlayer.textContent || scenePlayer.textContent === "Ready") {
+    scenePlayer.textContent = state.selectedStar ? shortName(state.selectedStar.name) : "FC Stars";
+  }
+  renderGoalFeed();
+}
+
+function renderGoalFeed() {
+  const goals = state.activeMatch?.goals || [];
+  if (!goals.length) {
+    goalFeed.className = "goal-feed empty-state";
+    goalFeed.textContent = "No goals yet.";
+    return;
+  }
+
+  goalFeed.className = "goal-feed";
+  goalFeed.innerHTML = "";
+  goals.forEach((goal) => {
+    const item = document.createElement("div");
+    item.className = "goal-feed-item";
+    item.innerHTML = `
+      <strong>${goal.minute}' ${goal.scorer}</strong>
+      <span>${goal.celebration} · goal no. ${goal.goalNumber}</span>
+    `;
+    goalFeed.appendChild(item);
+  });
+}
+
 function render() {
   renderStars();
   renderPitch();
   renderCurrentCard();
   renderInventory();
   renderStatus();
+  renderMatch();
 }
 
 topSpinBtn.addEventListener("click", spinCard);
+playMatchBtn.addEventListener("click", startMatch);
+attackBtn.addEventListener("click", () => playMatchMoment("attack"));
+ankaraBtn.addEventListener("click", () => playMatchMoment("ankara"));
+siuuBtn.addEventListener("click", () => playMatchMoment("siuu"));
+endMatchBtn.addEventListener("click", endMatch);
 inventorySearch.addEventListener("input", renderInventory);
 pitch.addEventListener("click", (event) => {
   if (event.target.closest(".player-dot")) return;

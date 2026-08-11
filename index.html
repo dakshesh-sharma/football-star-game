@@ -26,6 +26,7 @@
           <strong id="levelLabel">Level 1</strong>
           <div class="top-main-actions">
             <button id="topSpinBtn">Spin Player</button>
+            <button id="playMatchBtn">Play</button>
             <button id="inventoryToggleBtn" class="secondary">Inventory</button>
           </div>
           <div class="top-latest-card" aria-label="Latest rolled card">
@@ -57,6 +58,29 @@
         </aside>
 
         <section class="match-zone">
+          <section id="matchPanel" class="match-panel" hidden>
+            <div class="match-scoreboard">
+              <span>FC Stars</span>
+              <strong id="matchScoreLabel">0 - 0</strong>
+              <span>Rival XI</span>
+            </div>
+            <div id="matchScene" class="match-scene" aria-live="polite">
+              <div class="scene-stand"></div>
+              <div id="scenePlayer" class="scene-player">Ready</div>
+              <div id="sceneBall" class="scene-ball"></div>
+              <div id="sceneGoalText" class="scene-goal-text">Kickoff</div>
+            </div>
+            <div class="match-actions">
+              <button id="attackBtn" type="button">Attack</button>
+              <button id="ankaraBtn" class="secondary" type="button">Ankara Run</button>
+              <button id="siuuBtn" class="secondary" type="button">Siuu</button>
+              <button id="endMatchBtn" class="secondary danger-btn" type="button">End</button>
+            </div>
+            <div class="goal-feed-wrap">
+              <p id="goalFeedTitle" class="eyebrow">Goal Feed</p>
+              <div id="goalFeed" class="goal-feed empty-state">No goals yet.</div>
+            </div>
+          </section>
           <div class="pitch" id="pitch" aria-label="Football pitch with positions">
             <div class="half-line"></div>
             <div class="center-circle"></div>
