@@ -67,6 +67,24 @@ button:disabled {
   min-width: 0;
 }
 
+.brand-title {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.brand-title img {
+  aspect-ratio: 1;
+  border: 1px solid rgba(247, 211, 107, 0.46);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 18px rgba(247, 211, 107, 0.18);
+  display: block;
+  flex: 0 0 auto;
+  height: clamp(54px, 7vw, 82px);
+  object-fit: cover;
+  width: clamp(54px, 7vw, 82px);
+}
+
 .settings-block {
   align-items: center;
   display: flex;
