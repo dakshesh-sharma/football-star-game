@@ -243,7 +243,7 @@ function renderStars() {
     card.className = `star-card ${state.selectedStar?.name === star.name ? "active" : ""}`;
     card.innerHTML = `
       <span>
-        <strong>${star.name}</strong>
+        <strong>${poolNameLabel(star)}</strong>
         <span class="meta">${star.position} · ${star.rarity} · ${star.team} · ${chanceLabel(star)}</span>
       </span>
       <span class="rating">${ratingLabel(star)}</span>
@@ -753,6 +753,14 @@ function ratingSortValue(card) {
 
 function ratingLabel(card) {
   return card.rating === "∞" ? "∞" : card.rating;
+}
+
+function poolNameLabel(card) {
+  const labels = {
+    "Cristiano Ronaldo": "C.RONALDO",
+    "Lamine Yamal": "L.YAMAL"
+  };
+  return labels[card.name] || card.name;
 }
 
 function playerPhoto(card) {
