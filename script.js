@@ -306,12 +306,6 @@ function playerNode(player) {
 }
 
 function selectReplaceSlot(player) {
-  if (player.controlled) {
-    reportTitle.textContent = "That is your player";
-    reportText.textContent = "Use Become if you want the rolled card to replace the footballer you control.";
-    return;
-  }
-
   state.replaceSlot = player.id;
   reportTitle.textContent = `${player.slot} selected`;
   reportText.textContent = state.currentCard
@@ -414,6 +408,22 @@ function replaceSelectedSlotWithCurrentCard() {
   if (!state.replaceSlot) {
     reportTitle.textContent = "Pick a pitch player";
     reportText.textContent = "Click a card player on the ground, then press Replace.";
+    return;
+  }
+
+  if (isControlledSlot(state.replaceSlot)) {
+    if (state.selectedStar) {
+      state.inventory = addCardToInventory(state.inventory, state.selectedStar);
+    }
+    state.inventory = addCardToInventory(state.inventory, state.currentCard);
+    state.currentCardSaved = true;
+    state.selectedStar = state.currentCard;
+    state.selectedStarSlot = state.replaceSlot;
+    state.replaceSlot = null;
+    reportTitle.textContent = `You became ${state.currentCard.name}`;
+    reportText.textContent = `${state.currentCard.name} replaced your controlled player.`;
+    saveState();
+    render();
     return;
   }
 
@@ -617,6 +627,22 @@ function useCard(id) {
     return;
   }
 
+  if (isControlledSlot(state.replaceSlot)) {
+    if (state.selectedStar) {
+      state.inventory = addCardToInventory(state.inventory, state.selectedStar);
+    }
+    state.selectedStar = card;
+    state.selectedStarSlot = state.replaceSlot;
+    state.currentCard = card;
+    state.currentCardSaved = true;
+    state.replaceSlot = null;
+    reportTitle.textContent = `You became ${card.name}`;
+    reportText.textContent = `${card.name} replaced your controlled player.`;
+    saveState();
+    render();
+    return;
+  }
+
   const placed = placeCardOnTeam(card, state.replaceSlot);
   if (placed.oldCard) {
     state.inventory = addCardToInventory(state.inventory, placed.oldCard);
@@ -641,6 +667,11 @@ function placeCardOnTeam(card, forcedSlot) {
   });
   state.teamCards[targetSpot.id] = card;
   return { ...card, targetSlot: targetSpot.slot, oldCard };
+}
+
+function isControlledSlot(slotId) {
+  const selectedStarSlot = state.selectedStarSlot || bestSlotIdForPosition(state.selectedStar?.position);
+  return Boolean(state.selectedStar && slotId === selectedStarSlot);
 }
 
 function canPlaySlot(card, slot) {
