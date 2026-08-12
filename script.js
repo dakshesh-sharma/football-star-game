@@ -931,7 +931,7 @@ function playerNode(player) {
   node.innerHTML = `
     <span class="pitch-player-head">
       <span>${shortName(player.name)}</span>
-      <strong>#${jerseyNumber(player)}</strong>
+      <strong>${jerseyNumber(player)}</strong>
     </span>
     <span class="pitch-card-rating">
       <strong>${ratingLabel(player)}</strong>
@@ -982,6 +982,7 @@ function selectReplaceSlot(player) {
 }
 
 function shortName(name) {
+  if (name === "Cristiano Ronaldo") return "Ronaldo";
   if (name.length <= 13) return name;
   const parts = name.split(" ");
   return parts.length > 1 ? parts[parts.length - 1] : `${name.slice(0, 12)}.`;
