@@ -929,9 +929,9 @@ function playerNode(player) {
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
-    <span class="pitch-jersey" aria-label="${shortName(player.name)} jersey number ${jerseyNumber(player)}">
-      <span class="jersey-name">${shortName(player.name)}</span>
-      <strong>${jerseyNumber(player)}</strong>
+    <span class="pitch-player-head">
+      <span>${shortName(player.name)}</span>
+      <strong>#${jerseyNumber(player)}</strong>
     </span>
     <span class="pitch-card-rating">
       <strong>${ratingLabel(player)}</strong>
