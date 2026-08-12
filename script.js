@@ -937,7 +937,6 @@ function playerNode(player) {
       <strong>${ratingLabel(player)}</strong>
       <span>${player.slot}</span>
     </span>
-    <span class="name">${shortName(player.name)}</span>
     <span class="tag">${player.controlled ? `YOU${isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
