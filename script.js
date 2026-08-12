@@ -929,7 +929,10 @@ function playerNode(player) {
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
-    <span class="pitch-jersey" aria-hidden="true"></span>
+    <span class="pitch-jersey" aria-label="${shortName(player.name)} jersey number ${jerseyNumber(player)}">
+      <span class="jersey-name">${shortName(player.name)}</span>
+      <strong>${jerseyNumber(player)}</strong>
+    </span>
     <span class="pitch-card-rating">
       <strong>${ratingLabel(player)}</strong>
       <span>${player.slot}</span>
@@ -939,6 +942,34 @@ function playerNode(player) {
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
   return node;
+}
+
+function jerseyNumber(player) {
+  const numbers = {
+    "Cristiano Ronaldo": 7,
+    IshowSpeed: 7,
+    "Lionel Messi": 10,
+    Neymar: 10,
+    "Neymar Jr": 10,
+    Mbappu: 99,
+    "Kylian Mbappe": 9,
+    "Lamine Yamal": 19,
+    Pele: 10,
+    "Diego Maradona": 10,
+    Xavi: 6,
+    Ronaldinho: 10,
+    "Ronaldo Nazario": 9,
+    "David Beckham": 7,
+    "Luka Modric": 10,
+    "Mohamed Salah": 11,
+    "Son Heung-min": 7
+  };
+  if (numbers[player.name]) return numbers[player.name];
+  if (player.slot === "GK") return 1;
+  if (player.slot === "CB") return Math.max(2, Math.min(6, Number(player.rating) - 82 || 4));
+  if (player.slot === "CM" || player.slot === "CDM") return Math.max(6, Math.min(8, Number(player.rating) - 80 || 8));
+  if (player.slot === "LW" || player.slot === "RW" || player.slot === "RM" || player.slot === "LM") return 11;
+  return 9;
 }
 
 function selectReplaceSlot(player) {
