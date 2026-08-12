@@ -929,6 +929,7 @@ function playerNode(player) {
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
+    <span class="pitch-jersey" aria-hidden="true"></span>
     <span class="pitch-card-rating">
       <strong>${ratingLabel(player)}</strong>
       <span>${player.slot}</span>
