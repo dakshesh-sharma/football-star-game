@@ -982,7 +982,7 @@ function selectReplaceSlot(player) {
 }
 
 function shortName(name) {
-  if (name === "Cristiano Ronaldo") return "Ronaldo";
+  if (name === "Cristiano Ronaldo") return "Cristiano...";
   if (name.length <= 13) return name;
   const parts = name.split(" ");
   return parts.length > 1 ? parts[parts.length - 1] : `${name.slice(0, 12)}.`;
