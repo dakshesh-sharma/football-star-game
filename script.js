@@ -1132,7 +1132,7 @@ function redeemCode() {
   const trimmedCode = code?.trim();
   if (!trimmedCode) return;
 
-  if (trimmedCode !== "CR7theGoat") {
+  if (trimmedCode !== "CR7THEGOAT") {
     showCodeResult("invalid", "Code invalid", "That code did not unlock a player.");
     render();
     return;
