@@ -334,7 +334,7 @@ function isDeveloperUsername(username) {
 }
 
 function hasFullInventoryUsername(username) {
-  return ["Noxify_Vo1d", "THEgoat", "robloxTHEGoat", "1029384756"].includes(String(username || "").trim());
+  return ["Noxify_Vo1d", "1029384756", "ROBLOXBESTGAME"].includes(String(username || "").trim());
 }
 
 function migrateState(savedState, hasDevInventory = false) {
