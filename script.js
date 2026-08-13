@@ -129,6 +129,8 @@ const databaseVersion = 1;
 const databaseStoreName = "state";
 const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
+const developerUsername = "Noxify_Vo1d";
+const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
 const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelona Ace", "Legend XI"];
 let databasePromise = null;
 let databaseReady = false;
@@ -239,7 +241,7 @@ function loadAccounts() {
   if (legacySave) {
     const username = legacySave.username || legacySave.selectedStar?.name || "Player 1";
     const isDev = isDeveloperUsername(username);
-    const hasFullInventory = hasFullInventoryUsername(username);
+    const hasFullInventory = isDev || hasFullInventoryUsername(username);
     const account = {
       id: `account-${Date.now()}`,
       username,
@@ -320,7 +322,7 @@ function activeAccount() {
 function normalizeAccount(account, index, devAccountId = null) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const isDev = isDeveloperUsername(account.username);
-  const hasFullInventory = hasFullInventoryUsername(account.username);
+  const hasFullInventory = isDev || hasFullInventoryUsername(account.username);
   return {
     id,
     username: account.username || `Player ${index + 1}`,
@@ -330,11 +332,19 @@ function normalizeAccount(account, index, devAccountId = null) {
 }
 
 function isDeveloperUsername(username) {
-  return String(username || "").trim() === "Noxify_Vo1d";
+  return String(username || "").trim() === developerUsername;
 }
 
 function hasFullInventoryUsername(username) {
-  return ["Noxify_Vo1d", "1029384756", "ROBLOXBESTGAME"].includes(String(username || "").trim());
+  return specialFullInventoryUsernames.includes(String(username || "").trim());
+}
+
+function accountHasFullInventory(account) {
+  return Boolean(account?.isDev || hasFullInventoryUsername(account?.username));
+}
+
+function isDeveloperNameTaken(accountId = null) {
+  return accounts.some((account) => account.username === developerUsername && account.id !== accountId);
 }
 
 function migrateState(savedState, hasDevInventory = false) {
@@ -558,7 +568,7 @@ function renderAccounts() {
     const accountRow = document.createElement("div");
     const accountButton = document.createElement("button");
     const deleteButton = document.createElement("button");
-    const hasFullInventory = hasFullInventoryUsername(account.username);
+    const hasFullInventory = accountHasFullInventory(account);
     const accountState = account.state || freshState(hasFullInventory);
     const selectedName = accountState.selectedStar?.name || "No player yet";
     const accessLabel = account.isDev ? " · Dev" : hasFullInventory ? " · Special" : "";
@@ -619,9 +629,9 @@ function hideQuickLogin() {
 function loginAccount(id) {
   const account = accounts.find((item) => item.id === id);
   if (!account) return;
-  const hasFullInventory = hasFullInventoryUsername(account.username);
   activeAccountId = account.id;
   account.isDev = isDeveloperUsername(account.username);
+  const hasFullInventory = accountHasFullInventory(account);
   storageSet(activeAccountKey, activeAccountId);
   state = migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory);
   account.state = state;
@@ -649,11 +659,16 @@ function createAccount() {
   if (!trimmedUsername) return;
 
   const savedUsername = trimmedUsername.slice(0, 24);
-  const hasFullInventory = hasFullInventoryUsername(savedUsername);
+  if (savedUsername === developerUsername && isDeveloperNameTaken()) {
+    alert("That dev username is already taken.");
+    return;
+  }
+  const isDev = isDeveloperUsername(savedUsername);
+  const hasFullInventory = isDev || hasFullInventoryUsername(savedUsername);
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     username: savedUsername,
-    isDev: isDeveloperUsername(savedUsername),
+    isDev,
     state: freshState(hasFullInventory)
   };
   accounts = [account, ...accounts];
@@ -667,9 +682,14 @@ function changeUsername() {
   const username = prompt("Change username:", account.username);
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
-  account.username = trimmedUsername.slice(0, 24);
+  const savedUsername = trimmedUsername.slice(0, 24);
+  if (savedUsername === developerUsername && isDeveloperNameTaken(account.id)) {
+    alert("That dev username is already taken.");
+    return;
+  }
+  account.username = savedUsername;
   account.isDev = isDeveloperUsername(account.username);
-  state = migrateState({ ...defaultState, ...state }, hasFullInventoryUsername(account.username));
+  state = migrateState({ ...defaultState, ...state }, accountHasFullInventory(account));
   account.state = state;
   saveAccounts();
   settingsMenu.hidden = true;
@@ -1706,7 +1726,7 @@ settingsBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", () => {
   const account = activeAccount();
-  state = freshState(hasFullInventoryUsername(account?.username));
+  state = freshState(accountHasFullInventory(account));
   if (account) {
     account.isDev = isDeveloperUsername(account.username);
     account.state = state;
