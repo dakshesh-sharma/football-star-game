@@ -345,10 +345,19 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
+  savedState.inventory = savedState.inventory.filter((card) => !isExcludedFullInventoryGrant(card));
   if (!hasDevInventory) {
     savedState.inventory = savedState.inventory.filter((card) => !isDevGrantedCard(card));
   }
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
+  if (isExcludedFullInventoryGrant(savedState.selectedStar)) {
+    savedState.selectedStar = null;
+    savedState.selectedStarSlot = null;
+  }
+  if (isExcludedFullInventoryGrant(savedState.currentCard)) {
+    savedState.currentCard = null;
+    savedState.currentCardSaved = false;
+  }
   if (!hasDevInventory && isDevGrantedCard(savedState.selectedStar)) {
     savedState.selectedStar = null;
     savedState.selectedStarSlot = null;
@@ -367,6 +376,7 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.teamCards = Object.fromEntries(
     Object.entries(savedState.teamCards || {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
+      if (isExcludedFullInventoryGrant(enrichedCard)) return [];
       if (!hasDevInventory && isDevGrantedCard(enrichedCard)) return [];
       return enrichedCard ? [[slotIdFromSave(slot, enrichedCard), enrichedCard]] : [];
     })
@@ -390,6 +400,10 @@ function isDevGrantedCard(card) {
   return card?.specialAccess || id.startsWith("owned-") || id.startsWith("guaranteed-");
 }
 
+function isExcludedFullInventoryGrant(card) {
+  return card?.name === "Cristiano Ronaldo" && String(card?.id || "").startsWith("owned-");
+}
+
 function enrichCard(card) {
   if (!card?.name) return null;
   const fullCard = [...cardPool, ...codeOnlyCards].find((item) => item.name === card.name);
@@ -397,10 +411,12 @@ function enrichCard(card) {
 }
 
 function allInventoryCards() {
-  return cardPool.map((card) => ({
-    ...card,
-    id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
-  }));
+  return cardPool
+    .filter((card) => card.name !== "Cristiano Ronaldo")
+    .map((card) => ({
+      ...card,
+      id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
+    }));
 }
 
 function slotIdFromSave(slot, card) {
