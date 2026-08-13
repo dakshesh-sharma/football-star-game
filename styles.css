@@ -1513,6 +1513,72 @@ h3 {
   display: none;
 }
 
+.game-prompt-overlay {
+  align-items: center;
+  background: rgba(5, 8, 8, 0.76);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 60;
+}
+
+.game-prompt-overlay[hidden] {
+  display: none;
+}
+
+.game-prompt-box {
+  background: rgba(18, 26, 24, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5);
+  display: grid;
+  gap: 14px;
+  max-width: 430px;
+  padding: 22px;
+  width: min(430px, 100%);
+}
+
+.game-prompt-box h2 {
+  font-size: 1.35rem;
+  text-align: center;
+}
+
+.game-prompt-field {
+  display: grid;
+  gap: 8px;
+}
+
+.game-prompt-field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.game-prompt-field input {
+  background: #0e1515;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  min-height: 48px;
+  outline: none;
+  padding: 0 12px;
+}
+
+.game-prompt-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.18);
+}
+
+.game-prompt-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .account-list {
   display: grid;
   gap: 10px;

@@ -177,6 +177,7 @@ if (activeAccountId && !accounts.some((account) => account.id === activeAccountI
   storageRemove(activeAccountKey);
 }
 let state = loadState();
+let activePromptSubmit = null;
 
 const starList = document.querySelector("#starList");
 const layout = document.querySelector(".layout");
@@ -220,6 +221,14 @@ const quickLoginTitle = document.querySelector("#quickLoginTitle");
 const quickLoginMessage = document.querySelector("#quickLoginMessage");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
+const gamePromptOverlay = document.querySelector("#gamePromptOverlay");
+const gamePromptForm = document.querySelector("#gamePromptForm");
+const gamePromptTitle = document.querySelector("#gamePromptTitle");
+const gamePromptLabel = document.querySelector("#gamePromptLabel");
+const gamePromptInput = document.querySelector("#gamePromptInput");
+const gamePromptMessage = document.querySelector("#gamePromptMessage");
+const gamePromptCancelBtn = document.querySelector("#gamePromptCancelBtn");
+const gamePromptSubmitBtn = document.querySelector("#gamePromptSubmitBtn");
 const matchPanel = document.querySelector("#matchPanel");
 const homeLeaderLabel = document.querySelector("#homeLeaderLabel");
 const awayLeaderLabel = document.querySelector("#awayLeaderLabel");
@@ -717,6 +726,34 @@ function clearQuickLoginMessage() {
   quickLoginMessage.hidden = true;
 }
 
+function openGamePrompt({ title, label, value = "", submitLabel = "OK", onSubmit }) {
+  activePromptSubmit = onSubmit;
+  gamePromptTitle.textContent = title;
+  gamePromptLabel.textContent = label;
+  gamePromptInput.value = value;
+  gamePromptMessage.hidden = true;
+  gamePromptMessage.textContent = "";
+  gamePromptSubmitBtn.textContent = submitLabel;
+  gamePromptOverlay.hidden = false;
+  requestAnimationFrame(() => {
+    gamePromptInput.focus();
+    gamePromptInput.select();
+  });
+}
+
+function closeGamePrompt() {
+  activePromptSubmit = null;
+  gamePromptOverlay.hidden = true;
+  gamePromptForm.reset();
+  gamePromptMessage.hidden = true;
+  gamePromptMessage.textContent = "";
+}
+
+function showGamePromptMessage(message) {
+  gamePromptMessage.textContent = message;
+  gamePromptMessage.hidden = false;
+}
+
 function loginAccount(id) {
   const account = accounts.find((item) => item.id === id);
   if (!account) return;
@@ -745,13 +782,22 @@ function logoutAccount() {
 }
 
 function createAccount() {
-  const username = prompt("Choose a username:", `Player ${accounts.length + 1}`);
+  openGamePrompt({
+    title: "Create Account",
+    label: "Choose a username",
+    value: `Player ${accounts.length + 1}`,
+    submitLabel: "Create",
+    onSubmit: finishCreateAccount
+  });
+}
+
+function finishCreateAccount(username) {
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
 
   const savedUsername = trimmedUsername.slice(0, 24);
   if (savedUsername === developerUsername && isDeveloperNameTaken()) {
-    showQuickLoginMessage("That dev username is already taken.");
+    showGamePromptMessage("That dev username is already taken.");
     return;
   }
   const isDev = isDeveloperUsername(savedUsername);
@@ -764,19 +810,30 @@ function createAccount() {
   };
   accounts = [account, ...accounts];
   saveAccounts();
+  closeGamePrompt();
   loginAccount(account.id);
 }
 
 function changeUsername() {
   const account = activeAccount();
   if (!account) return;
-  const username = prompt("Change username:", account.username);
+  openGamePrompt({
+    title: "Change Username",
+    label: "New username",
+    value: account.username,
+    submitLabel: "Save",
+    onSubmit: finishChangeUsername
+  });
+}
+
+function finishChangeUsername(username) {
+  const account = activeAccount();
+  if (!account) return;
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
   const savedUsername = trimmedUsername.slice(0, 24);
   if (savedUsername === developerUsername && isDeveloperNameTaken(account.id)) {
-    showQuickLogin();
-    showQuickLoginMessage("That dev username is already taken.");
+    showGamePromptMessage("That dev username is already taken.");
     return;
   }
   account.username = savedUsername;
@@ -786,6 +843,7 @@ function changeUsername() {
   saveAccounts();
   settingsMenu.hidden = true;
   settingsBtn.setAttribute("aria-expanded", "false");
+  closeGamePrompt();
   render();
 }
 
@@ -1256,17 +1314,27 @@ function redeemCode() {
     return;
   }
 
-  const code = prompt("Enter code:");
+  openGamePrompt({
+    title: "Redeem Code",
+    label: "Enter code",
+    submitLabel: "Redeem",
+    onSubmit: finishRedeemCode
+  });
+}
+
+function finishRedeemCode(code) {
   const trimmedCode = code?.trim();
   if (!trimmedCode) return;
 
   if (trimmedCode !== "CR7THEGOAT") {
+    closeGamePrompt();
     showCodeResult("invalid", "Code invalid", "That code did not unlock a player.");
     render();
     return;
   }
 
   if (state.redeemedCodes.includes(trimmedCode) || ownedPlayerNames().has("IshowSpeed")) {
+    closeGamePrompt();
     showCodeResult("invalid", "Code already used", "IshowSpeed is already in this account.");
     render();
     return;
@@ -1280,6 +1348,7 @@ function redeemCode() {
   state.redeemedCodes = uniqueNames([...state.redeemedCodes, trimmedCode]);
   state.inventoryOpen = true;
   showCodeResult("success", "Code succeeded", "IshowSpeed joined your inventory as a Legend Portugal card.");
+  closeGamePrompt();
   saveState();
   render();
 }
@@ -1811,6 +1880,15 @@ accountToggleBtn.addEventListener("click", () => {
 });
 changeUsernameBtn.addEventListener("click", changeUsername);
 createAccountBtn.addEventListener("click", createAccount);
+gamePromptForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!activePromptSubmit) return;
+  activePromptSubmit(gamePromptInput.value);
+});
+gamePromptCancelBtn.addEventListener("click", closeGamePrompt);
+gamePromptOverlay.addEventListener("click", (event) => {
+  if (event.target === gamePromptOverlay) closeGamePrompt();
+});
 settingsBtn.addEventListener("click", () => {
   const willOpen = settingsMenu.hidden;
   settingsMenu.hidden = !willOpen;
