@@ -287,10 +287,10 @@ function loadState() {
   return account?.state || freshState(false);
 }
 
-function freshState(hasDevInventory = false) {
+function freshState(inventoryGrant = false) {
   return {
     ...defaultState,
-    inventory: hasDevInventory ? allInventoryCards() : [],
+    inventory: inventoryGrant ? allInventoryCards(inventoryGrant) : [],
     teamCards: {},
     deletedCardNames: [],
     playerStats: {},
@@ -347,12 +347,12 @@ function normalizeAccounts(savedAccounts, preferredActiveAccountId = null) {
 function normalizeAccount(account, index) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const isDev = isDeveloperUsername(account.username);
-  const hasFullInventory = isDev || hasFullInventoryUsername(account.username);
+  const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(account.username) ? "special" : false;
   return {
     id,
     username: account.username || `Player ${index + 1}`,
     isDev,
-    state: migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory)
+    state: migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant)
   };
 }
 
@@ -408,15 +408,19 @@ function hasFullInventoryUsername(username) {
   return specialFullInventoryUsernames.includes(String(username || "").trim());
 }
 
-function accountHasFullInventory(account) {
-  return Boolean(account?.isDev || hasFullInventoryUsername(account?.username));
+function accountInventoryGrant(account) {
+  if (account?.isDev) return "dev";
+  if (hasFullInventoryUsername(account?.username)) return "special";
+  return false;
 }
 
 function isDeveloperNameTaken(accountId = null) {
   return accounts.some((account) => account.username === developerUsername && account.id !== accountId);
 }
 
-function migrateState(savedState, hasDevInventory = false) {
+function migrateState(savedState, inventoryGrant = false) {
+  const hasFullInventory = Boolean(inventoryGrant);
+  const isDeveloperInventory = inventoryGrant === "dev";
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.redeemedCodes = savedState.redeemedCodes || [];
@@ -424,24 +428,26 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
-  savedState.inventory = savedState.inventory.filter((card) => !isExcludedFullInventoryGrant(card));
-  if (!hasDevInventory) {
+  if (!isDeveloperInventory) {
+    savedState.inventory = savedState.inventory.filter((card) => !isExcludedFullInventoryGrant(card));
+  }
+  if (!hasFullInventory) {
     savedState.inventory = savedState.inventory.filter((card) => !isDevGrantedCard(card));
   }
   savedState.currentCard = savedState.currentCard ? enrichCard(savedState.currentCard) : null;
-  if (isExcludedFullInventoryGrant(savedState.selectedStar)) {
+  if (!isDeveloperInventory && isExcludedFullInventoryGrant(savedState.selectedStar)) {
     savedState.selectedStar = null;
     savedState.selectedStarSlot = null;
   }
-  if (isExcludedFullInventoryGrant(savedState.currentCard)) {
+  if (!isDeveloperInventory && isExcludedFullInventoryGrant(savedState.currentCard)) {
     savedState.currentCard = null;
     savedState.currentCardSaved = false;
   }
-  if (!hasDevInventory && isDevGrantedCard(savedState.selectedStar)) {
+  if (!hasFullInventory && isDevGrantedCard(savedState.selectedStar)) {
     savedState.selectedStar = null;
     savedState.selectedStarSlot = null;
   }
-  if (!hasDevInventory && isDevGrantedCard(savedState.currentCard)) {
+  if (!hasFullInventory && isDevGrantedCard(savedState.currentCard)) {
     savedState.currentCard = null;
     savedState.currentCardSaved = false;
   }
@@ -455,8 +461,8 @@ function migrateState(savedState, hasDevInventory = false) {
   savedState.teamCards = Object.fromEntries(
     Object.entries(savedState.teamCards || {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
-      if (isExcludedFullInventoryGrant(enrichedCard)) return [];
-      if (!hasDevInventory && isDevGrantedCard(enrichedCard)) return [];
+      if (!isDeveloperInventory && isExcludedFullInventoryGrant(enrichedCard)) return [];
+      if (!hasFullInventory && isDevGrantedCard(enrichedCard)) return [];
       return enrichedCard ? [[slotIdFromSave(slot, enrichedCard), enrichedCard]] : [];
     })
   );
@@ -465,7 +471,7 @@ function migrateState(savedState, hasDevInventory = false) {
     ...Object.values(savedState.teamCards),
     savedState.selectedStar,
     savedState.currentCard,
-    ...(hasDevInventory ? allInventoryCards() : [])
+    ...(hasFullInventory ? allInventoryCards(inventoryGrant) : [])
   ]);
   if (savedState.selectedStar && (!savedState.selectedStarSlot || savedState.selectedStar.position === "CF")) {
     savedState.selectedStarSlot = bestSlotIdForPosition(savedState.selectedStar.position);
@@ -490,9 +496,10 @@ function enrichCard(card) {
   return fullCard ? { ...card, ...fullCard, id: card.id } : card;
 }
 
-function allInventoryCards() {
-  return cardPool
-    .filter((card) => card.name !== "Cristiano Ronaldo")
+function allInventoryCards(inventoryGrant = "special") {
+  const sourceCards = inventoryGrant === "dev" ? [...cardPool, ...codeOnlyCards] : cardPool;
+  return sourceCards
+    .filter((card) => inventoryGrant === "dev" || card.name !== "Cristiano Ronaldo")
     .map((card) => ({
       ...card,
       id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
@@ -638,8 +645,9 @@ function renderAccounts() {
     const accountRow = document.createElement("div");
     const accountButton = document.createElement("button");
     const deleteButton = document.createElement("button");
-    const hasFullInventory = accountHasFullInventory(account);
-    const accountState = account.state || freshState(hasFullInventory);
+    const inventoryGrant = accountInventoryGrant(account);
+    const hasFullInventory = Boolean(inventoryGrant);
+    const accountState = account.state || freshState(inventoryGrant);
     const selectedName = accountState.selectedStar?.name || "No player yet";
     const accessLabel = account.isDev ? " · Dev" : hasFullInventory ? " · Special" : "";
     accountRow.className = "account-row";
@@ -701,9 +709,9 @@ function loginAccount(id) {
   if (!account) return;
   activeAccountId = account.id;
   account.isDev = isDeveloperUsername(account.username);
-  const hasFullInventory = accountHasFullInventory(account);
+  const inventoryGrant = accountInventoryGrant(account);
   storageSet(activeAccountKey, activeAccountId);
-  state = migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory);
+  state = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
   account.state = state;
   saveAccounts();
   hideQuickLogin();
@@ -734,12 +742,12 @@ function createAccount() {
     return;
   }
   const isDev = isDeveloperUsername(savedUsername);
-  const hasFullInventory = isDev || hasFullInventoryUsername(savedUsername);
+  const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(savedUsername) ? "special" : false;
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     username: savedUsername,
     isDev,
-    state: freshState(hasFullInventory)
+    state: freshState(inventoryGrant)
   };
   accounts = [account, ...accounts];
   saveAccounts();
@@ -759,7 +767,7 @@ function changeUsername() {
   }
   account.username = savedUsername;
   account.isDev = isDeveloperUsername(account.username);
-  state = migrateState({ ...defaultState, ...state }, accountHasFullInventory(account));
+  state = migrateState({ ...defaultState, ...state }, accountInventoryGrant(account));
   account.state = state;
   saveAccounts();
   settingsMenu.hidden = true;
@@ -1796,7 +1804,7 @@ settingsBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", () => {
   const account = activeAccount();
-  state = freshState(accountHasFullInventory(account));
+  state = freshState(accountInventoryGrant(account));
   if (account) {
     account.isDev = isDeveloperUsername(account.username);
     account.state = state;
