@@ -131,6 +131,24 @@ const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
 const developerUsername = "Noxify_Vo1d";
 const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
+const redeemableCodes = {
+  DAILY: { type: "xp", xp: 300, daily: true, message: "Daily XP claimed." },
+  WELCOME: { type: "xp", xp: 250, message: "Welcome bonus claimed." },
+  FCSTARS: { type: "xp", xp: 500, message: "FC Stars bonus claimed." },
+  LEVELUP: { type: "xp", xp: 1000, message: "Level boost claimed." },
+  LAUNCHDAY: { type: "xp", xp: 1500, expires: "2026-09-01", message: "Limited launch reward claimed." },
+  CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as a Legend Portugal card." }
+};
+const levelRewards = {
+  2: { type: "unlock", message: "Level 2 reward: better spin reveal unlocked." },
+  3: { type: "card", rarity: "Gold", message: "Level 3 reward: guaranteed Gold card." },
+  5: { type: "unlock", message: "Level 5 reward: real-player trials unlocked." },
+  7: { type: "xp", xp: 750, message: "Level 7 reward: 750 bonus XP." },
+  10: { type: "card", rarity: "Elite", message: "Level 10 reward: guaranteed Elite card." },
+  15: { type: "card", rarity: "Icon", message: "Level 15 reward: guaranteed Icon card." },
+  25: { type: "badge", message: "Level 25 reward: FC Stars badge title unlocked." },
+  50: { type: "badge", message: "Level 50 reward: G.O.A.T profile glow unlocked." }
+};
 const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelona Ace", "Legend XI"];
 let databasePromise = null;
 let databaseReady = false;
@@ -165,6 +183,8 @@ const defaultState = {
   currentCardSaved: false,
   deletedCardNames: [],
   redeemedCodes: [],
+  claimedLevelRewards: [],
+  badges: [],
   playerStats: {},
   joinRequest: null,
   activeMatch: null
@@ -402,6 +422,8 @@ function mergeStates(baseState, incomingState) {
     teamCards: { ...(baseState.teamCards || {}), ...(incomingState.teamCards || {}) },
     deletedCardNames: uniqueNames([...(baseState.deletedCardNames || []), ...(incomingState.deletedCardNames || [])]),
     redeemedCodes: uniqueNames([...(baseState.redeemedCodes || []), ...(incomingState.redeemedCodes || [])]),
+    claimedLevelRewards: uniqueNames([...(baseState.claimedLevelRewards || []), ...(incomingState.claimedLevelRewards || [])]),
+    badges: uniqueNames([...(baseState.badges || []), ...(incomingState.badges || [])]),
     playerStats: { ...(baseState.playerStats || {}), ...(incomingState.playerStats || {}) },
     selectedStar: baseState.selectedStar || incomingState.selectedStar || null,
     selectedStarSlot: baseState.selectedStarSlot || incomingState.selectedStarSlot || null,
@@ -434,6 +456,8 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.redeemedCodes = savedState.redeemedCodes || [];
+  savedState.claimedLevelRewards = savedState.claimedLevelRewards || [];
+  savedState.badges = savedState.badges || [];
   savedState.playerStats = savedState.playerStats || {};
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
@@ -1054,6 +1078,53 @@ function addGoalForPlayer(name) {
   return state.playerStats[name].goals;
 }
 
+function xpForNextLevel(level = state.level) {
+  return 500 + (Math.max(1, level) - 1) * 250;
+}
+
+function addXp(amount) {
+  state.xp = Math.max(0, (state.xp || 0) + amount);
+  const leveledUpTo = [];
+  const rewardMessages = [];
+
+  while (state.xp >= xpForNextLevel(state.level)) {
+    state.xp -= xpForNextLevel(state.level);
+    state.level += 1;
+    leveledUpTo.push(state.level);
+    rewardMessages.push(...claimLevelRewards(state.level));
+  }
+
+  return { leveledUpTo, rewardMessages };
+}
+
+function claimLevelRewards(level) {
+  const reward = levelRewards[level];
+  if (!reward || state.claimedLevelRewards.includes(String(level))) return [];
+
+  state.claimedLevelRewards = uniqueNames([...state.claimedLevelRewards, String(level)]);
+  if (reward.type === "xp") {
+    state.xp += reward.xp;
+    return [reward.message];
+  }
+  if (reward.type === "card") {
+    const card = guaranteedCardForRarity(reward.rarity);
+    if (!card) return [`${reward.message} Already owned every ${reward.rarity} card.`];
+    state.inventory = addCardToInventory(state.inventory, card);
+    return [`${reward.message} ${card.name} added to inventory.`];
+  }
+  if (reward.type === "badge") {
+    state.badges = uniqueNames([...state.badges, reward.message]);
+  }
+  return [reward.message];
+}
+
+function guaranteedCardForRarity(rarity) {
+  const card = cardPool
+    .filter((item) => item.rarity === rarity && !item.specialAccess && !ownedPlayerNames().has(item.name))
+    .sort((a, b) => ratingSortValue(b) - ratingSortValue(a) || a.name.localeCompare(b.name))[0];
+  return card ? { ...card, id: `reward-${rarity.toLowerCase()}-${Date.now()}-${Math.random().toString(16).slice(2)}` } : null;
+}
+
 function celebrationFor(player) {
   if (player.name.includes("Ronaldo")) return "Siuu";
   if (player.name.includes("Messi")) return "Ankara Messi";
@@ -1323,34 +1394,78 @@ function redeemCode() {
 }
 
 function finishRedeemCode(code) {
-  const trimmedCode = code?.trim();
+  const trimmedCode = code?.trim().toUpperCase();
   if (!trimmedCode) return;
+  const reward = redeemableCodes[trimmedCode];
+  const redeemedCodeKey = reward?.daily ? `${trimmedCode}-${localDateKey()}` : trimmedCode;
 
-  if (trimmedCode !== "CR7THEGOAT") {
+  if (!reward) {
     closeGamePrompt();
     showCodeResult("invalid", "Code invalid", "That code did not unlock a player.");
     render();
     return;
   }
 
-  if (state.redeemedCodes.includes(trimmedCode) || ownedPlayerNames().has("IshowSpeed")) {
+  if (isCodeExpired(reward)) {
     closeGamePrompt();
-    showCodeResult("invalid", "Code already used", "IshowSpeed is already in this account.");
+    showCodeResult("invalid", "Code expired", `${trimmedCode} is no longer active.`);
     render();
     return;
   }
 
-  const speedCard = {
-    ...codeOnlyCards[0],
-    id: `code-ishowspeed-${Date.now()}`
-  };
-  state.inventory = addCardToInventory(state.inventory, speedCard);
-  state.redeemedCodes = uniqueNames([...state.redeemedCodes, trimmedCode]);
+  if (state.redeemedCodes.includes(redeemedCodeKey)) {
+    closeGamePrompt();
+    showCodeResult("invalid", "Code already used", reward.daily
+      ? `${trimmedCode} was already used today.`
+      : `${trimmedCode} was already used on this account.`);
+    render();
+    return;
+  }
+
+  const rewardMessages = [];
+  if (reward.type === "player") {
+    const playerCard = codeOnlyCards.find((card) => card.name === reward.player);
+    if (!playerCard || ownedPlayerNames().has(playerCard.name)) {
+      closeGamePrompt();
+      showCodeResult("invalid", "Code already used", `${reward.player} is already in this account.`);
+      render();
+      return;
+    }
+    state.inventory = addCardToInventory(state.inventory, {
+      ...playerCard,
+      id: `code-${playerCard.name.toLowerCase()}-${Date.now()}`
+    });
+    rewardMessages.push(reward.message);
+  }
+
+  if (reward.type === "xp") {
+    const result = addXp(reward.xp);
+    rewardMessages.push(`${reward.message} +${reward.xp} XP.`);
+    if (result.leveledUpTo.length) {
+      rewardMessages.push(`Leveled up to Level ${result.leveledUpTo[result.leveledUpTo.length - 1]}.`);
+    }
+    rewardMessages.push(...result.rewardMessages);
+  }
+
+  state.redeemedCodes = uniqueNames([...state.redeemedCodes, redeemedCodeKey]);
   state.inventoryOpen = true;
-  showCodeResult("success", "Code succeeded", "IshowSpeed joined your inventory as a Legend Portugal card.");
+  showCodeResult("success", "Code succeeded", rewardMessages.join(" "));
   closeGamePrompt();
   saveState();
   render();
+}
+
+function isCodeExpired(reward) {
+  if (!reward.expires) return false;
+  const expiresAt = new Date(`${reward.expires}T23:59:59`);
+  return Date.now() > expiresAt.getTime();
+}
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function showCodeResult(type, title, text) {
@@ -1760,15 +1875,25 @@ function wikiPageName(name) {
 
 function renderStatus() {
   const account = activeAccount();
+  const nextXp = xpForNextLevel(state.level);
   selectedPlayerLabel.textContent = state.selectedStar
     ? `${account?.username || "Guest"} · ${state.selectedStar.name} · ${state.selectedStar.team}`
     : `${account?.username || "Guest"} · Spin your player`;
-  levelLabel.textContent = `Level ${state.level}`;
+  levelLabel.textContent = `Level ${state.level} · ${state.xp}/${nextXp} XP`;
   unlockText.textContent = state.level >= 5
-    ? "Unlocked: stronger rival teams. Online real players can be added later."
-    : "Reach Level 5 to unlock stronger rival teams.";
+    ? nextLevelRewardLabel()
+    : `Reach Level 5 to unlock stronger rival teams. Next level: ${nextXp - state.xp} XP.`;
   accountToggleBtn.textContent = account ? "Logout" : "Login";
   changeUsernameBtn.hidden = !account;
+}
+
+function nextLevelRewardLabel() {
+  const nextRewardLevel = Object.keys(levelRewards)
+    .map(Number)
+    .filter((level) => level > state.level)
+    .sort((a, b) => a - b)[0];
+  if (!nextRewardLevel) return "Unlocked: stronger rival teams. More rewards coming soon.";
+  return `Next reward at Level ${nextRewardLevel}: ${levelRewards[nextRewardLevel].message}`;
 }
 
 function renderMatch() {
