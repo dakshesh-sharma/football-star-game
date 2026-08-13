@@ -283,6 +283,24 @@ h3 {
   margin-top: 14px;
 }
 
+.selector-report-card.code-success {
+  border-color: rgba(84, 255, 159, 0.72);
+  box-shadow: 0 0 0 2px rgba(84, 255, 159, 0.18), 0 0 24px rgba(84, 255, 159, 0.18);
+}
+
+.selector-report-card.code-invalid {
+  border-color: rgba(255, 92, 92, 0.78);
+  box-shadow: 0 0 0 2px rgba(255, 92, 92, 0.18), 0 0 24px rgba(255, 92, 92, 0.16);
+}
+
+.selector-report-card.code-success h3 {
+  color: #54ff9f;
+}
+
+.selector-report-card.code-invalid h3 {
+  color: #ff8a8a;
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: 1fr;

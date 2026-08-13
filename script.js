@@ -198,6 +198,7 @@ const inventoryPanel = document.querySelector("#inventoryPanel");
 const inventoryCount = document.querySelector("#inventoryCount");
 const replaceHint = document.querySelector("#replaceHint");
 const clearReplaceFilterBtn = document.querySelector("#clearReplaceFilterBtn");
+const selectorReportCard = document.querySelector("#selectorReportCard");
 const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
@@ -1132,15 +1133,13 @@ function redeemCode() {
   if (!trimmedCode) return;
 
   if (trimmedCode !== "CR7theGoat") {
-    reportTitle.textContent = "Invalid code";
-    reportText.textContent = "That code did not unlock a player.";
+    showCodeResult("invalid", "Code invalid", "That code did not unlock a player.");
     render();
     return;
   }
 
   if (state.redeemedCodes.includes(trimmedCode) || ownedPlayerNames().has("IshowSpeed")) {
-    reportTitle.textContent = "Code already used";
-    reportText.textContent = "IshowSpeed is already in this account.";
+    showCodeResult("invalid", "Code already used", "IshowSpeed is already in this account.");
     render();
     return;
   }
@@ -1152,10 +1151,16 @@ function redeemCode() {
   state.inventory = addCardToInventory(state.inventory, speedCard);
   state.redeemedCodes = uniqueNames([...state.redeemedCodes, trimmedCode]);
   state.inventoryOpen = true;
-  reportTitle.textContent = "Code redeemed";
-  reportText.textContent = "IshowSpeed joined your inventory as a Legend Portugal card.";
+  showCodeResult("success", "Code succeeded", "IshowSpeed joined your inventory as a Legend Portugal card.");
   saveState();
   render();
+}
+
+function showCodeResult(type, title, text) {
+  selectorReportCard.classList.remove("code-success", "code-invalid");
+  selectorReportCard.classList.add(type === "success" ? "code-success" : "code-invalid");
+  reportTitle.textContent = title;
+  reportText.textContent = text;
 }
 
 function uniqueCards(cards) {
