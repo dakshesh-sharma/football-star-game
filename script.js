@@ -234,7 +234,9 @@ function loadAccounts() {
   const storedActiveAccountId = storageGet(activeAccountKey);
   const savedAccounts = safeJson(storageGet(accountsKey));
   if (Array.isArray(savedAccounts) && savedAccounts.length) {
-    return savedAccounts.map((account, index) => normalizeAccount(account, index, storedActiveAccountId));
+    const normalizedAccounts = normalizeAccounts(savedAccounts, storedActiveAccountId);
+    storageSet(accountsKey, JSON.stringify(normalizedAccounts));
+    return normalizedAccounts;
   }
 
   const legacySave = safeJson(storageGet(saveKey));
@@ -319,7 +321,15 @@ function activeAccount() {
   return accounts.find((account) => account.id === activeAccountId) || null;
 }
 
-function normalizeAccount(account, index, devAccountId = null) {
+function normalizeAccounts(savedAccounts, preferredActiveAccountId = null) {
+  const devAccount = savedAccounts.find((account) => account.id === preferredActiveAccountId && isDeveloperUsername(account.username))
+    || savedAccounts.find((account) => isDeveloperUsername(account.username));
+  return savedAccounts
+    .filter((account) => !isDeveloperUsername(account.username) || account.id === devAccount?.id)
+    .map((account, index) => normalizeAccount(account, index, preferredActiveAccountId));
+}
+
+function normalizeAccount(account, index) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const isDev = isDeveloperUsername(account.username);
   const hasFullInventory = isDev || hasFullInventoryUsername(account.username);
@@ -411,7 +421,8 @@ function isDevGrantedCard(card) {
 }
 
 function isExcludedFullInventoryGrant(card) {
-  return card?.name === "Cristiano Ronaldo" && String(card?.id || "").startsWith("owned-");
+  const id = String(card?.id || "");
+  return card?.name === "Cristiano Ronaldo" && (id.startsWith("owned-") || id.startsWith("guaranteed-"));
 }
 
 function enrichCard(card) {
@@ -507,7 +518,7 @@ function hydrateFromLocalDatabase() {
         return;
       }
 
-      accounts = databaseAccounts.map((account, index) => normalizeAccount(account, index, databaseActiveAccountId));
+      accounts = normalizeAccounts(databaseAccounts, databaseActiveAccountId);
       activeAccountId = databaseActiveAccountId && accounts.some((account) => account.id === databaseActiveAccountId)
         ? databaseActiveAccountId
         : null;
