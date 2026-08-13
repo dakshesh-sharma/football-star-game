@@ -137,6 +137,12 @@ const redeemableCodes = {
   FCSTARS: { type: "xp", xp: 500, message: "FC Stars bonus claimed." },
   LEVELUP: { type: "xp", xp: 1000, message: "Level boost claimed." },
   LAUNCHDAY: { type: "xp", xp: 1500, expires: "2026-09-01", message: "Limited launch reward claimed." },
+  NOXIFYINFINITE: {
+    type: "infiniteLevel",
+    ownerOnly: true,
+    expiresAt: "2026-08-13T21:25:00+05:30",
+    message: "Owner infinite level activated."
+  },
   CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as a Legend Portugal card." }
 };
 const levelRewards = {
@@ -174,6 +180,7 @@ const defaultState = {
   selectedStar: null,
   level: 1,
   xp: 0,
+  infiniteLevel: false,
   inventory: [],
   teamCards: {},
   selectedStarSlot: null,
@@ -418,6 +425,7 @@ function mergeStates(baseState, incomingState) {
     ...incomingState,
     level: Math.max(baseState.level || 1, incomingState.level || 1),
     xp: Math.max(baseState.xp || 0, incomingState.xp || 0),
+    infiniteLevel: Boolean(baseState.infiniteLevel || incomingState.infiniteLevel),
     inventory: uniqueCards([...(baseState.inventory || []), ...(incomingState.inventory || [])]),
     teamCards: { ...(baseState.teamCards || {}), ...(incomingState.teamCards || {}) },
     deletedCardNames: uniqueNames([...(baseState.deletedCardNames || []), ...(incomingState.deletedCardNames || [])]),
@@ -453,6 +461,9 @@ function isDeveloperNameTaken(accountId = null) {
 function migrateState(savedState, inventoryGrant = false) {
   const hasFullInventory = Boolean(inventoryGrant);
   const isDeveloperInventory = inventoryGrant === "dev";
+  savedState.level = Number.isFinite(Number(savedState.level)) && Number(savedState.level) > 0 ? Number(savedState.level) : 1;
+  savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
+  savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.redeemedCodes = savedState.redeemedCodes || [];
@@ -684,12 +695,13 @@ function renderAccounts() {
     const accountState = account.state || freshState(inventoryGrant);
     const selectedName = accountState.selectedStar?.name || "No player yet";
     const accessLabel = account.isDev ? " · Dev" : hasFullInventory ? " · Special" : "";
+    const accountLevel = levelDisplay(accountState.level || 1, accountState.infiniteLevel);
     accountRow.className = "account-row";
     accountButton.className = "account-card secondary";
     accountButton.type = "button";
     accountButton.innerHTML = `
       <strong>${account.username}</strong>
-      <span>${selectedName} · Level ${accountState.level || 1}${accessLabel}</span>
+      <span>${selectedName} · Level ${accountLevel}${accessLabel}</span>
     `;
     deleteButton.className = "account-delete-btn secondary danger-btn";
     deleteButton.type = "button";
@@ -1082,7 +1094,18 @@ function xpForNextLevel(level = state.level) {
   return 500 + (Math.max(1, level) - 1) * 250;
 }
 
+function hasInfiniteLevel() {
+  return Boolean(state.infiniteLevel);
+}
+
+function levelDisplay(level = state.level, infiniteLevel = state.infiniteLevel) {
+  return infiniteLevel ? "∞" : level;
+}
+
 function addXp(amount) {
+  if (hasInfiniteLevel()) {
+    return { leveledUpTo: [], rewardMessages: ["Already at infinite level."] };
+  }
   state.xp = Math.max(0, (state.xp || 0) + amount);
   const leveledUpTo = [];
   const rewardMessages = [];
@@ -1413,6 +1436,13 @@ function finishRedeemCode(code) {
     return;
   }
 
+  if (reward.ownerOnly && !activeAccount()?.isDev) {
+    closeGamePrompt();
+    showCodeResult("invalid", "Owner code only", `${trimmedCode} only works on the dev account.`);
+    render();
+    return;
+  }
+
   if (state.redeemedCodes.includes(redeemedCodeKey)) {
     closeGamePrompt();
     showCodeResult("invalid", "Code already used", reward.daily
@@ -1447,6 +1477,18 @@ function finishRedeemCode(code) {
     rewardMessages.push(...result.rewardMessages);
   }
 
+  if (reward.type === "infiniteLevel") {
+    state.infiniteLevel = true;
+    state.level = Math.max(state.level || 1, 999999);
+    state.xp = 0;
+    state.badges = uniqueNames([...state.badges, "Infinite Level"]);
+    Object.keys(levelRewards)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .forEach((level) => rewardMessages.push(...claimLevelRewards(level)));
+    rewardMessages.push(reward.message);
+  }
+
   state.redeemedCodes = uniqueNames([...state.redeemedCodes, redeemedCodeKey]);
   state.inventoryOpen = true;
   showCodeResult("success", "Code succeeded", rewardMessages.join(" "));
@@ -1456,6 +1498,7 @@ function finishRedeemCode(code) {
 }
 
 function isCodeExpired(reward) {
+  if (reward.expiresAt) return Date.now() > new Date(reward.expiresAt).getTime();
   if (!reward.expires) return false;
   const expiresAt = new Date(`${reward.expires}T23:59:59`);
   return Date.now() > expiresAt.getTime();
@@ -1879,8 +1922,10 @@ function renderStatus() {
   selectedPlayerLabel.textContent = state.selectedStar
     ? `${account?.username || "Guest"} · ${state.selectedStar.name} · ${state.selectedStar.team}`
     : `${account?.username || "Guest"} · Spin your player`;
-  levelLabel.textContent = `Level ${state.level} · ${state.xp}/${nextXp} XP`;
-  unlockText.textContent = state.level >= 5
+  levelLabel.textContent = hasInfiniteLevel() ? "Level ∞" : `Level ${state.level} · ${state.xp}/${nextXp} XP`;
+  unlockText.textContent = hasInfiniteLevel()
+    ? "Infinite level active. Every current level reward is unlocked."
+    : state.level >= 5
     ? nextLevelRewardLabel()
     : `Reach Level 5 to unlock stronger rival teams. Next level: ${nextXp - state.xp} XP.`;
   accountToggleBtn.textContent = account ? "Logout" : "Login";
