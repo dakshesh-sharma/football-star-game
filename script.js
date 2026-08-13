@@ -234,22 +234,18 @@ function loadAccounts() {
   const storedActiveAccountId = storageGet(activeAccountKey);
   const savedAccounts = safeJson(storageGet(accountsKey));
   if (Array.isArray(savedAccounts) && savedAccounts.length) {
-    const normalizedAccounts = normalizeAccounts(savedAccounts, storedActiveAccountId);
+    const legacySave = safeJson(storageGet(saveKey));
+    const accountsToNormalize = legacySave && isRecoverableDeveloperSave(legacySave)
+      ? [...savedAccounts, legacySaveAccount(legacySave, savedAccounts.length)]
+      : savedAccounts;
+    const normalizedAccounts = normalizeAccounts(accountsToNormalize, storedActiveAccountId);
     storageSet(accountsKey, JSON.stringify(normalizedAccounts));
     return normalizedAccounts;
   }
 
   const legacySave = safeJson(storageGet(saveKey));
   if (legacySave) {
-    const username = legacySave.username || legacySave.selectedStar?.name || "Player 1";
-    const isDev = isDeveloperUsername(username);
-    const hasFullInventory = isDev || hasFullInventoryUsername(username);
-    const account = {
-      id: `account-${Date.now()}`,
-      username,
-      isDev,
-      state: migrateState({ ...defaultState, ...legacySave }, hasFullInventory)
-    };
+    const account = normalizeAccount(legacySaveAccount(legacySave, 0), 0);
     storageSet(accountsKey, JSON.stringify([account]));
     storageSet(activeAccountKey, account.id);
     return [account];
@@ -321,11 +317,30 @@ function activeAccount() {
   return accounts.find((account) => account.id === activeAccountId) || null;
 }
 
+function legacySaveAccount(legacySave, index) {
+  const username = legacySave.username || (legacySave.selectedStar?.name === "Cristiano Ronaldo" ? developerUsername : null) || "Player 1";
+  return {
+    id: legacySave.accountId || `legacy-account-${index}`,
+    username,
+    isDev: isDeveloperUsername(username),
+    state: legacySave
+  };
+}
+
+function isRecoverableDeveloperSave(legacySave) {
+  return isDeveloperUsername(legacySave?.username)
+    || legacySave?.selectedStar?.name === "Cristiano Ronaldo"
+    || legacySave?.currentCard?.name === "Cristiano Ronaldo"
+    || Object.values(legacySave?.teamCards || {}).some((card) => card?.name === "Cristiano Ronaldo");
+}
+
 function normalizeAccounts(savedAccounts, preferredActiveAccountId = null) {
-  const devAccount = savedAccounts.find((account) => account.id === preferredActiveAccountId && isDeveloperUsername(account.username))
-    || savedAccounts.find((account) => isDeveloperUsername(account.username));
-  return savedAccounts
-    .filter((account) => !isDeveloperUsername(account.username) || account.id === devAccount?.id)
+  const devAccounts = savedAccounts.filter((account) => isDeveloperUsername(account.username));
+  const mergedDevAccount = mergeDeveloperAccounts(devAccounts, preferredActiveAccountId);
+  return [
+    ...(mergedDevAccount ? [mergedDevAccount] : []),
+    ...savedAccounts.filter((account) => !isDeveloperUsername(account.username))
+  ]
     .map((account, index) => normalizeAccount(account, index, preferredActiveAccountId));
 }
 
@@ -338,6 +353,50 @@ function normalizeAccount(account, index) {
     username: account.username || `Player ${index + 1}`,
     isDev,
     state: migrateState({ ...defaultState, ...(account.state || {}) }, hasFullInventory)
+  };
+}
+
+function mergeDeveloperAccounts(devAccounts, preferredActiveAccountId = null) {
+  if (!devAccounts.length) return null;
+  const bestAccount = devAccounts.slice().sort((first, second) => accountProgressScore(second) - accountProgressScore(first))[0];
+  const activeDevAccount = devAccounts.find((account) => account.id === preferredActiveAccountId);
+  const baseAccount = accountProgressScore(bestAccount) > accountProgressScore(activeDevAccount) ? bestAccount : activeDevAccount || bestAccount;
+  const mergedState = devAccounts.reduce((merged, account) => mergeStates(merged, account.state || {}), {
+    ...defaultState,
+    ...(baseAccount.state || {})
+  });
+  return {
+    ...baseAccount,
+    username: developerUsername,
+    isDev: true,
+    state: mergedState
+  };
+}
+
+function accountProgressScore(account) {
+  const accountState = account?.state || {};
+  return (accountState.level || 1) * 1000
+    + Object.keys(accountState.teamCards || {}).length * 100
+    + (accountState.inventory || []).length
+    + (accountState.selectedStar ? 50 : 0)
+    + (accountState.currentCard ? 10 : 0);
+}
+
+function mergeStates(baseState, incomingState) {
+  return {
+    ...baseState,
+    ...incomingState,
+    level: Math.max(baseState.level || 1, incomingState.level || 1),
+    xp: Math.max(baseState.xp || 0, incomingState.xp || 0),
+    inventory: uniqueCards([...(baseState.inventory || []), ...(incomingState.inventory || [])]),
+    teamCards: { ...(baseState.teamCards || {}), ...(incomingState.teamCards || {}) },
+    deletedCardNames: uniqueNames([...(baseState.deletedCardNames || []), ...(incomingState.deletedCardNames || [])]),
+    redeemedCodes: uniqueNames([...(baseState.redeemedCodes || []), ...(incomingState.redeemedCodes || [])]),
+    playerStats: { ...(baseState.playerStats || {}), ...(incomingState.playerStats || {}) },
+    selectedStar: baseState.selectedStar || incomingState.selectedStar || null,
+    selectedStarSlot: baseState.selectedStarSlot || incomingState.selectedStarSlot || null,
+    currentCard: baseState.currentCard || incomingState.currentCard || null,
+    currentCardSaved: Boolean(baseState.currentCardSaved || incomingState.currentCardSaved)
   };
 }
 
