@@ -217,6 +217,7 @@ const startSplash = document.querySelector("#startSplash");
 const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
 const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
 const quickLoginTitle = document.querySelector("#quickLoginTitle");
+const quickLoginMessage = document.querySelector("#quickLoginMessage");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
 const matchPanel = document.querySelector("#matchPanel");
@@ -691,6 +692,7 @@ function showQuickLogin() {
   renderLoginBackdrop();
   quickLoginTitle.textContent = accounts.length ? "Quick Login" : "Create your username";
   createAccountBtn.textContent = accounts.length ? "Create Account" : "Create Username";
+  clearQuickLoginMessage();
   renderAccounts();
   quickLoginOverlay.hidden = false;
 }
@@ -701,7 +703,18 @@ function showQuickLoginAfterSplash() {
 }
 
 function hideQuickLogin() {
+  clearQuickLoginMessage();
   quickLoginOverlay.hidden = true;
+}
+
+function showQuickLoginMessage(message) {
+  quickLoginMessage.textContent = message;
+  quickLoginMessage.hidden = false;
+}
+
+function clearQuickLoginMessage() {
+  quickLoginMessage.textContent = "";
+  quickLoginMessage.hidden = true;
 }
 
 function loginAccount(id) {
@@ -738,7 +751,7 @@ function createAccount() {
 
   const savedUsername = trimmedUsername.slice(0, 24);
   if (savedUsername === developerUsername && isDeveloperNameTaken()) {
-    alert("That dev username is already taken.");
+    showQuickLoginMessage("That dev username is already taken.");
     return;
   }
   const isDev = isDeveloperUsername(savedUsername);
@@ -762,7 +775,8 @@ function changeUsername() {
   if (!trimmedUsername) return;
   const savedUsername = trimmedUsername.slice(0, 24);
   if (savedUsername === developerUsername && isDeveloperNameTaken(account.id)) {
-    alert("That dev username is already taken.");
+    showQuickLogin();
+    showQuickLoginMessage("That dev username is already taken.");
     return;
   }
   account.username = savedUsername;

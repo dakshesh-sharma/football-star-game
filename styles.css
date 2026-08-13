@@ -1497,6 +1497,22 @@ h3 {
   text-align: center;
 }
 
+.quick-login-message {
+  background: rgba(233, 93, 79, 0.14);
+  border: 1px solid rgba(233, 93, 79, 0.42);
+  border-radius: 8px;
+  color: #ffd7d2;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.quick-login-message[hidden] {
+  display: none;
+}
+
 .account-list {
   display: grid;
   gap: 10px;
