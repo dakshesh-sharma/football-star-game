@@ -131,6 +131,14 @@ const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
 const developerUsername = "Noxify_Vo1d";
 const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
+const defaultProfileMotto = "Build your XI";
+const goatProfileBadge = "goat-profile-glow";
+const avatarStyles = {
+  gold: "FC",
+  blue: "XI",
+  red: "ST",
+  goat: "99"
+};
 const redeemableCodes = {
   DAILY: { type: "xp", xp: 300, daily: true, message: "Daily XP claimed." },
   WELCOME: { type: "xp", xp: 250, message: "Welcome bonus claimed." },
@@ -146,14 +154,7 @@ const redeemableCodes = {
   CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as a Legend Portugal card." }
 };
 const levelRewards = {
-  2: { type: "unlock", message: "Level 2 reward: better spin reveal unlocked." },
-  3: { type: "card", rarity: "Gold", message: "Level 3 reward: guaranteed Gold card." },
-  5: { type: "unlock", message: "Level 5 reward: real-player trials unlocked." },
-  7: { type: "xp", xp: 750, message: "Level 7 reward: 750 bonus XP." },
-  10: { type: "card", rarity: "Elite", message: "Level 10 reward: guaranteed Elite card." },
-  15: { type: "card", rarity: "Icon", message: "Level 15 reward: guaranteed Icon card." },
-  25: { type: "badge", message: "Level 25 reward: FC Stars badge title unlocked." },
-  50: { type: "badge", message: "Level 50 reward: G.O.A.T profile glow unlocked." }
+  50: { type: "badge", badge: goatProfileBadge, message: "Level 50 reward: G.O.A.T profile glow unlocked." }
 };
 const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelona Ace", "Legend XI"];
 let databasePromise = null;
@@ -240,8 +241,10 @@ const rejectJoinBtn = document.querySelector("#rejectJoinBtn");
 const settingsBtn = document.querySelector("#settingsBtn");
 const settingsMenu = document.querySelector("#settingsMenu");
 const accountToggleBtn = document.querySelector("#accountToggleBtn");
-const changeUsernameBtn = document.querySelector("#changeUsernameBtn");
 const resetBtn = document.querySelector("#resetBtn");
+const profileEditBtn = document.querySelector("#profileEditBtn");
+const profileAvatar = document.querySelector("#profileAvatar");
+const profileMottoLabel = document.querySelector("#profileMottoLabel");
 const startSplash = document.querySelector("#startSplash");
 const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
 const loginCardBackdrop = document.querySelector("#loginCardBackdrop");
@@ -257,6 +260,15 @@ const gamePromptInput = document.querySelector("#gamePromptInput");
 const gamePromptMessage = document.querySelector("#gamePromptMessage");
 const gamePromptCancelBtn = document.querySelector("#gamePromptCancelBtn");
 const gamePromptSubmitBtn = document.querySelector("#gamePromptSubmitBtn");
+const profileOverlay = document.querySelector("#profileOverlay");
+const profileForm = document.querySelector("#profileForm");
+const profilePreviewAvatar = document.querySelector("#profilePreviewAvatar");
+const profilePreviewMeta = document.querySelector("#profilePreviewMeta");
+const profileUsernameInput = document.querySelector("#profileUsernameInput");
+const profileMottoInput = document.querySelector("#profileMottoInput");
+const profileEditorMessage = document.querySelector("#profileEditorMessage");
+const profileCancelBtn = document.querySelector("#profileCancelBtn");
+const profileAvatarStyleInputs = document.querySelectorAll("input[name='profileAvatarStyle']");
 const matchPanel = document.querySelector("#matchPanel");
 const homeLeaderLabel = document.querySelector("#homeLeaderLabel");
 const awayLeaderLabel = document.querySelector("#awayLeaderLabel");
@@ -360,6 +372,8 @@ function legacySaveAccount(legacySave, index) {
   return {
     id: legacySave.accountId || `legacy-account-${index}`,
     username,
+    motto: legacySave.motto || defaultProfileMotto,
+    avatarStyle: legacySave.avatarStyle || "gold",
     isDev: isDeveloperUsername(username),
     state: legacySave
   };
@@ -389,6 +403,8 @@ function normalizeAccount(account, index) {
   return {
     id,
     username: account.username || `Player ${index + 1}`,
+    motto: account.motto || defaultProfileMotto,
+    avatarStyle: avatarStyles[account.avatarStyle] ? account.avatarStyle : "gold",
     isDev,
     state: migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant)
   };
@@ -406,6 +422,8 @@ function mergeDeveloperAccounts(devAccounts, preferredActiveAccountId = null) {
   return {
     ...baseAccount,
     username: developerUsername,
+    motto: baseAccount.motto || defaultProfileMotto,
+    avatarStyle: avatarStyles[baseAccount.avatarStyle] ? baseAccount.avatarStyle : "goat",
     isDev: true,
     state: mergedState
   };
@@ -842,6 +860,8 @@ function finishCreateAccount(username) {
   const account = {
     id: `account-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     username: savedUsername,
+    motto: defaultProfileMotto,
+    avatarStyle: isDev ? "goat" : "gold",
     isDev,
     state: freshState(inventoryGrant)
   };
@@ -851,37 +871,79 @@ function finishCreateAccount(username) {
   loginAccount(account.id);
 }
 
-function changeUsername() {
+function openProfileEditor() {
   const account = activeAccount();
-  if (!account) return;
-  openGamePrompt({
-    title: "Change Username",
-    label: "New username",
-    value: account.username,
-    submitLabel: "Save",
-    onSubmit: finishChangeUsername
+  if (!account) {
+    showQuickLogin();
+    return;
+  }
+  const avatarStyle = canUseGoatProfile() ? account.avatarStyle || "gold" : account.avatarStyle === "goat" ? "gold" : account.avatarStyle || "gold";
+  profileUsernameInput.value = account.username;
+  profileMottoInput.value = account.motto || defaultProfileMotto;
+  profileAvatarStyleInputs.forEach((input) => {
+    input.disabled = input.value === "goat" && !canUseGoatProfile();
+    input.closest(".avatar-choice")?.classList.toggle("locked", input.disabled);
+    input.checked = input.value === avatarStyle;
   });
+  profileEditorMessage.hidden = true;
+  profileEditorMessage.textContent = "";
+  updateProfilePreview();
+  settingsMenu.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  profileOverlay.hidden = false;
+  requestAnimationFrame(() => profileUsernameInput.focus());
 }
 
-function finishChangeUsername(username) {
+function closeProfileEditor() {
+  profileOverlay.hidden = true;
+  profileForm.reset();
+  profileEditorMessage.hidden = true;
+  profileEditorMessage.textContent = "";
+}
+
+function selectedAvatarStyle() {
+  return [...profileAvatarStyleInputs].find((input) => input.checked)?.value || "gold";
+}
+
+function updateProfilePreview() {
   const account = activeAccount();
   if (!account) return;
-  const trimmedUsername = username?.trim();
-  if (!trimmedUsername) return;
+  const selectedName = state.selectedStar?.name || "No player yet";
+  renderProfileAvatar(profilePreviewAvatar, selectedAvatarStyle());
+  profilePreviewMeta.textContent = `${profileUsernameInput.value.trim() || account.username} · ${profileMottoInput.value.trim() || defaultProfileMotto} · ${selectedName}`;
+}
+
+function showProfileEditorMessage(message) {
+  profileEditorMessage.textContent = message;
+  profileEditorMessage.hidden = false;
+}
+
+function saveProfile() {
+  const account = activeAccount();
+  if (!account) return;
+  const trimmedUsername = profileUsernameInput.value?.trim();
+  if (!trimmedUsername) {
+    showProfileEditorMessage("Username cannot be empty.");
+    return;
+  }
   const savedUsername = trimmedUsername.slice(0, 24);
   if (savedUsername === developerUsername && isDeveloperNameTaken(account.id)) {
-    showGamePromptMessage("That dev username is already taken.");
+    showProfileEditorMessage("That dev username is already taken.");
     return;
   }
   account.username = savedUsername;
+  account.motto = (profileMottoInput.value?.trim() || defaultProfileMotto).slice(0, 42);
+  account.avatarStyle = selectedAvatarStyle() === "goat" && !canUseGoatProfile() ? "gold" : selectedAvatarStyle();
   account.isDev = isDeveloperUsername(account.username);
   state = migrateState({ ...defaultState, ...state }, accountInventoryGrant(account));
   account.state = state;
   saveAccounts();
-  settingsMenu.hidden = true;
-  settingsBtn.setAttribute("aria-expanded", "false");
-  closeGamePrompt();
+  closeProfileEditor();
   render();
+}
+
+function canUseGoatProfile() {
+  return hasInfiniteLevel() || state.level >= 50 || state.badges.includes(goatProfileBadge);
 }
 
 function buildTeam() {
@@ -1137,9 +1199,18 @@ function claimLevelRewards(level) {
     return [`${reward.message} ${card.name} added to inventory.`];
   }
   if (reward.type === "badge") {
-    state.badges = uniqueNames([...state.badges, reward.message]);
+    state.badges = uniqueNames([...state.badges, reward.badge || reward.message]);
   }
   return [reward.message];
+}
+
+function syncEarnedLevelRewards() {
+  if (hasInfiniteLevel()) return [];
+  return Object.keys(levelRewards)
+    .map(Number)
+    .filter((level) => state.level >= level)
+    .sort((a, b) => a - b)
+    .flatMap((level) => claimLevelRewards(level));
 }
 
 function guaranteedCardForRarity(rarity) {
@@ -1924,14 +1995,23 @@ function renderStatus() {
     ? `${account?.username || "Guest"} · ${state.selectedStar.name} · ${state.selectedStar.team}`
     : `${account?.username || "Guest"} · Spin your player`;
   levelLabel.textContent = hasInfiniteLevel() ? "Level ∞" : `Level ${state.level} · ${state.xp}/${nextXp} XP`;
+  profileMottoLabel.textContent = account?.motto || defaultProfileMotto;
+  renderProfileAvatar(profileAvatar, account?.avatarStyle || "gold");
   unlockText.textContent = hasInfiniteLevel()
     ? "Infinite level active. Every current level reward is unlocked."
     : state.level >= 5
     ? nextLevelRewardLabel()
     : `Reach Level 5 to unlock stronger rival teams. Next level: ${nextXp - state.xp} XP.`;
   accountToggleBtn.textContent = account ? "Logout" : "Login";
-  changeUsernameBtn.hidden = !account;
   renderLevelRewards();
+}
+
+function renderProfileAvatar(target, style) {
+  const requestedStyle = avatarStyles[style] ? style : "gold";
+  const avatarStyle = requestedStyle === "goat" && !canUseGoatProfile() ? "gold" : requestedStyle;
+  const glowClass = canUseGoatProfile() ? " profile-avatar-reward-glow" : "";
+  target.className = `profile-avatar profile-avatar-${avatarStyle}${glowClass}`;
+  target.textContent = avatarStyles[avatarStyle];
 }
 
 function nextLevelRewardLabel() {
@@ -1944,7 +2024,7 @@ function renderLevelRewards() {
   levelRewardsList.innerHTML = "";
   Object.entries(levelRewards).forEach(([level, reward]) => {
     const rewardLevel = Number(level);
-    const claimed = hasInfiniteLevel() || state.claimedLevelRewards.includes(level);
+    const claimed = canUseGoatProfile() || state.claimedLevelRewards.includes(level);
     const next = !claimed && rewardLevel > state.level && rewardLevel === nextRewardLevelNumber();
     const row = document.createElement("div");
     row.className = `level-reward-row ${claimed ? "claimed" : next ? "next" : "locked"}`;
@@ -2024,6 +2104,8 @@ function renderJoinRequest() {
 }
 
 function render() {
+  const rewardMessages = syncEarnedLevelRewards();
+  if (rewardMessages.length) saveState();
   renderStars();
   renderPitch();
   renderCurrentCard();
@@ -2071,7 +2153,7 @@ accountToggleBtn.addEventListener("click", () => {
   settingsBtn.setAttribute("aria-expanded", "false");
   showQuickLogin();
 });
-changeUsernameBtn.addEventListener("click", changeUsername);
+profileEditBtn.addEventListener("click", openProfileEditor);
 createAccountBtn.addEventListener("click", createAccount);
 gamePromptForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -2081,6 +2163,19 @@ gamePromptForm.addEventListener("submit", (event) => {
 gamePromptCancelBtn.addEventListener("click", closeGamePrompt);
 gamePromptOverlay.addEventListener("click", (event) => {
   if (event.target === gamePromptOverlay) closeGamePrompt();
+});
+profileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveProfile();
+});
+profileCancelBtn.addEventListener("click", closeProfileEditor);
+profileOverlay.addEventListener("click", (event) => {
+  if (event.target === profileOverlay) closeProfileEditor();
+});
+profileUsernameInput.addEventListener("input", updateProfilePreview);
+profileMottoInput.addEventListener("input", updateProfilePreview);
+profileAvatarStyleInputs.forEach((input) => {
+  input.addEventListener("change", updateProfilePreview);
 });
 settingsBtn.addEventListener("click", () => {
   const willOpen = settingsMenu.hidden;

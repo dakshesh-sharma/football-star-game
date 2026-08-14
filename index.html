@@ -17,14 +17,21 @@
             <button id="settingsBtn" class="secondary" type="button" aria-expanded="false" aria-controls="settingsMenu">Settings</button>
             <div id="settingsMenu" class="settings-menu" hidden>
               <button id="accountToggleBtn" class="secondary" type="button">Logout</button>
-              <button id="changeUsernameBtn" class="secondary" type="button">Change Username</button>
               <button id="resetBtn" class="secondary" type="button" title="Reset save">Reset</button>
             </div>
           </div>
         </div>
         <div class="profile">
-          <span id="selectedPlayerLabel">Spin your player</span>
-          <strong id="levelLabel">Level 1</strong>
+          <div class="profile-row">
+            <button id="profileEditBtn" class="profile-avatar-btn" type="button" aria-label="Open profile editor">
+              <span id="profileAvatar" class="profile-avatar profile-avatar-gold">FC</span>
+            </button>
+            <div>
+              <span id="selectedPlayerLabel">Spin your player</span>
+              <strong id="levelLabel">Level 1</strong>
+              <small id="profileMottoLabel">Build your XI</small>
+            </div>
+          </div>
           <div class="top-main-actions">
             <button id="topSpinBtn">Spin Player</button>
             <button id="redeemCodeBtn" class="secondary">Code</button>
@@ -163,6 +170,53 @@
         <div class="game-prompt-actions">
           <button id="gamePromptCancelBtn" class="secondary" type="button">Cancel</button>
           <button id="gamePromptSubmitBtn" type="submit">OK</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="profileOverlay" class="profile-overlay" hidden>
+      <form id="profileForm" class="profile-editor" role="dialog" aria-modal="true" aria-labelledby="profileEditorTitle">
+        <div class="profile-editor-hero">
+          <span id="profilePreviewAvatar" class="profile-avatar profile-avatar-gold">FC</span>
+          <div>
+            <p class="eyebrow">FC Stars profile</p>
+            <h2 id="profileEditorTitle">Your Club Identity</h2>
+            <p id="profilePreviewMeta">Level 1 · No player yet</p>
+          </div>
+        </div>
+        <label class="profile-field" for="profileUsernameInput">
+          <span>Username</span>
+          <input id="profileUsernameInput" type="text" maxlength="24" autocomplete="off" />
+        </label>
+        <label class="profile-field" for="profileMottoInput">
+          <span>Club motto</span>
+          <input id="profileMottoInput" type="text" maxlength="42" autocomplete="off" />
+        </label>
+        <div class="profile-field">
+          <span>Badge style</span>
+          <div class="avatar-choice-grid" role="radiogroup" aria-label="Badge style">
+            <label class="avatar-choice">
+              <input type="radio" name="profileAvatarStyle" value="gold" />
+              <span class="profile-avatar profile-avatar-gold">FC</span>
+            </label>
+            <label class="avatar-choice">
+              <input type="radio" name="profileAvatarStyle" value="blue" />
+              <span class="profile-avatar profile-avatar-blue">XI</span>
+            </label>
+            <label class="avatar-choice">
+              <input type="radio" name="profileAvatarStyle" value="red" />
+              <span class="profile-avatar profile-avatar-red">ST</span>
+            </label>
+            <label class="avatar-choice">
+              <input type="radio" name="profileAvatarStyle" value="goat" />
+              <span class="profile-avatar profile-avatar-goat">99</span>
+            </label>
+          </div>
+        </div>
+        <p id="profileEditorMessage" class="quick-login-message" hidden></p>
+        <div class="profile-editor-actions">
+          <button id="profileCancelBtn" class="secondary" type="button">Cancel</button>
+          <button type="submit">Save Profile</button>
         </div>
       </form>
     </section>
