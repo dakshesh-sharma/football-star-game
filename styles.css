@@ -19,9 +19,7 @@
 
 body {
   margin: 0;
-  height: 100vh;
   min-height: 100vh;
-  overflow: hidden;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: radial-gradient(circle at 18% 10%, rgba(242, 193, 78, 0.18), transparent 24%),
     linear-gradient(135deg, #0e1515 0%, #17201b 48%, #201d18 100%);
@@ -52,13 +50,9 @@ button:disabled {
 }
 
 .app-shell {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   width: min(1440px, 100%);
   margin: 0 auto;
   padding: 20px;
-  overflow: hidden;
 }
 
 .topbar {
@@ -329,9 +323,7 @@ h3 {
   display: grid;
   grid-template-columns: 290px minmax(360px, 1fr) 310px;
   gap: 16px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  align-items: start;
 }
 
 .layout.inventory-hidden {
@@ -348,9 +340,12 @@ h3 {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
   padding: 14px;
+}
+
+.roster-panel,
+.side-panel {
+  max-height: calc(100vh - 40px);
 }
 
 .panel-title {
@@ -376,6 +371,7 @@ h3 {
 
 .star-list {
   flex: 1;
+  min-height: 160px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
