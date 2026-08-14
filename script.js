@@ -18,7 +18,7 @@ const cardPool = [
   { name: "Achraf Hakimi", position: "RB", team: "PSG", rating: 86, rarity: "Gold", chance: 8 },
   { name: "Theo Hernandez", position: "LB", team: "AC Milan", rating: 86, rarity: "Gold", chance: 8 },
   { name: "Alisson", position: "GK", team: "Liverpool", rating: 89, rarity: "Gold", chance: 7 },
-  { name: "Neymar Jr", position: "LW", team: "Santos", rating: 88, rarity: "Elite", chance: 4 },
+  { name: "Neymar Jr", position: "LW", team: "Brazil", rating: "∞", rarity: "G.O.A.T", chance: 0.1 },
   { name: "Harry Kane", position: "ST", team: "Bayern", rating: 90, rarity: "Gold", chance: 7 },
   { name: "Bukayo Saka", position: "RW", team: "Arsenal", rating: 88, rarity: "Gold", chance: 8 },
   { name: "Rafael Leao", position: "LW", team: "AC Milan", rating: 87, rarity: "Gold", chance: 8 },
