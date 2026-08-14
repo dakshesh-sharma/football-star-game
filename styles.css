@@ -810,6 +810,12 @@ h3 {
   gap: 10px;
 }
 
+.top-friends-card {
+  margin-top: 18px;
+  max-width: 440px;
+  width: min(440px, 42vw);
+}
+
 .friends-title {
   align-items: center;
   display: flex;
@@ -2416,6 +2422,10 @@ h3 {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .top-friends-card {
+    width: min(440px, 100%);
   }
 
   .profile {
