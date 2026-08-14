@@ -244,6 +244,7 @@ const accountToggleBtn = document.querySelector("#accountToggleBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const profileEditBtn = document.querySelector("#profileEditBtn");
 const profileAvatar = document.querySelector("#profileAvatar");
+const profilePhotoInput = document.querySelector("#profilePhotoInput");
 const profileMottoLabel = document.querySelector("#profileMottoLabel");
 const startSplash = document.querySelector("#startSplash");
 const quickLoginOverlay = document.querySelector("#quickLoginOverlay");
@@ -374,6 +375,7 @@ function legacySaveAccount(legacySave, index) {
     username,
     motto: legacySave.motto || defaultProfileMotto,
     avatarStyle: legacySave.avatarStyle || "gold",
+    profilePhoto: legacySave.profilePhoto || "",
     isDev: isDeveloperUsername(username),
     state: legacySave
   };
@@ -405,6 +407,7 @@ function normalizeAccount(account, index) {
     username: account.username || `Player ${index + 1}`,
     motto: account.motto || defaultProfileMotto,
     avatarStyle: avatarStyles[account.avatarStyle] ? account.avatarStyle : "gold",
+    profilePhoto: account.profilePhoto || "",
     isDev,
     state: migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant)
   };
@@ -424,6 +427,7 @@ function mergeDeveloperAccounts(devAccounts, preferredActiveAccountId = null) {
     username: developerUsername,
     motto: baseAccount.motto || defaultProfileMotto,
     avatarStyle: avatarStyles[baseAccount.avatarStyle] ? baseAccount.avatarStyle : "goat",
+    profilePhoto: baseAccount.profilePhoto || "",
     isDev: true,
     state: mergedState
   };
@@ -862,6 +866,7 @@ function finishCreateAccount(username) {
     username: savedUsername,
     motto: defaultProfileMotto,
     avatarStyle: isDev ? "goat" : "gold",
+    profilePhoto: "",
     isDev,
     state: freshState(inventoryGrant)
   };
@@ -909,7 +914,7 @@ function updateProfilePreview() {
   const account = activeAccount();
   if (!account) return;
   const selectedName = state.selectedStar?.name || "No player yet";
-  renderProfileAvatar(profilePreviewAvatar, selectedAvatarStyle());
+  renderProfileAvatar(profilePreviewAvatar, selectedAvatarStyle(), account.profilePhoto);
   profilePreviewMeta.textContent = `${profileUsernameInput.value.trim() || account.username} · ${profileMottoInput.value.trim() || defaultProfileMotto} · ${selectedName}`;
 }
 
@@ -944,6 +949,61 @@ function saveProfile() {
 
 function canUseGoatProfile() {
   return hasInfiniteLevel() || state.level >= 50 || state.badges.includes(goatProfileBadge);
+}
+
+function openProfilePhotoPicker() {
+  if (!activeAccount()) {
+    showQuickLogin();
+    return;
+  }
+  profilePhotoInput.click();
+}
+
+function saveProfilePhoto(file) {
+  const account = activeAccount();
+  if (!account || !file) return;
+  if (!file.type.startsWith("image/")) {
+    showProfileEditorMessage("Choose an image file.");
+    return;
+  }
+
+  resizeProfilePhoto(file)
+    .then((dataUrl) => {
+      account.profilePhoto = dataUrl;
+      saveAccounts();
+      render();
+      if (!profileOverlay.hidden) updateProfilePreview();
+    })
+    .catch(() => {
+      showProfileEditorMessage("That picture could not be loaded.");
+    })
+    .finally(() => {
+      profilePhotoInput.value = "";
+    });
+}
+
+function resizeProfilePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const size = Math.min(image.width, image.height);
+        const sourceX = (image.width - size) / 2;
+        const sourceY = (image.height - size) / 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 256;
+        const context = canvas.getContext("2d");
+        context.drawImage(image, sourceX, sourceY, size, size, 0, 0, 256, 256);
+        resolve(canvas.toDataURL("image/jpeg", 0.86));
+      };
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function buildTeam() {
@@ -1996,7 +2056,7 @@ function renderStatus() {
     : `${account?.username || "Guest"} · Spin your player`;
   levelLabel.textContent = hasInfiniteLevel() ? "Level ∞" : `Level ${state.level} · ${state.xp}/${nextXp} XP`;
   profileMottoLabel.textContent = account?.motto || defaultProfileMotto;
-  renderProfileAvatar(profileAvatar, account?.avatarStyle || "gold");
+  renderProfileAvatar(profileAvatar, account?.avatarStyle || "gold", account?.profilePhoto);
   unlockText.textContent = hasInfiniteLevel()
     ? "Infinite level active. Every current level reward is unlocked."
     : state.level >= 5
@@ -2006,12 +2066,14 @@ function renderStatus() {
   renderLevelRewards();
 }
 
-function renderProfileAvatar(target, style) {
+function renderProfileAvatar(target, style, photo = "") {
   const requestedStyle = avatarStyles[style] ? style : "gold";
   const avatarStyle = requestedStyle === "goat" && !canUseGoatProfile() ? "gold" : requestedStyle;
   const glowClass = canUseGoatProfile() ? " profile-avatar-reward-glow" : "";
-  target.className = `profile-avatar profile-avatar-${avatarStyle}${glowClass}`;
-  target.textContent = avatarStyles[avatarStyle];
+  const photoClass = photo ? " profile-avatar-photo" : "";
+  target.className = `profile-avatar profile-avatar-${avatarStyle}${glowClass}${photoClass}`;
+  target.style.backgroundImage = photo ? `url("${photo}")` : "";
+  target.textContent = photo ? "" : avatarStyles[avatarStyle];
 }
 
 function nextLevelRewardLabel() {
@@ -2153,7 +2215,16 @@ accountToggleBtn.addEventListener("click", () => {
   settingsBtn.setAttribute("aria-expanded", "false");
   showQuickLogin();
 });
-profileEditBtn.addEventListener("click", openProfileEditor);
+profileEditBtn.addEventListener("click", (event) => {
+  if (event.target.closest(".profile-avatar-plus")) {
+    openProfilePhotoPicker();
+    return;
+  }
+  openProfileEditor();
+});
+profilePhotoInput.addEventListener("change", () => {
+  saveProfilePhoto(profilePhotoInput.files?.[0]);
+});
 createAccountBtn.addEventListener("click", createAccount);
 gamePromptForm.addEventListener("submit", (event) => {
   event.preventDefault();

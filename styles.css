@@ -268,6 +268,12 @@ h3 {
     inset 0 0 18px rgba(255, 255, 255, 0.18);
 }
 
+.profile-avatar-photo {
+  background-position: center;
+  background-size: cover;
+  color: transparent;
+}
+
 .top-main-actions {
   display: flex;
   flex-wrap: wrap;
@@ -365,18 +371,19 @@ h3 {
   display: grid;
   gap: 9px;
   min-height: 0;
-  overflow-y: auto;
   padding-right: 4px;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 
 .star-list {
   flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .inventory {
-  flex: 1 1 220px;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .star-card,
@@ -422,6 +429,20 @@ h3 {
 .current-card,
 .card-box {
   margin-top: 14px;
+}
+
+.side-panel .card-box,
+.side-panel .inventory-search,
+.side-panel .replace-hint,
+.side-panel .inventory-clear-filter,
+.roster-panel .current-card {
+  flex: 0 0 auto;
+}
+
+.side-panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .selector-report-card.code-success {
@@ -1089,6 +1110,13 @@ h3 {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.52);
 }
 
+.inventory .inventory-card {
+  gap: 7px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  min-height: 0;
+  padding: 8px;
+}
+
 .inventory-card::before,
 .inventory-card::after {
   content: "";
@@ -1120,6 +1148,19 @@ h3 {
 .card-rating strong {
   font-size: 1.78rem;
   font-weight: 950;
+}
+
+.inventory .card-rating {
+  border-radius: 7px;
+  padding: 6px 4px;
+}
+
+.inventory .card-rating strong {
+  font-size: 1.32rem;
+}
+
+.inventory .card-rating span {
+  font-size: 0.64rem;
 }
 
 .card-rating span {
@@ -1163,6 +1204,23 @@ h3 {
   font-size: 1.02rem;
   font-weight: 950;
   overflow-wrap: anywhere;
+}
+
+.inventory .card-details {
+  gap: 1px;
+  padding: 7px 8px;
+}
+
+.inventory .card-details strong {
+  font-size: 0.9rem;
+}
+
+.inventory .card-details span {
+  font-size: 0.74rem;
+}
+
+.inventory .card-details small {
+  font-size: 0.64rem;
 }
 
 .card-details span {
@@ -1536,12 +1594,22 @@ h3 {
   z-index: 1;
 }
 
+.inventory .inventory-actions {
+  gap: 6px;
+}
+
 .inventory-card button {
   margin-top: 6px;
   min-width: 0;
   position: relative;
   text-shadow: none;
   z-index: 1;
+}
+
+.inventory .inventory-card button {
+  font-size: 0.78rem;
+  min-height: 34px;
+  padding: 0 8px;
 }
 
 .card-photo {
@@ -1553,6 +1621,10 @@ h3 {
   object-fit: contain;
   object-position: center top;
   width: 100%;
+}
+
+.inventory .card-photo {
+  height: 88px;
 }
 
 .replace-hint {
