@@ -67,6 +67,12 @@ button:disabled {
   min-width: 0;
 }
 
+.brand-kicker {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
 .settings-block {
   align-items: center;
   display: flex;
@@ -287,12 +293,9 @@ h3 {
 }
 
 .status-profile-btn {
-  left: -56px;
+  flex: 0 0 auto;
   min-height: 32px;
   margin-top: 0 !important;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
   width: 32px;
 }
 
@@ -863,6 +866,12 @@ h3 {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
+}
+
+.friend-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .friend-row button {

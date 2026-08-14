@@ -11,7 +11,13 @@
     <main class="app-shell">
       <section class="topbar">
         <div class="brand-block">
-          <p class="eyebrow">Career football card game</p>
+          <div class="brand-kicker">
+            <p class="eyebrow">Career football card game</p>
+            <button id="profileEditBtn" class="profile-avatar-btn status-profile-btn" type="button" aria-label="Open profile editor">
+              <span id="profileAvatar" class="profile-avatar profile-avatar-gold status-profile-avatar">FC</span>
+              <span class="profile-avatar-plus" aria-hidden="true">+</span>
+            </button>
+          </div>
           <h1>FC Stars</h1>
           <div class="settings-block">
             <button id="settingsBtn" class="secondary" type="button" aria-expanded="false" aria-controls="settingsMenu">Settings</button>
@@ -37,10 +43,6 @@
             <div>
               <span id="selectedPlayerLabel">Spin your player</span>
               <span class="level-profile-line">
-                <button id="profileEditBtn" class="profile-avatar-btn status-profile-btn" type="button" aria-label="Open profile editor">
-                  <span id="profileAvatar" class="profile-avatar profile-avatar-gold status-profile-avatar">FC</span>
-                  <span class="profile-avatar-plus" aria-hidden="true">+</span>
-                </button>
                 <strong id="levelLabel">Level 1</strong>
               </span>
               <small id="profileMottoLabel">Build your XI</small>

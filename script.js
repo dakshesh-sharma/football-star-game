@@ -896,25 +896,71 @@ function finishAddFriend(username) {
   const trimmedUsername = username?.trim();
   if (!trimmedUsername) return;
   const savedUsername = trimmedUsername.slice(0, 24);
+  const senderAccount = activeAccount();
+  const receiverAccount = accounts.find((account) => account.username.toLowerCase() === savedUsername.toLowerCase());
   const duplicate = state.friends.some((friend) => friend.username.toLowerCase() === savedUsername.toLowerCase());
   if (duplicate) {
     showGamePromptMessage("That friend is already added.");
     return;
   }
-  if (activeAccount()?.username?.toLowerCase() === savedUsername.toLowerCase()) {
+  if (senderAccount?.username?.toLowerCase() === savedUsername.toLowerCase()) {
     showGamePromptMessage("You cannot add yourself.");
     return;
   }
-  state.friends = uniqueFriends([
-    ...state.friends,
-    {
-      id: `friend-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      username: savedUsername
-    }
+  if (!receiverAccount) {
+    showGamePromptMessage("That player does not exist yet.");
+    return;
+  }
+  if (!senderAccount) return;
+
+  const receiverState = receiverAccount.state || freshState(accountInventoryGrant(receiverAccount));
+  const receiverAlreadyHasSender = receiverState.friends?.some((friend) => friend.username.toLowerCase() === senderAccount.username.toLowerCase());
+  if (receiverAlreadyHasSender) {
+    showGamePromptMessage("That player already has your request or is already your friend.");
+    return;
+  }
+
+  receiverState.friends = uniqueFriends([
+    ...(receiverState.friends || []),
+    friendRecord(senderAccount, "pending")
   ]);
+  receiverAccount.state = receiverState;
   closeGamePrompt();
-  reportTitle.textContent = `${savedUsername} friended`;
-  reportText.textContent = `${savedUsername} can now be invited to your XI.`;
+  reportTitle.textContent = `Request sent to ${savedUsername}`;
+  reportText.textContent = `${savedUsername} will see Accept and Decline when they log in.`;
+  saveState();
+  render();
+}
+
+function acceptFriendRequest(id) {
+  const friend = state.friends.find((item) => item.id === id);
+  if (!friend) return;
+  const receiverAccount = activeAccount();
+  const senderAccount = accounts.find((account) => account.id === friend.accountId)
+    || accounts.find((account) => account.username.toLowerCase() === friend.username.toLowerCase());
+  friend.status = "accepted";
+  if (receiverAccount && senderAccount) {
+    const senderState = senderAccount.state || freshState(accountInventoryGrant(senderAccount));
+    senderState.friends = uniqueFriends([
+      ...(senderState.friends || []),
+      friendRecord(receiverAccount, "accepted")
+    ]);
+    senderAccount.state = senderState;
+    friend.accountId = senderAccount.id;
+  }
+  reportTitle.textContent = `${friend.username} accepted`;
+  reportText.textContent = `${friend.username} can now be invited to your XI.`;
+  saveState();
+  render();
+}
+
+function declineFriendRequest(id) {
+  const friend = state.friends.find((item) => item.id === id);
+  if (!friend) return;
+  state.friends = state.friends.filter((item) => item.id !== id);
+  if (state.joinRequest?.friendId === id) state.joinRequest = null;
+  reportTitle.textContent = `${friend.username} declined`;
+  reportText.textContent = `${friend.username}'s friend request was removed.`;
   saveState();
   render();
 }
@@ -932,10 +978,34 @@ function removeFriend(id) {
 
 function inviteFriend(id) {
   const friend = state.friends.find((item) => item.id === id);
-  if (!friend) return;
-  state.joinRequest = friendCard(friend);
+  if (!friend || friend.status !== "accepted") return;
+  const senderAccount = activeAccount();
+  const receiverAccount = accountForFriend(friend);
+  if (!senderAccount || !receiverAccount) {
+    reportTitle.textContent = "Friend account missing";
+    reportText.textContent = `${friend.username} needs a local account before you can send an XI request.`;
+    render();
+    return;
+  }
+
+  const receiverState = receiverAccount.state || freshState(accountInventoryGrant(receiverAccount));
+  if (hasActiveClan(receiverState)) {
+    reportTitle.textContent = `${friend.username} already has an XI`;
+    reportText.textContent = `You cannot send an XI request while ${friend.username} already has a club.`;
+    render();
+    return;
+  }
+  if (isRealJoinRequest(receiverState.joinRequest)) {
+    reportTitle.textContent = `${friend.username} has a pending request`;
+    reportText.textContent = `Wait for ${friend.username} to accept or decline their current XI request.`;
+    render();
+    return;
+  }
+
+  receiverState.joinRequest = friendCard(friendRecord(senderAccount, "accepted"), senderAccount);
+  receiverAccount.state = receiverState;
   reportTitle.textContent = `${friend.username} invited`;
-  reportText.textContent = `${friend.username} has a Team Request ready. Accept it to add them to your XI.`;
+  reportText.textContent = `${friend.username} will see your XI request when they log in.`;
   saveState();
   render();
 }
@@ -1729,20 +1799,51 @@ function uniqueNames(names) {
 }
 
 function uniqueFriends(friends) {
-  const seen = new Set();
-  return (friends || []).flatMap((friend, index) => {
+  const byUsername = new Map();
+  (friends || []).forEach((friend, index) => {
     const username = String(friend?.username || friend || "").trim().slice(0, 24);
     const key = username.toLowerCase();
-    if (!username || seen.has(key)) return [];
-    seen.add(key);
-    return [{
+    if (!username) return;
+    const nextFriend = {
       id: friend?.id || `friend-${Date.now()}-${index}`,
-      username
-    }];
+      username,
+      accountId: friend?.accountId || "",
+      status: friend?.status === "pending" ? "pending" : "accepted"
+    };
+    const savedFriend = byUsername.get(key);
+    if (!savedFriend) {
+      byUsername.set(key, nextFriend);
+      return;
+    }
+    savedFriend.id = savedFriend.id || nextFriend.id;
+    savedFriend.accountId = savedFriend.accountId || nextFriend.accountId;
+    if (nextFriend.status === "accepted") savedFriend.status = "accepted";
   });
+  return [...byUsername.values()];
 }
 
-function friendCard(friend) {
+function friendRecord(account, status = "accepted") {
+  return {
+    id: `friend-${account.id}`,
+    username: account.username,
+    accountId: account.id,
+    status
+  };
+}
+
+function accountForFriend(friend) {
+  return accounts.find((account) => account.id === friend.accountId)
+    || accounts.find((account) => account.username.toLowerCase() === friend.username.toLowerCase());
+}
+
+function hasActiveClan(accountState) {
+  return Boolean(
+    accountState?.selectedStar
+    || Object.keys(accountState?.teamCards || {}).length
+  );
+}
+
+function friendCard(friend, senderAccount = null) {
   return {
     id: `friend-${friend.id}`,
     name: friend.username,
@@ -1751,7 +1852,10 @@ function friendCard(friend) {
     rating: Math.max(72, Math.min(99, 70 + Math.floor((state.level || 1) / 2))),
     rarity: "Friend",
     realPlayer: true,
-    friendId: friend.id
+    friendId: friend.id,
+    accountId: friend.accountId || "",
+    fromAccountId: senderAccount?.id || "",
+    fromUsername: senderAccount?.username || ""
   };
 }
 
@@ -2206,21 +2310,46 @@ function renderFriends() {
   friendsList.className = "friends-list";
   friends.forEach((friend) => {
     const row = document.createElement("div");
-    const activeInvite = state.joinRequest?.friendId === friend.id;
+    const activeInvite = hasPendingXiInvite(friend);
+    const isPending = friend.status === "pending";
     row.className = "friend-row";
-    row.innerHTML = `
-      <div>
-        <strong>${friend.username}</strong>
-        <span>${activeInvite ? "Team request active" : "Friended"}</span>
-      </div>
-      <button class="secondary" type="button" data-invite="${friend.id}">${activeInvite ? "Invited" : "Invite to your XI"}</button>
-      <button class="secondary danger-btn" type="button" data-remove="${friend.id}" aria-label="Remove ${friend.username}">Remove</button>
-    `;
-    row.querySelector("[data-invite]").disabled = activeInvite;
-    row.querySelector("[data-invite]").addEventListener("click", () => inviteFriend(friend.id));
-    row.querySelector("[data-remove]").addEventListener("click", () => removeFriend(friend.id));
+    if (isPending) {
+      row.innerHTML = `
+        <div>
+          <strong>${friend.username}</strong>
+          <span>Friend request pending</span>
+        </div>
+        <div class="friend-actions">
+          <button type="button" data-accept-friend="${friend.id}">Accept</button>
+          <button class="secondary danger-btn" type="button" data-decline-friend="${friend.id}">Decline</button>
+        </div>
+      `;
+      row.querySelector("[data-accept-friend]").addEventListener("click", () => acceptFriendRequest(friend.id));
+      row.querySelector("[data-decline-friend]").addEventListener("click", () => declineFriendRequest(friend.id));
+    } else {
+      row.innerHTML = `
+        <div>
+          <strong>${friend.username}</strong>
+          <span>${activeInvite ? "Team request active" : "Friended"}</span>
+        </div>
+        <div class="friend-actions">
+          <button class="secondary" type="button" data-invite="${friend.id}">${activeInvite ? "Invited" : "Invite to your XI"}</button>
+          <button class="secondary danger-btn" type="button" data-remove="${friend.id}" aria-label="Remove ${friend.username}">Remove</button>
+        </div>
+      `;
+      row.querySelector("[data-invite]").disabled = activeInvite;
+      row.querySelector("[data-invite]").addEventListener("click", () => inviteFriend(friend.id));
+      row.querySelector("[data-remove]").addEventListener("click", () => removeFriend(friend.id));
+    }
     friendsList.appendChild(row);
   });
+}
+
+function hasPendingXiInvite(friend) {
+  const senderAccount = activeAccount();
+  const receiverAccount = accountForFriend(friend);
+  const request = receiverAccount?.state?.joinRequest;
+  return Boolean(senderAccount && isRealJoinRequest(request) && request.fromAccountId === senderAccount.id);
 }
 
 function nextRewardLevelNumber() {
