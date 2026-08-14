@@ -193,6 +193,7 @@ const defaultState = {
   redeemedCodes: [],
   claimedLevelRewards: [],
   badges: [],
+  friends: [],
   playerStats: {},
   joinRequest: null,
   activeMatch: null
@@ -234,6 +235,8 @@ const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
 const levelRewardsList = document.querySelector("#levelRewardsList");
+const addFriendBtn = document.querySelector("#addFriendBtn");
+const friendsList = document.querySelector("#friendsList");
 const joinRequestTitle = document.querySelector("#joinRequestTitle");
 const joinRequestText = document.querySelector("#joinRequestText");
 const acceptJoinBtn = document.querySelector("#acceptJoinBtn");
@@ -344,6 +347,7 @@ function freshState(inventoryGrant = false) {
     inventory: inventoryGrant ? allInventoryCards(inventoryGrant) : [],
     teamCards: {},
     deletedCardNames: [],
+    friends: [],
     playerStats: {},
     joinRequest: null,
     activeMatch: null
@@ -455,6 +459,7 @@ function mergeStates(baseState, incomingState) {
     redeemedCodes: uniqueNames([...(baseState.redeemedCodes || []), ...(incomingState.redeemedCodes || [])]),
     claimedLevelRewards: uniqueNames([...(baseState.claimedLevelRewards || []), ...(incomingState.claimedLevelRewards || [])]),
     badges: uniqueNames([...(baseState.badges || []), ...(incomingState.badges || [])]),
+    friends: uniqueFriends([...(baseState.friends || []), ...(incomingState.friends || [])]),
     playerStats: { ...(baseState.playerStats || {}), ...(incomingState.playerStats || {}) },
     selectedStar: baseState.selectedStar || incomingState.selectedStar || null,
     selectedStarSlot: baseState.selectedStarSlot || incomingState.selectedStarSlot || null,
@@ -492,6 +497,7 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.redeemedCodes = savedState.redeemedCodes || [];
   savedState.claimedLevelRewards = savedState.claimedLevelRewards || [];
   savedState.badges = savedState.badges || [];
+  savedState.friends = uniqueFriends(savedState.friends || []);
   savedState.playerStats = savedState.playerStats || {};
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
@@ -874,6 +880,64 @@ function finishCreateAccount(username) {
   saveAccounts();
   closeGamePrompt();
   loginAccount(account.id);
+}
+
+function addFriend() {
+  openGamePrompt({
+    title: "Add Friend",
+    label: "Friend username",
+    value: "",
+    submitLabel: "Add",
+    onSubmit: finishAddFriend
+  });
+}
+
+function finishAddFriend(username) {
+  const trimmedUsername = username?.trim();
+  if (!trimmedUsername) return;
+  const savedUsername = trimmedUsername.slice(0, 24);
+  const duplicate = state.friends.some((friend) => friend.username.toLowerCase() === savedUsername.toLowerCase());
+  if (duplicate) {
+    showGamePromptMessage("That friend is already added.");
+    return;
+  }
+  if (activeAccount()?.username?.toLowerCase() === savedUsername.toLowerCase()) {
+    showGamePromptMessage("You cannot add yourself.");
+    return;
+  }
+  state.friends = uniqueFriends([
+    ...state.friends,
+    {
+      id: `friend-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      username: savedUsername
+    }
+  ]);
+  closeGamePrompt();
+  reportTitle.textContent = `${savedUsername} friended`;
+  reportText.textContent = `${savedUsername} can now be invited to your XI.`;
+  saveState();
+  render();
+}
+
+function removeFriend(id) {
+  const friend = state.friends.find((item) => item.id === id);
+  if (!friend) return;
+  state.friends = state.friends.filter((item) => item.id !== id);
+  if (state.joinRequest?.friendId === id) state.joinRequest = null;
+  reportTitle.textContent = `${friend.username} removed`;
+  reportText.textContent = `${friend.username} is no longer in your friends list.`;
+  saveState();
+  render();
+}
+
+function inviteFriend(id) {
+  const friend = state.friends.find((item) => item.id === id);
+  if (!friend) return;
+  state.joinRequest = friendCard(friend);
+  reportTitle.textContent = `${friend.username} invited`;
+  reportText.textContent = `${friend.username} has a Team Request ready. Accept it to add them to your XI.`;
+  saveState();
+  render();
 }
 
 function openProfileEditor() {
@@ -1664,6 +1728,33 @@ function uniqueNames(names) {
   return [...new Set(names.filter(Boolean))];
 }
 
+function uniqueFriends(friends) {
+  const seen = new Set();
+  return (friends || []).flatMap((friend, index) => {
+    const username = String(friend?.username || friend || "").trim().slice(0, 24);
+    const key = username.toLowerCase();
+    if (!username || seen.has(key)) return [];
+    seen.add(key);
+    return [{
+      id: friend?.id || `friend-${Date.now()}-${index}`,
+      username
+    }];
+  });
+}
+
+function friendCard(friend) {
+  return {
+    id: `friend-${friend.id}`,
+    name: friend.username,
+    position: "ST",
+    team: "Friend XI",
+    rating: Math.max(72, Math.min(99, 70 + Math.floor((state.level || 1) / 2))),
+    rarity: "Friend",
+    realPlayer: true,
+    friendId: friend.id
+  };
+}
+
 function renderCurrentCard() {
   if (!state.currentCard) {
     currentCardName.textContent = "No card yet";
@@ -1975,12 +2066,14 @@ function formatChance(chance) {
 function chanceLabel(card) {
   if (card.specialAccess) return "only special guest and devs";
   if (card.codeOnly) return "code only";
+  if (card.realPlayer || card.rarity === "Friend") return "friended player";
   return `${chancePercent(card)}% chance`;
 }
 
 function chanceSortValue(card) {
   if (card.specialAccess) return -1;
   if (card.codeOnly) return -0.5;
+  if (card.realPlayer || card.rarity === "Friend") return -0.25;
   return Number(chancePercent(card));
 }
 
@@ -1991,6 +2084,7 @@ function raritySortValue(card) {
     Icon: 2,
     Elite: 3,
     Hero: 4,
+    Friend: 4.5,
     Gold: 5,
     Silver: 6,
     Bronze: 7
@@ -2099,6 +2193,36 @@ function renderLevelRewards() {
   });
 }
 
+function renderFriends() {
+  const friends = uniqueFriends(state.friends || []);
+  state.friends = friends;
+  friendsList.innerHTML = "";
+  if (!friends.length) {
+    friendsList.className = "friends-list empty-state";
+    friendsList.textContent = "No friends yet.";
+    return;
+  }
+
+  friendsList.className = "friends-list";
+  friends.forEach((friend) => {
+    const row = document.createElement("div");
+    const activeInvite = state.joinRequest?.friendId === friend.id;
+    row.className = "friend-row";
+    row.innerHTML = `
+      <div>
+        <strong>${friend.username}</strong>
+        <span>${activeInvite ? "Team request active" : "Friended"}</span>
+      </div>
+      <button class="secondary" type="button" data-invite="${friend.id}">${activeInvite ? "Invited" : "Invite to your XI"}</button>
+      <button class="secondary danger-btn" type="button" data-remove="${friend.id}" aria-label="Remove ${friend.username}">Remove</button>
+    `;
+    row.querySelector("[data-invite]").disabled = activeInvite;
+    row.querySelector("[data-invite]").addEventListener("click", () => inviteFriend(friend.id));
+    row.querySelector("[data-remove]").addEventListener("click", () => removeFriend(friend.id));
+    friendsList.appendChild(row);
+  });
+}
+
 function nextRewardLevelNumber() {
   return Object.keys(levelRewards)
     .map(Number)
@@ -2173,6 +2297,7 @@ function render() {
   renderCurrentCard();
   renderInventory();
   renderStatus();
+  renderFriends();
   renderMatch();
   renderJoinRequest();
 }
@@ -2225,6 +2350,7 @@ profileEditBtn.addEventListener("click", (event) => {
 profilePhotoInput.addEventListener("change", () => {
   saveProfilePhoto(profilePhotoInput.files?.[0]);
 });
+addFriendBtn.addEventListener("click", addFriend);
 createAccountBtn.addEventListener("click", createAccount);
 gamePromptForm.addEventListener("submit", (event) => {
   event.preventDefault();
