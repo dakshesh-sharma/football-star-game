@@ -305,6 +305,8 @@ h3 {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+  max-height: 214px;
+  overflow: auto;
 }
 
 .level-reward-row {
