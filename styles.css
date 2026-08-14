@@ -154,8 +154,8 @@ h3 {
 .level-profile-line {
   align-items: center;
   display: inline-flex;
-  gap: 14px;
   justify-content: flex-end;
+  position: relative;
 }
 
 .profile strong {
@@ -287,9 +287,12 @@ h3 {
 }
 
 .status-profile-btn {
+  left: -56px;
   min-height: 32px;
   margin-top: 0 !important;
-  margin-right: 2px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   width: 32px;
 }
 
