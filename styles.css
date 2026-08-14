@@ -1112,10 +1112,10 @@ h3 {
 }
 
 .inventory .inventory-card {
-  gap: 8px;
-  grid-template-columns: 58px minmax(0, 1fr) 96px;
+  gap: 10px;
+  grid-template-columns: 72px minmax(0, 1fr) 122px;
   min-height: 0;
-  padding: 9px;
+  padding: 10px;
 }
 
 .inventory-card::before,
@@ -1155,15 +1155,16 @@ h3 {
   border-radius: 7px;
   grid-column: 1;
   grid-row: 1;
-  padding: 6px 4px;
+  min-height: 72px;
+  padding: 10px 6px;
 }
 
 .inventory .card-rating strong {
-  font-size: 1.32rem;
+  font-size: 1.68rem;
 }
 
 .inventory .card-rating span {
-  font-size: 0.64rem;
+  font-size: 0.78rem;
 }
 
 .card-rating span {
@@ -1193,10 +1194,10 @@ h3 {
   align-self: start;
   grid-column: 3;
   grid-row: 1;
-  height: 108px;
+  height: 136px;
   justify-self: end;
-  padding: 5px;
-  width: 96px;
+  padding: 7px;
+  width: 122px;
 }
 
 .card-details {
@@ -1640,7 +1641,7 @@ h3 {
 }
 
 .inventory .card-photo {
-  height: 88px;
+  height: 118px;
 }
 
 .replace-hint {
