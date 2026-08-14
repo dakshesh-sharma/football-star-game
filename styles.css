@@ -178,10 +178,32 @@ h3 {
   border-radius: 999px;
   min-height: 58px;
   padding: 0;
+  position: relative;
 }
 
 .profile-avatar-btn:hover {
   filter: none;
+}
+
+.profile-avatar-plus {
+  align-items: center;
+  background: var(--accent);
+  border: 2px solid #101414;
+  border-radius: 999px;
+  bottom: 0;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+  color: #171308;
+  display: flex;
+  font-size: 1rem;
+  font-weight: 950;
+  height: 23px;
+  justify-content: center;
+  line-height: 1;
+  position: absolute;
+  right: -2px;
+  text-shadow: none;
+  width: 23px;
+  z-index: 2;
 }
 
 .profile-avatar {
