@@ -232,6 +232,7 @@ const selectorReportCard = document.querySelector("#selectorReportCard");
 const reportTitle = document.querySelector("#reportTitle");
 const reportText = document.querySelector("#reportText");
 const unlockText = document.querySelector("#unlockText");
+const levelRewardsList = document.querySelector("#levelRewardsList");
 const joinRequestTitle = document.querySelector("#joinRequestTitle");
 const joinRequestText = document.querySelector("#joinRequestText");
 const acceptJoinBtn = document.querySelector("#acceptJoinBtn");
@@ -1930,15 +1931,37 @@ function renderStatus() {
     : `Reach Level 5 to unlock stronger rival teams. Next level: ${nextXp - state.xp} XP.`;
   accountToggleBtn.textContent = account ? "Logout" : "Login";
   changeUsernameBtn.hidden = !account;
+  renderLevelRewards();
 }
 
 function nextLevelRewardLabel() {
-  const nextRewardLevel = Object.keys(levelRewards)
-    .map(Number)
-    .filter((level) => level > state.level)
-    .sort((a, b) => a - b)[0];
+  const nextRewardLevel = nextRewardLevelNumber();
   if (!nextRewardLevel) return "Unlocked: stronger rival teams. More rewards coming soon.";
   return `Next reward at Level ${nextRewardLevel}: ${levelRewards[nextRewardLevel].message}`;
+}
+
+function renderLevelRewards() {
+  levelRewardsList.innerHTML = "";
+  Object.entries(levelRewards).forEach(([level, reward]) => {
+    const rewardLevel = Number(level);
+    const claimed = hasInfiniteLevel() || state.claimedLevelRewards.includes(level);
+    const next = !claimed && rewardLevel > state.level && rewardLevel === nextRewardLevelNumber();
+    const row = document.createElement("div");
+    row.className = `level-reward-row ${claimed ? "claimed" : next ? "next" : "locked"}`;
+    row.innerHTML = `
+      <span class="level-reward-level">Lv ${rewardLevel}</span>
+      <span class="level-reward-text">${reward.message}</span>
+      <strong>${claimed ? "Done" : next ? "Next" : "Locked"}</strong>
+    `;
+    levelRewardsList.appendChild(row);
+  });
+}
+
+function nextRewardLevelNumber() {
+  return Object.keys(levelRewards)
+    .map(Number)
+    .filter((level) => level > state.level)
+    .sort((a, b) => a - b)[0] || null;
 }
 
 function renderMatch() {

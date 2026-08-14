@@ -301,6 +301,62 @@ h3 {
   color: #ff8a8a;
 }
 
+.level-rewards-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.level-reward-row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 42px;
+  padding: 8px;
+}
+
+.level-reward-level {
+  background: #101414;
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 5px 7px;
+}
+
+.level-reward-text {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.level-reward-row strong {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.level-reward-row.claimed {
+  border-color: rgba(84, 255, 159, 0.34);
+}
+
+.level-reward-row.claimed strong {
+  color: #54ff9f;
+}
+
+.level-reward-row.next {
+  border-color: rgba(242, 193, 78, 0.65);
+  box-shadow: 0 0 18px rgba(242, 193, 78, 0.14);
+}
+
+.level-reward-row.next strong {
+  color: var(--accent);
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: 1fr;
