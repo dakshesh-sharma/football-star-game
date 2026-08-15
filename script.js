@@ -179,6 +179,20 @@ const formation = [
   { id: "rw", slot: "RW", x: 77, y: 36 }
 ];
 
+const mobileFormationPositions = {
+  gk: { x: 50, y: 94 },
+  "cb-left": { x: 27, y: 80 },
+  "cb-center": { x: 50, y: 84 },
+  "cb-right": { x: 73, y: 80 },
+  lm: { x: 15, y: 53 },
+  "cm-left": { x: 40, y: 64 },
+  "cm-right": { x: 60, y: 64 },
+  rm: { x: 85, y: 53 },
+  lw: { x: 22, y: 34 },
+  st: { x: 50, y: 25 },
+  rw: { x: 78, y: 34 }
+};
+
 const starterNames = ["Maignan", "Ruben Dias", "Araujo", "Saliba", "Son", "Pedri", "Modric", "Salah", "Neymar Jr", "Mbappe", "Yamal"];
 const defaultState = {
   selectedStar: null,
@@ -1148,15 +1162,16 @@ function resizeProfilePhoto(file) {
 function buildTeam() {
   const selectedStarSlot = state.selectedStarSlot || bestSlotIdForPosition(state.selectedStar?.position);
   return formation.map((spot, index) => {
+    const pitchSpot = pitchDisplaySpot(spot);
     const star = state.selectedStar;
     if (star && spot.id === selectedStarSlot) {
-      return { ...spot, ...star, id: spot.id, cardId: star.id, slot: star.position, controlled: true };
+      return { ...pitchSpot, ...star, id: spot.id, cardId: star.id, slot: star.position, controlled: true };
     }
 
     const savedCard = state.teamCards[spot.id];
     if (savedCard) {
       return {
-        ...spot,
+        ...pitchSpot,
         ...savedCard,
         id: spot.id,
         cardId: savedCard.id,
@@ -1169,7 +1184,7 @@ function buildTeam() {
     const starterCard = player ? starterCardForName(player) : null;
     if (player && starterCard) {
       return {
-        ...spot,
+        ...pitchSpot,
         ...starterCard,
         id: spot.id,
         cardId: `starter-${starterCard.name.toLowerCase().replaceAll(" ", "-")}`,
@@ -1179,7 +1194,7 @@ function buildTeam() {
     }
 
     return {
-      ...spot,
+      ...pitchSpot,
       name: botName(spot),
       team: "Starter Bots",
       rating: 60 + Math.min(state.level, 10),
@@ -1187,6 +1202,11 @@ function buildTeam() {
       controlled: false
     };
   });
+}
+
+function pitchDisplaySpot(spot) {
+  if (typeof window === "undefined" || !window.matchMedia("(max-width: 600px)").matches) return spot;
+  return { ...spot, ...(mobileFormationPositions[spot.id] || {}) };
 }
 
 function botName(spot) {

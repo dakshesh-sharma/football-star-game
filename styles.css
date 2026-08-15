@@ -2447,7 +2447,7 @@ h3 {
   }
 
   .pitch {
-    min-height: 440px;
+    min-height: 560px;
   }
 
   .match-scoreboard {
@@ -2477,34 +2477,40 @@ h3 {
   }
 
   .player-dot {
-    min-height: 84px;
-    padding: 5px;
-    width: 92px;
+    border-width: 1px;
+    gap: 3px;
+    min-height: 66px;
+    padding: 4px;
+    width: clamp(54px, 12vw, 70px);
   }
 
   .pitch-player-head {
-    min-height: 30px;
-    padding: 4px 5px;
-  }
-
-  .pitch-player-head span {
-    font-size: 0.62rem;
-  }
-
-  .pitch-player-head strong {
-    font-size: 0.66rem;
-  }
-
-  .pitch-card-rating {
+    border-radius: 5px;
+    min-height: 23px;
     padding: 3px 4px;
   }
 
+  .pitch-player-head span {
+    font-size: 0.52rem;
+  }
+
+  .pitch-player-head strong {
+    border-radius: 4px;
+    font-size: 0.56rem;
+    padding: 2px 3px;
+  }
+
+  .pitch-card-rating {
+    border-radius: 5px;
+    padding: 2px 4px;
+  }
+
   .pitch-card-rating strong {
-    font-size: 0.9rem;
+    font-size: 0.72rem;
   }
 
   .pitch-card-rating span {
-    font-size: 0.58rem;
+    font-size: 0.5rem;
   }
 
   .player-dot .name {
@@ -2513,7 +2519,8 @@ h3 {
   }
 
   .player-dot .tag {
-    font-size: 0.5rem;
+    font-size: 0.42rem;
+    padding: 2px 3px;
   }
 
   .card-actions {
