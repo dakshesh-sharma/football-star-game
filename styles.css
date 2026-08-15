@@ -633,6 +633,163 @@ h3 {
   perspective: 700px;
 }
 
+.match-scene {
+  aspect-ratio: 1.55;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 36px, transparent 36px 72px),
+    linear-gradient(90deg, #167847, #22915a 50%, #167847);
+  min-height: 380px;
+  perspective: none;
+}
+
+.match-field-markings,
+.match-field-halfway,
+.match-field-circle,
+.match-field-box {
+  border-color: rgba(255, 255, 255, 0.68);
+  pointer-events: none;
+  position: absolute;
+}
+
+.match-field-halfway {
+  border-top: 2px solid rgba(255, 255, 255, 0.68);
+  left: 0;
+  right: 0;
+  top: 50%;
+}
+
+.match-field-circle {
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  border-radius: 999px;
+  height: 104px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 104px;
+}
+
+.match-field-box {
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  height: 24%;
+  left: 30%;
+  width: 40%;
+}
+
+.match-field-box-top {
+  border-top: 0;
+  top: 0;
+}
+
+.match-field-box-bottom {
+  border-bottom: 0;
+  bottom: 0;
+}
+
+.match-avatar {
+  align-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  font-size: 0.56rem;
+  font-weight: 950;
+  height: 42px;
+  justify-content: center;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  z-index: 3;
+}
+
+.match-controlled {
+  background: #e4ae22;
+  border-color: #fff4ad;
+  box-shadow: 0 0 0 5px rgba(244, 194, 71, 0.2), 0 5px 12px rgba(0, 0, 0, 0.35);
+}
+
+.match-controlled.is-sprinting {
+  box-shadow: 0 0 0 8px rgba(244, 194, 71, 0.3), 0 5px 12px rgba(0, 0, 0, 0.35);
+}
+
+.match-teammate {
+  background: #2d76d2;
+  opacity: 0.9;
+}
+
+.match-opponent {
+  background: #cf4e4e;
+  opacity: 0.95;
+}
+
+.match-ball {
+  background: #fff;
+  border: 2px solid #111816;
+  border-radius: 999px;
+  height: 15px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 15px;
+  z-index: 4;
+}
+
+.match-controls {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 116px;
+}
+
+.match-joystick {
+  height: 92px;
+  touch-action: none;
+  width: 92px;
+}
+
+.match-joystick-ring {
+  background: rgba(10, 20, 17, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  display: block;
+  height: 92px;
+  position: relative;
+  width: 92px;
+}
+
+.match-joystick-knob {
+  background: rgba(255, 255, 255, 0.86);
+  border: 2px solid #163b2b;
+  border-radius: 999px;
+  height: 38px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+}
+
+.match-action-buttons {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.match-control-btn {
+  border-radius: 999px;
+  min-height: 54px;
+  min-width: 72px;
+}
+
+.match-control-btn.sprint {
+  background: #f4c247;
+  color: #101414;
+}
+
+.match-control-btn.shoot {
+  background: #d9554f;
+  color: #fff;
+}
+
 .scene-stand {
   background:
     repeating-linear-gradient(90deg, #f2c14e 0 12px, #e95d4f 12px 24px, #4ea7f2 24px 36px, #f5f0e8 36px 48px);
@@ -2533,7 +2690,28 @@ h3 {
   }
 
   .match-scene {
-    min-height: 190px;
+    min-height: 360px;
+  }
+
+  .match-controls {
+    min-height: 104px;
+  }
+
+  .match-joystick,
+  .match-joystick-ring {
+    height: 82px;
+    width: 82px;
+  }
+
+  .match-action-buttons {
+    gap: 5px;
+  }
+
+  .match-control-btn {
+    font-size: 0.72rem;
+    min-height: 48px;
+    min-width: 58px;
+    padding: 0 8px;
   }
 
   .scene-player {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=20260815-play2" />
+    <link rel="stylesheet" href="styles.css?v=20260815-fcmobile1" />
   </head>
   <body>
     <main class="app-shell">
@@ -89,14 +89,27 @@
               <span id="awayLeaderLabel">Rival XI</span>
             </div>
             <div id="matchScene" class="match-scene" aria-live="polite">
-              <div class="scene-stand"></div>
-              <div class="scene-crowd"></div>
-              <div id="sceneTeammateLeft" class="scene-person scene-teammate scene-teammate-left"></div>
-              <div id="sceneOpponent" class="scene-person scene-opponent"></div>
-              <div id="scenePlayer" class="scene-player">Ready</div>
-              <div id="sceneTeammateRight" class="scene-person scene-teammate scene-teammate-right"></div>
-              <div id="sceneBall" class="scene-ball"></div>
+              <div class="match-field-markings" aria-hidden="true">
+                <div class="match-field-halfway"></div>
+                <div class="match-field-circle"></div>
+                <div class="match-field-box match-field-box-top"></div>
+                <div class="match-field-box match-field-box-bottom"></div>
+              </div>
+              <div id="matchOpponent" class="match-avatar match-opponent">RIVAL</div>
+              <div id="matchTeammate" class="match-avatar match-teammate">XI</div>
+              <div id="matchAvatar" class="match-avatar match-controlled">YOU</div>
+              <div id="matchBall" class="match-ball"></div>
               <div id="sceneGoalText" class="scene-goal-text">Kickoff</div>
+            </div>
+            <div class="match-controls" aria-label="Match controls">
+              <div id="matchJoystick" class="match-joystick" aria-label="Move player" role="application">
+                <span class="match-joystick-ring"><span id="matchJoystickKnob" class="match-joystick-knob"></span></span>
+              </div>
+              <div class="match-action-buttons">
+                <button id="matchPassBtn" class="match-control-btn secondary" type="button">Pass</button>
+                <button id="matchSprintBtn" class="match-control-btn sprint" type="button">Sprint</button>
+                <button id="matchShootBtn" class="match-control-btn shoot" type="button">Shoot</button>
+              </div>
             </div>
             <div class="match-actions">
               <span id="matchClockLabel" class="match-clock">Waiting for kickoff</span>
@@ -245,6 +258,6 @@
       </form>
     </section>
 
-    <script src="script.js?v=20260815-play2"></script>
+    <script src="script.js?v=20260815-fcmobile1"></script>
   </body>
 </html>

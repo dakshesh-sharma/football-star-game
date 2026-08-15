@@ -163,6 +163,9 @@ const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelo
 let databasePromise = null;
 let databaseReady = false;
 let matchTimer = null;
+let matchMoveTimer = null;
+let activeJoystickPointer = null;
+let joystickVector = { x: 0, y: 0 };
 let startSplashActive = true;
 
 const formation = [
@@ -230,6 +233,15 @@ const layout = document.querySelector(".layout");
 const pitch = document.querySelector("#pitch");
 const pitchPlayBtn = document.querySelector("#pitchPlayBtn");
 const pitchFullscreenBtn = document.querySelector("#pitchFullscreenBtn");
+const matchAvatar = document.querySelector("#matchAvatar");
+const matchOpponent = document.querySelector("#matchOpponent");
+const matchTeammate = document.querySelector("#matchTeammate");
+const matchBall = document.querySelector("#matchBall");
+const matchJoystick = document.querySelector("#matchJoystick");
+const matchJoystickKnob = document.querySelector("#matchJoystickKnob");
+const matchPassBtn = document.querySelector("#matchPassBtn");
+const matchSprintBtn = document.querySelector("#matchSprintBtn");
+const matchShootBtn = document.querySelector("#matchShootBtn");
 const selectedPlayerLabel = document.querySelector("#selectedPlayerLabel");
 const levelLabel = document.querySelector("#levelLabel");
 const currentCardName = document.querySelector("#currentCardName");
@@ -296,8 +308,6 @@ const matchPanel = document.querySelector("#matchPanel");
 const homeLeaderLabel = document.querySelector("#homeLeaderLabel");
 const awayLeaderLabel = document.querySelector("#awayLeaderLabel");
 const matchScoreLabel = document.querySelector("#matchScoreLabel");
-const scenePlayer = document.querySelector("#scenePlayer");
-const sceneBall = document.querySelector("#sceneBall");
 const sceneGoalText = document.querySelector("#sceneGoalText");
 const matchClockLabel = document.querySelector("#matchClockLabel");
 const endMatchBtn = document.querySelector("#endMatchBtn");
@@ -1271,20 +1281,28 @@ function startMatch() {
     minute: 1,
     goals: [],
     homeLeader: teamLeaderName(),
-    awayLeader: opponentLeaders[Math.floor(Math.random() * opponentLeaders.length)]
+    awayLeader: opponentLeaders[Math.floor(Math.random() * opponentLeaders.length)],
+    playerX: 24,
+    playerY: 50,
+    ballX: 29,
+    ballY: 50,
+    sprinting: false
   };
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
   reportText.textContent = `${state.activeMatch.homeLeader} leads FC Stars against ${state.activeMatch.awayLeader}.`;
   saveState();
   render();
-  animateChance(state.selectedStar || buildTeam()[9], "Kickoff");
+  matchPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  sceneGoalText.textContent = "Kickoff";
+  updateMatchField();
   scheduleNextMatchMoment();
 }
 
 function endMatch() {
   if (!state.activeMatch) return;
   clearMatchTimer();
+  stopMatchMovement();
   const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
@@ -1297,7 +1315,7 @@ function endMatch() {
 function scheduleNextMatchMoment() {
   clearMatchTimer();
   if (!state.activeMatch) return;
-  matchTimer = window.setTimeout(playAutoMatchMoment, randomInt(2600, 4300));
+  matchTimer = window.setTimeout(playAutoMatchMoment, 1000);
 }
 
 function clearMatchTimer() {
@@ -1308,77 +1326,99 @@ function clearMatchTimer() {
 
 function playAutoMatchMoment() {
   if (!state.activeMatch) return;
-  state.activeMatch.minute = Math.min(90, state.activeMatch.minute + randomInt(5, 11));
+  state.activeMatch.minute += 1;
 
   if (state.activeMatch.minute >= 90) {
     endMatch();
     return;
   }
-
-  const opponentChance = Math.random() < 0.24;
-  if (opponentChance) {
-    playOpponentMoment();
-    scheduleNextMatchMoment();
-    return;
-  }
-
-  const scorer = chooseScorer();
-  const didScore = Math.random() > 0.38;
-
-  if (!didScore) {
-    animateChance(scorer, "Saved");
-    reportTitle.textContent = "Chance missed";
-    reportText.textContent = `${scorer.name} forced a save in minute ${state.activeMatch.minute}.`;
-    saveState();
-    render();
-    scheduleNextMatchMoment();
-    return;
-  }
-
-  state.activeMatch.home += 1;
-  const goalNumber = addGoalForPlayer(scorer.name);
-  const goal = {
-    scorer: scorer.name,
-    minute: state.activeMatch.minute,
-    goalNumber,
-    celebration: celebrationFor(scorer)
-  };
-  state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
-  animateChance(scorer, "GOAL!");
-  reportTitle.textContent = `${scorer.name} scores`;
-  reportText.textContent = `${goal.celebration}. Goal no. ${goalNumber} for ${scorer.name}.`;
   saveState();
   render();
   scheduleNextMatchMoment();
 }
 
-function playOpponentMoment() {
-  const didScore = Math.random() > 0.58;
-  const opponentName = state.activeMatch.awayLeader || "Rival Captain";
+function updateMatchField() {
+  const match = state.activeMatch;
+  if (!match) return;
+  match.playerX = Number.isFinite(match.playerX) ? match.playerX : 24;
+  match.playerY = Number.isFinite(match.playerY) ? match.playerY : 50;
+  match.ballX = Number.isFinite(match.ballX) ? match.ballX : match.playerX + 5;
+  match.ballY = Number.isFinite(match.ballY) ? match.ballY : match.playerY;
+  matchAvatar.textContent = shortName(state.selectedStar?.name || activeAccount()?.username || "YOU");
+  matchAvatar.style.left = `${match.playerX}%`;
+  matchAvatar.style.top = `${match.playerY}%`;
+  matchBall.style.left = `${match.ballX}%`;
+  matchBall.style.top = `${match.ballY}%`;
+  matchAvatar.classList.toggle("is-sprinting", Boolean(match.sprinting));
+  matchTeammate.style.left = `${Math.min(88, match.playerX + 18)}%`;
+  matchTeammate.style.top = `${Math.max(16, match.playerY - 14)}%`;
+  matchOpponent.style.left = `${Math.max(12, match.playerX + 30)}%`;
+  matchOpponent.style.top = `${Math.min(82, match.playerY + 7)}%`;
+}
 
-  if (!didScore) {
-    scenePlayer.textContent = shortName(opponentName);
-    animateChance({ name: opponentName }, "Blocked");
-    reportTitle.textContent = "Defended";
-    reportText.textContent = `${opponentName} was stopped in minute ${state.activeMatch.minute}.`;
-    saveState();
-    render();
-    return;
+function moveMatchPlayer(x, y) {
+  const match = state.activeMatch;
+  if (!match) return;
+  const speed = match.sprinting ? 2.2 : 1.2;
+  match.playerX = Math.max(7, Math.min(93, match.playerX + x * speed));
+  match.playerY = Math.max(9, Math.min(91, match.playerY + y * speed));
+  if (Math.hypot(match.ballX - match.playerX, match.ballY - match.playerY) < 13) {
+    match.ballX = match.playerX + 5;
+    match.ballY = match.playerY;
   }
+  updateMatchField();
+}
 
-  state.activeMatch.away += 1;
-  const goal = {
-    scorer: opponentName,
-    minute: state.activeMatch.minute,
-    goalNumber: state.activeMatch.away,
-    celebration: "Rival goal"
-  };
-  state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
-  animateChance({ name: opponentName }, "Rival Goal");
-  reportTitle.textContent = `${opponentName} scores`;
-  reportText.textContent = `Rival XI makes it ${state.activeMatch.home}-${state.activeMatch.away}.`;
+function matchAction(action) {
+  const match = state.activeMatch;
+  if (!match) return;
+  if (action === "pass") {
+    match.ballX = Math.min(90, match.playerX + 22);
+    match.ballY = Math.max(8, Math.min(92, match.playerY - 8));
+    sceneGoalText.textContent = "Pass";
+    reportText.textContent = "Pass played into space.";
+  }
+  if (action === "shoot") {
+    match.ballX = 94;
+    match.ballY = match.playerY;
+    const scorer = state.selectedStar || buildTeam().find((player) => player.slot !== "GK") || cardPool[0];
+    const scored = Math.random() > 0.42 && match.playerX > 55;
+    sceneGoalText.textContent = scored ? "GOAL!" : "SAVED";
+    if (scored) {
+      match.home += 1;
+      const goalNumber = addGoalForPlayer(scorer.name);
+      match.goals = [{ scorer: scorer.name, minute: match.minute, goalNumber, celebration: "Goal" }, ...match.goals].slice(0, 12);
+      reportTitle.textContent = `${scorer.name} scores`;
+      reportText.textContent = `A controlled finish. FC Stars lead ${match.home}-${match.away}.`;
+    } else {
+      reportTitle.textContent = "Shot saved";
+      reportText.textContent = "The rival goalkeeper kept it out.";
+    }
+  }
+  updateMatchField();
   saveState();
   render();
+}
+
+function stopMatchMovement() {
+  if (matchMoveTimer) window.clearInterval(matchMoveTimer);
+  matchMoveTimer = null;
+  activeJoystickPointer = null;
+  joystickVector = { x: 0, y: 0 };
+  if (matchJoystickKnob) matchJoystickKnob.style.transform = "translate(-50%, -50%)";
+}
+
+function updateJoystick(event) {
+  const rect = matchJoystick.getBoundingClientRect();
+  const max = Math.max(1, rect.width / 2 - 18);
+  const x = event.clientX - (rect.left + rect.width / 2);
+  const y = event.clientY - (rect.top + rect.height / 2);
+  const distance = Math.min(max, Math.hypot(x, y));
+  const angle = Math.atan2(y, x);
+  const knobX = Math.cos(angle) * distance;
+  const knobY = Math.sin(angle) * distance;
+  matchJoystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+  joystickVector = { x: knobX / max, y: knobY / max };
 }
 
 function chooseScorer() {
@@ -1473,20 +1513,6 @@ function celebrationFor(player) {
   if (player.rarity === "Icon") return "Icon moment";
   if (player.rarity === "Legend" || player.rarity === "G.O.A.T") return "Legend celebration";
   return "Team celebration";
-}
-
-function animateChance(player, text) {
-  scenePlayer.textContent = shortName(player.name);
-  sceneGoalText.textContent = text;
-  sceneBall.classList.remove("ball-shot");
-  scenePlayer.classList.remove("player-run");
-  scenePlayer.classList.remove("scene-celebrate");
-  void sceneBall.offsetWidth;
-  sceneBall.classList.add("ball-shot");
-  scenePlayer.classList.add("player-run");
-  if (text.toLowerCase().includes("goal")) {
-    window.setTimeout(() => scenePlayer.classList.add("scene-celebrate"), 760);
-  }
 }
 
 function randomInt(min, max) {
@@ -2449,10 +2475,8 @@ function renderMatch() {
   homeLeaderLabel.textContent = match.homeLeader || teamLeaderName();
   awayLeaderLabel.textContent = match.awayLeader || "Rival XI";
   matchScoreLabel.textContent = `${match.home} - ${match.away}`;
-  matchClockLabel.textContent = `${match.minute}' · Watching live`;
-  if (!scenePlayer.textContent || scenePlayer.textContent === "Ready") {
-    scenePlayer.textContent = state.selectedStar ? shortName(state.selectedStar.name) : "FC Stars";
-  }
+  matchClockLabel.textContent = `${match.minute}' · Play now`;
+  updateMatchField();
   renderGoalFeed();
   if (!matchTimer) scheduleNextMatchMoment();
 }
@@ -2516,6 +2540,46 @@ topSpinBtn.addEventListener("click", spinCard);
 pitchPlayBtn.addEventListener("click", (event) => {
   event.stopPropagation();
   startMatch();
+});
+matchPassBtn.addEventListener("click", () => matchAction("pass"));
+matchShootBtn.addEventListener("click", () => matchAction("shoot"));
+matchSprintBtn.addEventListener("pointerdown", () => {
+  if (!state.activeMatch) return;
+  state.activeMatch.sprinting = true;
+  updateMatchField();
+});
+matchSprintBtn.addEventListener("pointerup", () => {
+  if (!state.activeMatch) return;
+  state.activeMatch.sprinting = false;
+  updateMatchField();
+});
+matchSprintBtn.addEventListener("pointerleave", () => {
+  if (!state.activeMatch) return;
+  state.activeMatch.sprinting = false;
+  updateMatchField();
+});
+matchJoystick.addEventListener("pointerdown", (event) => {
+  if (!state.activeMatch) return;
+  activeJoystickPointer = event.pointerId;
+  matchJoystick.setPointerCapture(event.pointerId);
+  updateJoystick(event);
+});
+matchJoystick.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== activeJoystickPointer) return;
+  updateJoystick(event);
+  moveMatchPlayer(joystickVector.x, joystickVector.y);
+});
+matchJoystick.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== activeJoystickPointer) return;
+  stopMatchMovement();
+});
+matchJoystick.addEventListener("pointercancel", stopMatchMovement);
+window.addEventListener("keydown", (event) => {
+  if (!state.activeMatch || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"].includes(event.key)) return;
+  event.preventDefault();
+  const x = event.key === "ArrowRight" || event.key.toLowerCase() === "d" ? 1 : event.key === "ArrowLeft" || event.key.toLowerCase() === "a" ? -1 : 0;
+  const y = event.key === "ArrowDown" || event.key.toLowerCase() === "s" ? 1 : event.key === "ArrowUp" || event.key.toLowerCase() === "w" ? -1 : 0;
+  moveMatchPlayer(x, y);
 });
 pitchFullscreenBtn.addEventListener("click", (event) => {
   event.stopPropagation();
