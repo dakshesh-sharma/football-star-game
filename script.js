@@ -1,5 +1,5 @@
 const cardPool = [
-  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: "∞", rarity: "G.O.A.T", chance: 0, specialAccess: true },
+  { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: "∞", rarity: "G.O.A.T", chance: 0, specialAccess: true, image: "assets/ronaldo.png" },
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.1, image: "assets/mbappu.png" },
