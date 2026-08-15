@@ -131,7 +131,7 @@ const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
 const developerUsername = "Sync_Vo1d";
 const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
-const ronaldoAccessUsernames = ["Shiva Porwal"];
+const allCardAccessUsernames = ["Shiva Porwal"];
 const defaultProfileMotto = "Build your XI";
 const goatProfileBadge = "goat-profile-glow";
 const avatarStyles = {
@@ -479,7 +479,7 @@ function hasFullInventoryUsername(username) {
 
 function accountInventoryGrant(account) {
   if (account?.isDev) return "dev";
-  if (ronaldoAccessUsernames.includes(String(account?.username || "").trim())) return "ronaldo";
+  if (allCardAccessUsernames.includes(String(account?.username || "").trim())) return "dev";
   if (hasFullInventoryUsername(account?.username)) return "special";
   return false;
 }
@@ -573,10 +573,6 @@ function enrichCard(card) {
 }
 
 function allInventoryCards(inventoryGrant = "special") {
-  if (inventoryGrant === "ronaldo") {
-    const ronaldo = cardPool.find((card) => card.name === "Cristiano Ronaldo");
-    return ronaldo ? [{ ...ronaldo, id: "owned-cristiano-ronaldo" }] : [];
-  }
   const sourceCards = inventoryGrant === "dev" ? [...cardPool, ...codeOnlyCards] : cardPool;
   return sourceCards
     .filter((card) => inventoryGrant === "dev" || card.name !== "Cristiano Ronaldo")
