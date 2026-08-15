@@ -1279,7 +1279,6 @@ function startMatch() {
   saveState();
   render();
   animateChance(state.selectedStar || buildTeam()[9], "Kickoff");
-  speakCommentary(`${state.activeMatch.homeLeader} versus ${state.activeMatch.awayLeader}. Kickoff.`);
   scheduleNextMatchMoment();
 }
 
@@ -1328,7 +1327,6 @@ function playAutoMatchMoment() {
 
   if (!didScore) {
     animateChance(scorer, "Saved");
-    speakCommentary(`${scorer.name} shoots. Great save by the keeper.`);
     reportTitle.textContent = "Chance missed";
     reportText.textContent = `${scorer.name} forced a save in minute ${state.activeMatch.minute}.`;
     saveState();
@@ -1347,7 +1345,6 @@ function playAutoMatchMoment() {
   };
   state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
   animateChance(scorer, "GOAL!");
-  speakGoal(scorer, goal.celebration);
   reportTitle.textContent = `${scorer.name} scores`;
   reportText.textContent = `${goal.celebration}. Goal no. ${goalNumber} for ${scorer.name}.`;
   saveState();
@@ -1362,7 +1359,6 @@ function playOpponentMoment() {
   if (!didScore) {
     scenePlayer.textContent = shortName(opponentName);
     animateChance({ name: opponentName }, "Blocked");
-    speakCommentary(`${opponentName} attacks, but FC Stars blocks it.`);
     reportTitle.textContent = "Defended";
     reportText.textContent = `${opponentName} was stopped in minute ${state.activeMatch.minute}.`;
     saveState();
@@ -1379,7 +1375,6 @@ function playOpponentMoment() {
   };
   state.activeMatch.goals = [goal, ...state.activeMatch.goals].slice(0, 12);
   animateChance({ name: opponentName }, "Rival Goal");
-  speakCommentary(`${opponentName} scores for Rival XI.`);
   reportTitle.textContent = `${opponentName} scores`;
   reportText.textContent = `Rival XI makes it ${state.activeMatch.home}-${state.activeMatch.away}.`;
   saveState();
@@ -1492,26 +1487,6 @@ function animateChance(player, text) {
   if (text.toLowerCase().includes("goal")) {
     window.setTimeout(() => scenePlayer.classList.add("scene-celebrate"), 760);
   }
-}
-
-function speakGoal(player, celebration) {
-  const line = celebration === "Ankara Messi"
-    ? `Ankara Messi, Ankara Messi, Ankara Messi, goal! ${player.name} scores.`
-    : celebration === "Siuu"
-      ? `Siuu! ${player.name} scores a brilliant goal.`
-      : `Goal! ${player.name} scores for FC Stars.`;
-  speakCommentary(line);
-}
-
-function speakCommentary(line) {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(line);
-  const voices = window.speechSynthesis.getVoices();
-  utterance.voice = voices.find((voice) => voice.lang.startsWith("en") && /Daniel|Thomas|Google|Microsoft/i.test(voice.name)) || voices.find((voice) => voice.lang.startsWith("en")) || null;
-  utterance.rate = 1;
-  utterance.pitch = 0.95;
-  window.speechSynthesis.speak(utterance);
 }
 
 function randomInt(min, max) {
