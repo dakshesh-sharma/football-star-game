@@ -228,6 +228,7 @@ let activePromptSubmit = null;
 const starList = document.querySelector("#starList");
 const layout = document.querySelector(".layout");
 const pitch = document.querySelector("#pitch");
+const pitchFullscreenBtn = document.querySelector("#pitchFullscreenBtn");
 const selectedPlayerLabel = document.querySelector("#selectedPlayerLabel");
 const levelLabel = document.querySelector("#levelLabel");
 const currentCardName = document.querySelector("#currentCardName");
@@ -1205,8 +1206,39 @@ function buildTeam() {
 }
 
 function pitchDisplaySpot(spot) {
-  if (typeof window === "undefined" || !window.matchMedia("(max-width: 760px)").matches) return spot;
+  if (typeof window === "undefined" || document.fullscreenElement === pitch || !window.matchMedia("(max-width: 760px)").matches) return spot;
   return { ...spot, ...(mobileFormationPositions[spot.id] || {}) };
+}
+
+function updatePitchFullscreenButton() {
+  const isFullscreen = document.fullscreenElement === pitch;
+  pitch.classList.toggle("is-fullscreen", isFullscreen);
+  pitchFullscreenBtn.innerHTML = isFullscreen
+    ? '<span aria-hidden="true">×</span><span class="pitch-fullscreen-label">Exit</span>'
+    : '<span aria-hidden="true">⛶</span><span class="pitch-fullscreen-label">Full screen</span>';
+  pitchFullscreenBtn.setAttribute("aria-label", isFullscreen ? "Exit pitch fullscreen" : "Open pitch fullscreen");
+  pitchFullscreenBtn.title = isFullscreen ? "Exit pitch fullscreen" : "Open pitch fullscreen";
+  renderPitch();
+}
+
+async function togglePitchFullscreen() {
+  try {
+    if (document.fullscreenElement === pitch) {
+      await document.exitFullscreen();
+      if (screen.orientation?.unlock) screen.orientation.unlock();
+      return;
+    }
+
+    await pitch.requestFullscreen({ navigationUI: "hide" });
+    try {
+      await screen.orientation?.lock?.("landscape");
+    } catch {
+      // Orientation locking is unavailable in some browsers, but fullscreen still works.
+    }
+  } catch {
+    pitch.classList.toggle("fullscreen-fallback");
+    updatePitchFullscreenButton();
+  }
 }
 
 function botName(spot) {
@@ -2505,6 +2537,11 @@ function render() {
 }
 
 topSpinBtn.addEventListener("click", spinCard);
+pitchFullscreenBtn.addEventListener("click", (event) => {
+  event.stopPropagation();
+  togglePitchFullscreen();
+});
+document.addEventListener("fullscreenchange", updatePitchFullscreenButton);
 redeemCodeBtn.addEventListener("click", redeemCode);
 endMatchBtn.addEventListener("click", endMatch);
 acceptJoinBtn.addEventListener("click", acceptJoinRequest);

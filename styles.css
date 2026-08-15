@@ -907,6 +907,49 @@ h3 {
   overflow: hidden;
 }
 
+.pitch-fullscreen-btn {
+  align-items: center;
+  background: rgba(8, 18, 15, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  color: #fff;
+  display: inline-flex;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 5;
+}
+
+.pitch-fullscreen-btn > span:first-child {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.pitch-fullscreen-btn:hover,
+.pitch-fullscreen-btn:focus-visible {
+  background: #f4c247;
+  color: #101414;
+}
+
+.pitch:fullscreen,
+.pitch:-webkit-full-screen,
+.pitch.fullscreen-fallback {
+  aspect-ratio: auto;
+  border-radius: 0;
+  height: 100vh;
+  min-height: 0;
+  width: 100vw;
+}
+
+.pitch:fullscreen .pitch-fullscreen-btn,
+.pitch:-webkit-full-screen .pitch-fullscreen-btn {
+  right: 18px;
+  top: 18px;
+}
+
 .half-line,
 .center-circle,
 .box {
@@ -2448,6 +2491,16 @@ h3 {
 
   .pitch {
     min-height: 560px;
+  }
+
+  .pitch-fullscreen-label {
+    font-size: 0.72rem;
+  }
+
+  .pitch:fullscreen,
+  .pitch:-webkit-full-screen,
+  .pitch.fullscreen-fallback {
+    min-height: 100svh;
   }
 
   .match-scoreboard {
