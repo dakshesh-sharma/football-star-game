@@ -1304,10 +1304,20 @@ function endMatch() {
   clearMatchTimer();
   stopMatchMovement();
   const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
+  const won = state.activeMatch.home > state.activeMatch.away;
+  const drew = state.activeMatch.home === state.activeMatch.away;
+  const xpResult = won ? addXp(250) : { leveledUpTo: [], rewardMessages: [] };
+  const levelMessage = xpResult.leveledUpTo.length
+    ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
+    : "";
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = "Full time";
-  reportText.textContent = `FC Stars finished ${score} against Rival XI.`;
+  reportText.textContent = won
+    ? `Victory! FC Stars won ${score}. +250 XP.${levelMessage}`
+    : drew
+      ? `Draw ${score}. Win the next match to earn XP.`
+      : `Defeat ${score}. Win a match to earn XP.`;
   saveState();
   render();
 }
