@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=20260815-fcmobile1" />
+    <link rel="stylesheet" href="styles.css?v=20260815-3dmatch1" />
   </head>
   <body>
     <main class="app-shell">
@@ -89,6 +89,7 @@
               <span id="awayLeaderLabel">Rival XI</span>
             </div>
             <div id="matchScene" class="match-scene" aria-live="polite">
+              <canvas id="matchCanvas" class="match-canvas" aria-label="3D football match"></canvas>
               <div class="match-field-markings" aria-hidden="true">
                 <div class="match-field-halfway"></div>
                 <div class="match-field-circle"></div>
@@ -258,6 +259,7 @@
       </form>
     </section>
 
-    <script src="script.js?v=20260815-fcmobile1"></script>
+    <script src="script.js?v=20260815-3dmatch1"></script>
+    <script type="module" src="three-match.js?v=20260815-3dmatch1"></script>
   </body>
 </html>

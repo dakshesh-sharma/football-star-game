@@ -642,6 +642,23 @@ h3 {
   perspective: none;
 }
 
+.match-canvas {
+  display: block;
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 0;
+}
+
+.match-scene > :not(.match-canvas):not(.scene-goal-text) {
+  display: none;
+}
+
+.match-scene .scene-goal-text {
+  z-index: 5;
+}
+
 .match-field-markings,
 .match-field-halfway,
 .match-field-circle,

@@ -1354,6 +1354,7 @@ function updateMatchField() {
   matchTeammate.style.top = `${Math.max(16, match.playerY - 14)}%`;
   matchOpponent.style.left = `${Math.max(12, match.playerX + 30)}%`;
   matchOpponent.style.top = `${Math.min(82, match.playerY + 7)}%`;
+  window.match3D?.update(match);
 }
 
 function moveMatchPlayer(x, y) {
