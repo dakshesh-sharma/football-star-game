@@ -2427,7 +2427,7 @@ h3 {
 
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .app-shell {
     padding: 12px;
   }
@@ -2479,24 +2479,24 @@ h3 {
   .player-dot {
     border-width: 1px;
     gap: 3px;
-    min-height: 66px;
+    min-height: 58px;
     padding: 4px;
-    width: clamp(54px, 12vw, 70px);
+    width: clamp(50px, 10vw, 64px);
   }
 
   .pitch-player-head {
     border-radius: 5px;
-    min-height: 23px;
-    padding: 3px 4px;
+    min-height: 21px;
+    padding: 2px 3px;
   }
 
   .pitch-player-head span {
-    font-size: 0.52rem;
+    font-size: 0.48rem;
   }
 
   .pitch-player-head strong {
     border-radius: 4px;
-    font-size: 0.56rem;
+    font-size: 0.5rem;
     padding: 2px 3px;
   }
 
@@ -2506,11 +2506,11 @@ h3 {
   }
 
   .pitch-card-rating strong {
-    font-size: 0.72rem;
+    font-size: 0.66rem;
   }
 
   .pitch-card-rating span {
-    font-size: 0.5rem;
+    font-size: 0.46rem;
   }
 
   .player-dot .name {

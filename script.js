@@ -1205,7 +1205,7 @@ function buildTeam() {
 }
 
 function pitchDisplaySpot(spot) {
-  if (typeof window === "undefined" || !window.matchMedia("(max-width: 600px)").matches) return spot;
+  if (typeof window === "undefined" || !window.matchMedia("(max-width: 760px)").matches) return spot;
   return { ...spot, ...(mobileFormationPositions[spot.id] || {}) };
 }
 
