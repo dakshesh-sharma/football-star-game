@@ -108,6 +108,7 @@ const exactChancePlayers = {
   Pele: 0.05,
   "Diego Maradona": 0.05,
   "Lionel Messi": 0.1,
+  "Neymar Jr": 0.1,
   "Gianluigi Buffon": 0.05,
   "Zinedine Zidane": 0.05,
   "Ronaldo Nazario": 0.05,
@@ -359,6 +360,7 @@ function freshState(inventoryGrant = false) {
 function saveState() {
   const account = activeAccount();
   if (!account) return;
+  dedupeTeamCards();
   account.state = state;
   saveAccounts();
   storageSet(saveKey, JSON.stringify(state));
@@ -1608,6 +1610,7 @@ function becomeCurrentCard() {
   state.currentCardSaved = true;
   state.selectedStar = state.currentCard;
   state.selectedStarSlot = bestSlotIdForPosition(state.currentCard.position);
+  dedupeTeamCards();
   state.replaceSlot = null;
   reportTitle.textContent = `You became ${state.currentCard.name}`;
   reportText.textContent = `${state.currentCard.name} is now the player you control.`;
@@ -1636,9 +1639,19 @@ function replaceSelectedSlotWithCurrentCard() {
     state.currentCardSaved = true;
     state.selectedStar = state.currentCard;
     state.selectedStarSlot = state.replaceSlot;
+    dedupeTeamCards();
     state.replaceSlot = null;
     reportTitle.textContent = `You became ${state.currentCard.name}`;
     reportText.textContent = `${state.currentCard.name} replaced your controlled player.`;
+    saveState();
+    render();
+    return;
+  }
+
+  if (state.selectedStar?.name === state.currentCard.name && !isControlledSlot(state.replaceSlot)) {
+    state.replaceSlot = null;
+    reportTitle.textContent = `${state.currentCard.name} already in your XI`;
+    reportText.textContent = `${state.currentCard.name} is already your controlled player, so it cannot be placed twice.`;
     saveState();
     render();
     return;
@@ -2011,6 +2024,7 @@ function becomeInventoryCard(id) {
   state.selectedStarSlot = bestSlotIdForPosition(card.position);
   state.currentCard = card;
   state.currentCardSaved = true;
+  dedupeTeamCards();
   state.replaceSlot = null;
   reportTitle.textContent = `You became ${card.name}`;
   reportText.textContent = `${card.name} is now the player you control from inventory.`;
@@ -2039,6 +2053,15 @@ function useCard(id) {
     return;
   }
 
+  if (state.selectedStar?.name === card.name && !isControlledSlot(state.replaceSlot)) {
+    state.replaceSlot = null;
+    reportTitle.textContent = `${card.name} already in your XI`;
+    reportText.textContent = `${card.name} is already your controlled player, so it cannot be placed twice.`;
+    saveState();
+    render();
+    return;
+  }
+
   if (isControlledSlot(state.replaceSlot)) {
     if (state.selectedStar) {
       state.inventory = addCardToInventory(state.inventory, state.selectedStar);
@@ -2047,6 +2070,7 @@ function useCard(id) {
     state.selectedStarSlot = state.replaceSlot;
     state.currentCard = card;
     state.currentCardSaved = true;
+    dedupeTeamCards();
     state.replaceSlot = null;
     reportTitle.textContent = `You became ${card.name}`;
     reportText.textContent = `${card.name} replaced your controlled player.`;
@@ -2116,7 +2140,17 @@ function placeCardOnTeam(card, forcedSlot) {
     }
   });
   state.teamCards[targetSpot.id] = card;
+  dedupeTeamCards();
   return { ...card, targetSlot: targetSpot.slot, oldCard };
+}
+
+function dedupeTeamCards() {
+  const selectedName = state.selectedStar?.name;
+  Object.entries(state.teamCards || {}).forEach(([slot, teamCard]) => {
+    if (selectedName && teamCard?.name === selectedName) {
+      delete state.teamCards[slot];
+    }
+  });
 }
 
 function isControlledSlot(slotId) {
@@ -2437,6 +2471,7 @@ function renderJoinRequest() {
 }
 
 function render() {
+  dedupeTeamCards();
   const rewardMessages = syncEarnedLevelRewards();
   if (rewardMessages.length) saveState();
   renderStars();
