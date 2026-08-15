@@ -228,6 +228,7 @@ let activePromptSubmit = null;
 const starList = document.querySelector("#starList");
 const layout = document.querySelector(".layout");
 const pitch = document.querySelector("#pitch");
+const pitchPlayBtn = document.querySelector("#pitchPlayBtn");
 const pitchFullscreenBtn = document.querySelector("#pitchFullscreenBtn");
 const selectedPlayerLabel = document.querySelector("#selectedPlayerLabel");
 const levelLabel = document.querySelector("#levelLabel");
@@ -2537,6 +2538,10 @@ function render() {
 }
 
 topSpinBtn.addEventListener("click", spinCard);
+pitchPlayBtn.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startMatch();
+});
 pitchFullscreenBtn.addEventListener("click", (event) => {
   event.stopPropagation();
   togglePitchFullscreen();

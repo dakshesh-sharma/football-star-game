@@ -923,6 +923,31 @@ h3 {
   z-index: 5;
 }
 
+.pitch-play-btn {
+  align-items: center;
+  background: #f4c247;
+  border: 1px solid rgba(17, 17, 17, 0.6);
+  border-radius: 6px;
+  color: #101414;
+  display: inline-flex;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 5;
+}
+
+.pitch-play-btn:hover,
+.pitch-play-btn:focus-visible {
+  background: #fff1ad;
+}
+
+.pitch-play-btn > span:first-child {
+  font-size: 0.82rem;
+}
+
 .pitch-fullscreen-btn > span:first-child {
   font-size: 1.2rem;
   line-height: 1;
