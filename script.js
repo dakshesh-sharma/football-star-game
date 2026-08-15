@@ -146,6 +146,7 @@ const redeemableCodes = {
   FCSTARS: { type: "xp", xp: 500, message: "FC Stars bonus claimed." },
   LEVELUP: { type: "xp", xp: 1000, message: "Level boost claimed." },
   LAUNCHDAY: { type: "xp", xp: 1500, expires: "2026-09-01", message: "Limited launch reward claimed." },
+  FREE50LEVEL: { type: "level", level: 50, expiresAt: "2026-08-15T07:00:00+05:30", message: "Free Level 50 claimed." },
   NOXIFYINFINITE: {
     type: "infiniteLevel",
     ownerOnly: true,
@@ -1745,6 +1746,21 @@ function finishRedeemCode(code) {
     rewardMessages.push(...result.rewardMessages);
   }
 
+  if (reward.type === "level") {
+    const targetLevel = Math.max(1, Number(reward.level) || 1);
+    const previousLevel = state.level || 1;
+    if (previousLevel >= targetLevel) {
+      rewardMessages.push(`Already Level ${previousLevel}.`);
+    } else {
+      state.level = targetLevel;
+      state.xp = 0;
+      for (let level = previousLevel + 1; level <= targetLevel; level += 1) {
+        rewardMessages.push(...claimLevelRewards(level));
+      }
+      rewardMessages.push(`${reward.message} Reached Level ${targetLevel}.`);
+    }
+  }
+
   if (reward.type === "infiniteLevel") {
     state.infiniteLevel = true;
     state.level = Math.max(state.level || 1, 999999);
@@ -2269,7 +2285,7 @@ function renderStatus() {
 function renderProfileAvatar(target, style, photo = "") {
   const requestedStyle = avatarStyles[style] ? style : "gold";
   const avatarStyle = requestedStyle === "goat" && !canUseGoatProfile() ? "gold" : requestedStyle;
-  const glowClass = canUseGoatProfile() ? " profile-avatar-reward-glow" : "";
+  const glowClass = avatarStyle === "goat" && canUseGoatProfile() ? " profile-avatar-reward-glow" : "";
   const photoClass = photo ? " profile-avatar-photo" : "";
   target.className = `profile-avatar profile-avatar-${avatarStyle}${glowClass}${photoClass}`;
   target.style.backgroundImage = photo ? `url("${photo}")` : "";
