@@ -77,6 +77,28 @@ function addBox(z) {
 addBox(11.5);
 addBox(-11.5);
 
+function addGoal(z, direction) {
+  const goal = new THREE.Group();
+  const frameMaterial = new THREE.MeshStandardMaterial({ color: 0xf4f4e9, roughness: 0.35 });
+  const netMaterial = new THREE.MeshBasicMaterial({ color: 0xdce9e0, transparent: true, opacity: 0.28, wireframe: true });
+  const postGeometry = new THREE.BoxGeometry(0.18, 2.4, 0.18);
+  [-3.2, 3.2].forEach((x) => {
+    const post = new THREE.Mesh(postGeometry, frameMaterial);
+    post.position.set(x, 1.2, z);
+    goal.add(post);
+  });
+  const crossbar = new THREE.Mesh(new THREE.BoxGeometry(6.55, 0.18, 0.18), frameMaterial);
+  crossbar.position.set(0, 2.4, z);
+  goal.add(crossbar);
+  const net = new THREE.Mesh(new THREE.BoxGeometry(6.4, 2.3, 1.5), netMaterial);
+  net.position.set(0, 1.15, z + direction * 0.72);
+  goal.add(net);
+  field.add(goal);
+}
+
+addGoal(-14, -1);
+addGoal(14, 1);
+
 function makePlayer(color, scale = 1) {
   const group = new THREE.Group();
   const body = new THREE.Mesh(
@@ -97,9 +119,27 @@ function makePlayer(color, scale = 1) {
 }
 
 const controlled = makePlayer(0xf1bf35, 1.15);
-const teammate = makePlayer(0x327ed5, 0.88);
-const opponent = makePlayer(0xd9554f, 0.95);
-field.add(controlled, teammate, opponent);
+const homeFormation = [
+  [0, 11], [-4.2, 7], [0, 7], [4.2, 7], [-5.2, 3], [-1.8, 3], [1.8, 3], [5.2, 3],
+  [-1.2, -1.5], [3.8, -1.5]
+];
+const awayFormation = [
+  [0, -11], [-4.2, -7], [0, -7], [4.2, -7], [-5.2, -3], [-1.8, -3], [1.8, -3], [5.2, -3],
+  [-3.8, 1.5], [1.2, 1.5], [0, 5]
+];
+const homePlayers = homeFormation.map(([x, z]) => {
+  const player = makePlayer(0x327ed5, 0.88);
+  player.position.set(x, 0, z);
+  field.add(player);
+  return player;
+});
+const awayPlayers = awayFormation.map(([x, z]) => {
+  const player = makePlayer(0xd9554f, 0.92);
+  player.position.set(x, 0, z);
+  field.add(player);
+  return player;
+});
+field.add(controlled);
 
 const ball = new THREE.Mesh(
   new THREE.SphereGeometry(0.18, 16, 12),
@@ -136,8 +176,6 @@ function update(match) {
   currentMatch = match;
   if (!match) return;
   controlled.position.set(mapX(match.playerX), 0, mapZ(match.playerY));
-  teammate.position.set(mapX(Math.min(92, match.playerX + 18)), 0, mapZ(Math.max(12, match.playerY - 14)));
-  opponent.position.set(mapX(Math.max(12, match.playerX + 30)), 0, mapZ(Math.min(88, match.playerY + 7)));
   ball.position.set(mapX(match.ballX), 0.18, mapZ(match.ballY));
   targetCamera.set(controlled.position.x * 0.36, 10.5, controlled.position.z + 12.5);
 }
