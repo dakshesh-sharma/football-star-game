@@ -98,7 +98,7 @@ const cardPool = [
 ];
 
 const codeOnlyCards = [
-  { name: "IshowSpeed", position: "RM", team: "Portugal", rating: 90, rarity: "Legend", chance: 0, codeOnly: true, image: "assets/ishowspeed.png" }
+  { name: "IshowSpeed", position: "RM", team: "Portugal", rating: 90, rarity: "Icon", chance: 0, codeOnly: true, image: "assets/ishowspeed.png" }
 ];
 
 const selectablePlayers = [...cardPool, ...codeOnlyCards];
@@ -152,7 +152,7 @@ const redeemableCodes = {
     expiresAt: "2026-08-13T21:25:00+05:30",
     message: "Owner infinite level activated."
   },
-  CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as a Legend Portugal card." }
+  CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as an Icon Portugal card." }
 };
 const levelRewards = {
   50: { type: "badge", badge: goatProfileBadge, message: "Level 50 reward: G.O.A.T profile glow unlocked." }
