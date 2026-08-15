@@ -2,10 +2,10 @@ const cardPool = [
   { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: "∞", rarity: "G.O.A.T", chance: 0, specialAccess: true, image: "assets/ronaldo.png" },
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1 },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1 },
-  { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.1, image: "assets/mbappu.png" },
+  { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.3, image: "assets/mbappu.png" },
   { name: "Lionel Messi", position: "RW", team: "Argentina", rating: "∞", rarity: "G.O.A.T", chance: 0.1, image: "assets/messi.png" },
   { name: "Sunil Chhetri", position: "ST", team: "India", rating: 84, rarity: "Hero", chance: 6 },
-  { name: "Lamine Yamal", position: "RW", team: "Barcelona", rating: 88, rarity: "Gold", chance: 0.2 },
+  { name: "Lamine Yamal", position: "RW", team: "Barcelona", rating: 88, rarity: "Gold", chance: 0.3 },
   { name: "Kylian Mbappe", position: "ST", team: "Real Madrid", rating: 92, rarity: "Elite", chance: 3 },
   { name: "Erling Haaland", position: "ST", team: "Man City", rating: 91, rarity: "Elite", chance: 4 },
   { name: "Rodri", position: "CDM", team: "Man City", rating: 91, rarity: "Elite", chance: 4 },
@@ -103,8 +103,8 @@ const codeOnlyCards = [
 
 const selectablePlayers = [...cardPool, ...codeOnlyCards];
 const exactChancePlayers = {
-  Mbappu: 0.1,
-  "Lamine Yamal": 0.2,
+  Mbappu: 0.3,
+  "Lamine Yamal": 0.3,
   Pele: 0.05,
   "Diego Maradona": 0.05,
   "Lionel Messi": 0.1,
