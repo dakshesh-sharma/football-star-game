@@ -242,6 +242,8 @@ const matchJoystickKnob = document.querySelector("#matchJoystickKnob");
 const matchPassBtn = document.querySelector("#matchPassBtn");
 const matchSprintBtn = document.querySelector("#matchSprintBtn");
 const matchShootBtn = document.querySelector("#matchShootBtn");
+const matchTackleBtn = document.querySelector("#matchTackleBtn");
+const matchDribbleBtn = document.querySelector("#matchDribbleBtn");
 const selectedPlayerLabel = document.querySelector("#selectedPlayerLabel");
 const levelLabel = document.querySelector("#levelLabel");
 const currentCardName = document.querySelector("#currentCardName");
@@ -1406,6 +1408,20 @@ function matchAction(action) {
       reportText.textContent = "The rival goalkeeper kept it out.";
     }
   }
+  if (action === "dribble") {
+    match.ballX = Math.min(90, match.playerX + 8);
+    match.ballY = match.playerY;
+    sceneGoalText.textContent = "DRIBBLE";
+    reportTitle.textContent = "Dribbling";
+    reportText.textContent = "Close control keeps the ball at your feet.";
+  }
+  if (action === "tackle") {
+    match.ballX = Math.max(8, match.playerX - 5);
+    match.ballY = match.playerY;
+    sceneGoalText.textContent = "TACKLE";
+    reportTitle.textContent = "Challenge won";
+    reportText.textContent = "You won the tackle and recovered possession.";
+  }
   updateMatchField();
   saveState();
   render();
@@ -2479,6 +2495,7 @@ function nextRewardLevelNumber() {
 function renderMatch() {
   const match = state.activeMatch;
   matchPanel.hidden = !match;
+  pitch.hidden = Boolean(match);
   endMatchBtn.disabled = !match;
 
   if (!match) return;
@@ -2554,6 +2571,8 @@ pitchPlayBtn.addEventListener("click", (event) => {
 });
 matchPassBtn.addEventListener("click", () => matchAction("pass"));
 matchShootBtn.addEventListener("click", () => matchAction("shoot"));
+matchTackleBtn.addEventListener("click", () => matchAction("tackle"));
+matchDribbleBtn.addEventListener("click", () => matchAction("dribble"));
 matchSprintBtn.addEventListener("pointerdown", () => {
   if (!state.activeMatch) return;
   state.activeMatch.sprinting = true;
@@ -2586,11 +2605,33 @@ matchJoystick.addEventListener("pointerup", (event) => {
 });
 matchJoystick.addEventListener("pointercancel", stopMatchMovement);
 window.addEventListener("keydown", (event) => {
-  if (!state.activeMatch || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"].includes(event.key)) return;
+  if (!state.activeMatch) return;
+  if (event.key === "Shift") {
+    state.activeMatch.sprinting = true;
+    updateMatchField();
+    return;
+  }
+  if (event.code === "Space") {
+    event.preventDefault();
+    matchAction("shoot");
+    return;
+  }
+  const actionKeys = { p: "pass", P: "pass", t: "tackle", T: "tackle", e: "dribble", E: "dribble" };
+  if (actionKeys[event.key]) {
+    event.preventDefault();
+    matchAction(actionKeys[event.key]);
+    return;
+  }
+  if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"].includes(event.key)) return;
   event.preventDefault();
   const x = event.key === "ArrowRight" || event.key.toLowerCase() === "d" ? 1 : event.key === "ArrowLeft" || event.key.toLowerCase() === "a" ? -1 : 0;
   const y = event.key === "ArrowDown" || event.key.toLowerCase() === "s" ? 1 : event.key === "ArrowUp" || event.key.toLowerCase() === "w" ? -1 : 0;
   moveMatchPlayer(x, y);
+});
+window.addEventListener("keyup", (event) => {
+  if (event.key !== "Shift" || !state.activeMatch) return;
+  state.activeMatch.sprinting = false;
+  updateMatchField();
 });
 pitchFullscreenBtn.addEventListener("click", (event) => {
   event.stopPropagation();

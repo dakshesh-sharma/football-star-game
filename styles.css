@@ -792,9 +792,21 @@ h3 {
 }
 
 .match-control-btn {
+  align-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
   border-radius: 999px;
   min-height: 54px;
   min-width: 72px;
+}
+
+.match-control-btn kbd {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+  font-size: 0.56rem;
+  line-height: 1;
+  padding: 2px 4px;
 }
 
 .match-control-btn.sprint {
@@ -804,6 +816,16 @@ h3 {
 
 .match-control-btn.shoot {
   background: #d9554f;
+  color: #fff;
+}
+
+.match-control-btn.tackle {
+  background: #6f78d8;
+  color: #fff;
+}
+
+.match-control-btn.dribble {
+  background: #3c9f72;
   color: #fff;
 }
 
@@ -2722,6 +2744,9 @@ h3 {
 
   .match-action-buttons {
     gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 250px;
   }
 
   .match-control-btn {

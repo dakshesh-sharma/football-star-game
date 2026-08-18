@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=20260815-3dmatch3" />
+    <link rel="stylesheet" href="styles.css?v=20260815-controls1" />
   </head>
   <body>
     <main class="app-shell">
@@ -107,9 +107,11 @@
                 <span class="match-joystick-ring"><span id="matchJoystickKnob" class="match-joystick-knob"></span></span>
               </div>
               <div class="match-action-buttons">
-                <button id="matchPassBtn" class="match-control-btn secondary" type="button">Pass</button>
-                <button id="matchSprintBtn" class="match-control-btn sprint" type="button">Sprint</button>
-                <button id="matchShootBtn" class="match-control-btn shoot" type="button">Shoot</button>
+                <button id="matchPassBtn" class="match-control-btn secondary" type="button"><span>Pass</span><kbd>P</kbd></button>
+                <button id="matchSprintBtn" class="match-control-btn sprint" type="button"><span>Sprint</span><kbd>Shift</kbd></button>
+                <button id="matchShootBtn" class="match-control-btn shoot" type="button"><span>Shoot</span><kbd>Space</kbd></button>
+                <button id="matchTackleBtn" class="match-control-btn tackle" type="button"><span>Tackle</span><kbd>T</kbd></button>
+                <button id="matchDribbleBtn" class="match-control-btn dribble" type="button"><span>Dribble</span><kbd>E</kbd></button>
               </div>
             </div>
             <div class="match-actions">
@@ -259,7 +261,7 @@
       </form>
     </section>
 
-    <script src="script.js?v=20260815-3dmatch3"></script>
-    <script type="module" src="three-match.js?v=20260815-3dmatch3"></script>
+    <script src="script.js?v=20260815-controls1"></script>
+    <script type="module" src="three-match.js?v=20260815-controls1"></script>
   </body>
 </html>
