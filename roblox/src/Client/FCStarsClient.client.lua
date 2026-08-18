@@ -1,0 +1,40 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local actionEvent = ReplicatedStorage:WaitForChild("MatchAction")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "FCStarsHUD"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local panel = Instance.new("TextLabel")
+panel.Size = UDim2.fromOffset(330, 115)
+panel.Position = UDim2.fromOffset(24, 24)
+panel.BackgroundColor3 = Color3.fromRGB(11, 25, 21)
+panel.BackgroundTransparency = 0.1
+panel.TextColor3 = Color3.new(1, 1, 1)
+panel.TextScaled = false
+panel.TextSize = 20
+panel.Font = Enum.Font.GothamBold
+panel.TextXAlignment = Enum.TextXAlignment.Left
+panel.TextYAlignment = Enum.TextYAlignment.Top
+panel.Parent = gui
+
+local function refreshHUD()
+	panel.Text = "  FC STARS\n  Score: " .. (player:GetAttribute("MatchScore") or "0 - 0")
+		.. "\n  XP: " .. tostring(player:GetAttribute("MatchXP") or 0)
+		.. "\n  P Pass   Shift Sprint   Space Shoot"
+end
+
+player.AttributeChanged:Connect(refreshHUD)
+refreshHUD()
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.KeyCode == Enum.KeyCode.P then actionEvent:FireServer("Pass") end
+	if input.KeyCode == Enum.KeyCode.LeftShift then actionEvent:FireServer("Sprint") end
+	if input.KeyCode == Enum.KeyCode.Space then actionEvent:FireServer("Shoot") end
+end)

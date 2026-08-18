@@ -1,0 +1,23 @@
+{
+  "name": "FC Stars Roblox",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/Shared"
+      }
+    },
+    "ServerScriptService": {
+      "FCStarsServer": {
+        "$path": "src/Server/FCStarsServer.server.lua"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "FCStarsClient": {
+          "$path": "src/Client/FCStarsClient.client.lua"
+        }
+      }
+    }
+  }
+}
