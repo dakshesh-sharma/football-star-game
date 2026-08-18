@@ -1277,6 +1277,7 @@ function startMatch() {
     return;
   }
 
+  const featuredPlayer = state.selectedStar || buildTeam().find((player) => player.name && player.image) || cardPool[0];
   state.activeMatch = {
     home: 0,
     away: 0,
@@ -1288,7 +1289,8 @@ function startMatch() {
     playerY: 50,
     ballX: 29,
     ballY: 50,
-    sprinting: false
+    sprinting: false,
+    playerImage: featuredPlayer?.image || ""
   };
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
@@ -1376,7 +1378,7 @@ function moveMatchPlayer(x, y) {
   match.playerX = Math.max(7, Math.min(93, match.playerX + x * speed));
   match.playerY = Math.max(9, Math.min(91, match.playerY + y * speed));
   if (Math.hypot(match.ballX - match.playerX, match.ballY - match.playerY) < 13) {
-    match.ballX = match.playerX + 5;
+    match.ballX = match.playerX;
     match.ballY = match.playerY;
   }
   updateMatchField();
@@ -1385,17 +1387,19 @@ function moveMatchPlayer(x, y) {
 function matchAction(action) {
   const match = state.activeMatch;
   if (!match) return;
+  const attackDirection = match.playerY >= 50 ? 1 : -1;
   if (action === "pass") {
-    match.ballX = Math.min(90, match.playerX + 22);
-    match.ballY = Math.max(8, Math.min(92, match.playerY - 8));
+    match.ballX = match.playerX;
+    match.ballY = Math.max(8, Math.min(92, match.playerY + attackDirection * 16));
     sceneGoalText.textContent = "Pass";
     reportText.textContent = "Pass played into space.";
   }
   if (action === "shoot") {
-    match.ballX = 94;
-    match.ballY = match.playerY;
+    match.ballX = match.playerX;
+    match.ballY = attackDirection > 0 ? 94 : 6;
     const scorer = state.selectedStar || buildTeam().find((player) => player.slot !== "GK") || cardPool[0];
-    const scored = Math.random() > 0.42 && match.playerX > 55;
+    const closeEnoughToGoal = attackDirection > 0 ? match.playerY > 60 : match.playerY < 40;
+    const scored = closeEnoughToGoal && Math.random() > 0.28;
     sceneGoalText.textContent = scored ? "GOAL!" : "SAVED";
     if (scored) {
       match.home += 1;
@@ -1409,7 +1413,8 @@ function matchAction(action) {
     }
   }
   if (action === "dribble") {
-    match.ballX = Math.min(90, match.playerX + 8);
+    match.ballX = match.playerX;
+    match.ballY = Math.max(8, Math.min(92, match.playerY + attackDirection * 8));
     match.ballY = match.playerY;
     sceneGoalText.textContent = "DRIBBLE";
     reportTitle.textContent = "Dribbling";
