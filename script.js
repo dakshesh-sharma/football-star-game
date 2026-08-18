@@ -1290,7 +1290,10 @@ function startMatch() {
     ballX: 29,
     ballY: 50,
     sprinting: false,
-    playerImage: featuredPlayer?.image || ""
+    playerImage: featuredPlayer?.image || "",
+    homeTeam: buildTeam().map(({ id, name, position, team, rating, image, controlled }) => ({
+      id, name, position, team, rating, image: image || "", controlled: Boolean(controlled)
+    }))
   };
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
@@ -1310,7 +1313,8 @@ function endMatch() {
   const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
   const won = state.activeMatch.home > state.activeMatch.away;
   const drew = state.activeMatch.home === state.activeMatch.away;
-  const xpResult = won ? addXp(250) : { leveledUpTo: [], rewardMessages: [] };
+  const winXp = won ? matchWinXp(state.activeMatch.home, state.activeMatch.away) : 0;
+  const xpResult = won ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
     : "";
@@ -1318,12 +1322,18 @@ function endMatch() {
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = "Full time";
   reportText.textContent = won
-    ? `Victory! FC Stars won ${score}. +250 XP.${levelMessage}`
+    ? `Victory! FC Stars won ${score}. +${winXp} XP for the result.${levelMessage}`
     : drew
       ? `Draw ${score}. Win the next match to earn XP.`
       : `Defeat ${score}. Win a match to earn XP.`;
   saveState();
   render();
+}
+
+function matchWinXp(homeGoals, awayGoals) {
+  const goals = Math.max(0, Number(homeGoals) || 0);
+  const margin = Math.max(0, goals - (Number(awayGoals) || 0));
+  return 150 + goals * 75 + margin * 125;
 }
 
 function scheduleNextMatchMoment() {
