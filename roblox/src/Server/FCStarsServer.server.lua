@@ -6,6 +6,10 @@ local actionEvent = Instance.new("RemoteEvent")
 actionEvent.Name = "MatchAction"
 actionEvent.Parent = ReplicatedStorage
 
+local celebrationEvent = Instance.new("RemoteEvent")
+celebrationEvent.Name = "Celebration"
+celebrationEvent.Parent = ReplicatedStorage
+
 local pitch = Instance.new("Folder")
 pitch.Name = "FCStarsPitch"
 pitch.Parent = workspace
@@ -44,6 +48,20 @@ local function makePlayer(name, position, color, isBot)
 	return model
 end
 
+local function avatarBotFrom(character, name, position)
+	local bot = character:Clone()
+	bot.Name = name
+	bot:PivotTo(CFrame.new(position + Vector3.new(0, 3, 0)))
+	bot.Parent = pitch
+	for _, item in ipairs(bot:GetDescendants()) do
+		if item:IsA("Script") or item:IsA("LocalScript") then item:Destroy() end
+	end
+	local humanoid = bot:FindFirstChildOfClass("Humanoid")
+	if humanoid then humanoid.DisplayName = name end
+	bot:SetAttribute("IsBot", true)
+	return bot
+end
+
 local homePlayers = {}
 for index, spot in ipairs(Config.Formation) do
 	local card = Config.Cards[((index - 1) % #Config.Cards) + 1]
@@ -57,6 +75,16 @@ local bots = {}
 for index, spot in ipairs(Config.Formation) do
 	local bot = makePlayer("Rival Bot " .. index, Vector3.new(-spot.x, 0, -spot.z), Color3.fromRGB(210, 55, 65), true)
 	table.insert(bots, bot)
+end
+
+local function replaceBotsWithAvatars(character)
+	if not character or not character:FindFirstChildOfClass("Humanoid") then return end
+	character.Archivable = true
+	for _, bot in ipairs(bots) do bot:Destroy() end
+	bots = {}
+	for index, spot in ipairs(Config.Formation) do
+		table.insert(bots, avatarBotFrom(character, "Rival Bot " .. index, Vector3.new(-spot.x, 0, -spot.z)))
+	end
 end
 
 local matchState = { home = 0, away = 0, xp = 0 }
@@ -82,6 +110,7 @@ actionEvent.OnServerEvent:Connect(function(player, action)
 		matchState.home += 1
 		matchState.xp = Config.WinXP(matchState.home, matchState.away)
 		ball.Position = Vector3.new(0, 1, -38)
+		celebrationEvent:FireAllClients(player.UserId, "GoalCelebration")
 	elseif action == "Pass" then
 		ball.AssemblyLinearVelocity = root.CFrame.LookVector * 65 + Vector3.new(0, 8, 0)
 	elseif action == "Sprint" then
@@ -99,4 +128,8 @@ end)
 Players.PlayerAdded:Connect(function(player)
 	player:SetAttribute("MatchScore", "0 - 0")
 	player:SetAttribute("MatchXP", 0)
+	player.CharacterAdded:Connect(function(character)
+		task.wait(1)
+		replaceBotsWithAvatars(character)
+	end)
 end)

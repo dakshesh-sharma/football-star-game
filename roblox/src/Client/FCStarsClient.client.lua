@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local actionEvent = ReplicatedStorage:WaitForChild("MatchAction")
+local celebrationEvent = ReplicatedStorage:WaitForChild("Celebration")
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "FCStarsHUD"
@@ -31,6 +32,23 @@ end
 
 player.AttributeChanged:Connect(refreshHUD)
 refreshHUD()
+
+local function celebrate(userId)
+	local target = Players:GetPlayerByUserId(userId)
+	local character = target and target.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return end
+
+	humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	root.AssemblyLinearVelocity = root.CFrame.LookVector * 12 + Vector3.new(0, 32, 0)
+	for _ = 1, 16 do
+		if root.Parent then root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(24), 0) end
+		task.wait(0.05)
+	end
+end
+
+celebrationEvent.OnClientEvent:Connect(celebrate)
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end

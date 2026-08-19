@@ -1,6 +1,6 @@
 # FC Stars Roblox prototype
 
-This is the first Roblox prototype: a generated football pitch, card-based FC Stars players, rival bots that chase the ball, shooting, passing, sprinting, score tracking, and score-based XP.
+This is the first Roblox prototype: a generated football pitch, card-based FC Stars team, rival bots that chase the ball, shooting, passing, sprinting, score tracking, score-based XP, and Roblox-avatar goal celebrations.
 
 ## Run it
 
@@ -11,4 +11,4 @@ This is the first Roblox prototype: a generated football pitch, card-based FC St
 
 Controls: `P` pass, `Shift` sprint, `Space` shoot.
 
-Next phase: replace placeholder bodies with imported player rigs, add card UI, player-specific skills, online matchmaking, and signature celebrations.
+Next phase: clone the player’s Roblox avatar for rival NPCs, add card UI, player-specific skills, online matchmaking, and selectable signature celebrations.
