@@ -130,7 +130,8 @@ const databaseVersion = 1;
 const databaseStoreName = "state";
 const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
-const developerUsername = "Sync_Vo1d";
+const developerUsername = "S7ph_Vo1d";
+const legacyDeveloperUsernames = ["Sync_Vo1d"];
 const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
 const allCardAccessUsernames = ["Shiva Porwal"];
 const defaultProfileMotto = "Build your XI";
@@ -375,6 +376,7 @@ function loadState() {
 function freshState(inventoryGrant = false) {
   return {
     ...defaultState,
+    level: inventoryGrant === "dev" ? 50 : 1,
     inventory: inventoryGrant ? allInventoryCards(inventoryGrant) : [],
     teamCards: {},
     deletedCardNames: [],
@@ -438,14 +440,16 @@ function normalizeAccount(account, index) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const isDev = isDeveloperUsername(account.username);
   const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(account.username) ? "special" : false;
+  const normalizedState = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
+  if (isDev) normalizedState.level = Math.max(50, Number(normalizedState.level) || 1);
   return {
     id,
-    username: account.username || `Player ${index + 1}`,
+    username: isDev ? developerUsername : account.username || `Player ${index + 1}`,
     motto: account.motto || defaultProfileMotto,
     avatarStyle: avatarStyles[account.avatarStyle] ? account.avatarStyle : "gold",
     profilePhoto: account.profilePhoto || "",
     isDev,
-    state: migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant)
+    state: normalizedState
   };
 }
 
@@ -458,6 +462,7 @@ function mergeDeveloperAccounts(devAccounts, preferredActiveAccountId = null) {
     ...defaultState,
     ...(baseAccount.state || {})
   });
+  mergedState.level = Math.max(50, Number(mergedState.level) || 1);
   return {
     ...baseAccount,
     username: developerUsername,
@@ -501,7 +506,8 @@ function mergeStates(baseState, incomingState) {
 }
 
 function isDeveloperUsername(username) {
-  return String(username || "").trim() === developerUsername;
+  const normalizedUsername = String(username || "").trim();
+  return normalizedUsername === developerUsername || legacyDeveloperUsernames.includes(normalizedUsername);
 }
 
 function hasFullInventoryUsername(username) {
