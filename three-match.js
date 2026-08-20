@@ -246,6 +246,7 @@ let targetCamera = new THREE.Vector3();
 let currentMatch = null;
 let matchTime = 0;
 let lastBotTouch = 0;
+let lastTeamTouch = 0;
 const textureLoader = new THREE.TextureLoader();
 
 function applyPortrait(url) {
@@ -330,10 +331,25 @@ function animate() {
   matchTime += 0.016;
   homePlayers.forEach((player, index) => {
     const base = homeBasePositions[index];
+    const ballDistance = player.position.distanceTo(ball.position);
+    const nearestHome = index === homePlayers.reduce((best, candidate, candidateIndex) => {
+      return candidate.position.distanceTo(ball.position) < homePlayers[best].position.distanceTo(ball.position) ? candidateIndex : best;
+    }, 0);
     const supportRun = index === 8 || index === 9;
-    const targetX = base.x + Math.sin(matchTime * (0.55 + index * 0.03) + index) * (supportRun ? 0.75 : 0.28);
-    const targetZ = base.z + Math.cos(matchTime * (0.48 + index * 0.02) + index) * (supportRun ? 0.5 : 0.22);
-    player.position.lerp(new THREE.Vector3(targetX, 0, targetZ), 0.045);
+    const chaseBall = nearestHome || (supportRun && ballDistance < 8);
+    const target = chaseBall
+      ? new THREE.Vector3(ball.position.x, 0, ball.position.z)
+      : new THREE.Vector3(
+        base.x + Math.sin(matchTime * (0.55 + index * 0.03) + index) * (supportRun ? 0.75 : 0.28),
+        0,
+        base.z + Math.cos(matchTime * (0.48 + index * 0.02) + index) * (supportRun ? 0.5 : 0.22)
+      );
+    player.position.lerp(target, chaseBall ? 0.065 : 0.045);
+    if (currentMatch && nearestHome && ballDistance < 0.82 && matchTime - lastTeamTouch > 2.2) {
+      lastTeamTouch = matchTime;
+      ball.position.set(player.position.x, 0.18, player.position.z);
+      currentMatch.teamPossession = player.userData.card?.name || `FC Stars Teammate ${index + 1}`;
+    }
   });
   awayPlayers.forEach((player, index) => {
     const base = awayBasePositions[index];
