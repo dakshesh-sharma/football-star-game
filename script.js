@@ -147,6 +147,12 @@ const redeemableCodes = {
   WELCOME: { type: "xp", xp: 250, message: "Welcome bonus claimed." },
   FCSTARS: { type: "xp", xp: 500, message: "FC Stars bonus claimed." },
   LEVELUP: { type: "xp", xp: 1000, message: "Level boost claimed." },
+  S7PH_ULTRAXP: {
+    type: "adminXp",
+    ownerOnly: true,
+    xp: "10000000000000000000000000000000000000000000000",
+    message: "Admin ultra XP granted."
+  },
   LAUNCHDAY: { type: "xp", xp: 1500, expires: "2026-09-01", message: "Limited launch reward claimed." },
   FREE50LEVEL: { type: "level", level: 50, expiresAt: "2026-08-15T08:55:00+05:30", message: "Free Level 50 claimed." },
   NOXIFYINFINITE: {
@@ -202,6 +208,7 @@ const defaultState = {
   selectedStar: null,
   level: 1,
   xp: 0,
+  adminXp: "0",
   infiniteLevel: false,
   inventory: [],
   teamCards: {},
@@ -489,6 +496,9 @@ function mergeStates(baseState, incomingState) {
     ...incomingState,
     level: Math.max(baseState.level || 1, incomingState.level || 1),
     xp: Math.max(baseState.xp || 0, incomingState.xp || 0),
+    adminXp: String(baseState.adminXp || "0").length >= String(incomingState.adminXp || "0").length
+      ? String(baseState.adminXp || "0")
+      : String(incomingState.adminXp || "0"),
     infiniteLevel: Boolean(baseState.infiniteLevel || incomingState.infiniteLevel),
     inventory: uniqueCards([...(baseState.inventory || []), ...(incomingState.inventory || [])]),
     teamCards: { ...(baseState.teamCards || {}), ...(incomingState.teamCards || {}) },
@@ -530,6 +540,7 @@ function migrateState(savedState, inventoryGrant = false) {
   const isDeveloperInventory = inventoryGrant === "dev";
   savedState.level = Number.isFinite(Number(savedState.level)) && Number(savedState.level) > 0 ? Number(savedState.level) : 1;
   savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
+  savedState.adminXp = /^\d+$/.test(String(savedState.adminXp || "0")) ? String(savedState.adminXp || "0") : "0";
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
@@ -1527,6 +1538,13 @@ function claimLevelRewards(level) {
     state.xp += reward.xp;
     return [reward.message];
   }
+
+  if (reward.type === "adminXp") {
+    state.adminXp = reward.xp;
+    state.xp = Number.MAX_SAFE_INTEGER;
+    state.level = Math.max(50, state.level || 1);
+    rewardMessages.push(`${reward.message} +${reward.xp} XP.`);
+  }
   if (reward.type === "card") {
     const card = guaranteedCardForRarity(reward.rarity);
     if (!card) return [`${reward.message} Already owned every ${reward.rarity} card.`];
@@ -2406,7 +2424,8 @@ function renderStatus() {
   selectedPlayerLabel.textContent = state.selectedStar
     ? `${account?.username || "Guest"} · ${state.selectedStar.name} · ${state.selectedStar.team}`
     : `${account?.username || "Guest"} · Spin your player`;
-  levelLabel.textContent = hasInfiniteLevel() ? "Level ∞" : `Level ${state.level} · ${state.xp}/${nextXp} XP`;
+  const visibleXp = account?.isDev && state.adminXp !== "0" ? state.adminXp : state.xp;
+  levelLabel.textContent = hasInfiniteLevel() ? "Level ∞" : `Level ${state.level} · ${visibleXp}/${nextXp} XP`;
   profileMottoLabel.textContent = account?.motto || defaultProfileMotto;
   renderProfileAvatar(profileAvatar, account?.avatarStyle || "gold", account?.profilePhoto);
   unlockText.textContent = hasInfiniteLevel()
