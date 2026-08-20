@@ -1836,6 +1836,17 @@ function finishRedeemCode(code) {
   const redeemedCodeKey = reward?.daily ? `${trimmedCode}-${localDateKey()}` : trimmedCode;
 
   if (!reward) {
+    if (activeAccount()?.isDev) {
+      state.adminXp = (BigInt(state.adminXp || "0") + 10000n).toString();
+      state.xp = Math.min(Number.MAX_SAFE_INTEGER, (state.xp || 0) + 10000);
+      state.redeemedCodes = uniqueNames([...state.redeemedCodes, redeemedCodeKey]);
+      state.inventoryOpen = true;
+      closeGamePrompt();
+      showCodeResult("success", "Admin code accepted", "Any admin code works. +10000 XP added.");
+      saveState();
+      render();
+      return;
+    }
     closeGamePrompt();
     showCodeResult("invalid", "Code invalid", "That code did not unlock a player.");
     render();
