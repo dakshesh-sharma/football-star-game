@@ -390,7 +390,7 @@ function loadState() {
 function freshState(inventoryGrant = false) {
   return {
     ...defaultState,
-    level: inventoryGrant === "dev" ? 999999 : 1,
+    level: inventoryGrant === "dev" ? 50 : 1,
     inventory: inventoryGrant ? allInventoryCards(inventoryGrant) : [],
     teamCards: {},
     deletedCardNames: [],
@@ -456,8 +456,11 @@ function normalizeAccount(account, index) {
   const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(account.username) ? "special" : false;
   const normalizedState = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
   if (isDev) {
-    normalizedState.level = Math.max(999999, Number(normalizedState.level) || 1);
-    normalizedState.adminXp = "10000000000000000000000000000000000000000000000";
+    normalizedState.level = Math.max(50, Number(normalizedState.level) || 1);
+    if (String(normalizedState.adminXp || "0").length > 6 || normalizedState.xp > 1000000000) {
+      normalizedState.adminXp = "0";
+      normalizedState.xp = 0;
+    }
   }
   return {
     id,
@@ -479,8 +482,9 @@ function mergeDeveloperAccounts(devAccounts, preferredActiveAccountId = null) {
     ...defaultState,
     ...(baseAccount.state || {})
   });
-  mergedState.level = Math.max(999999, Number(mergedState.level) || 1);
-  mergedState.adminXp = "10000000000000000000000000000000000000000000000";
+  mergedState.level = Math.max(50, Number(mergedState.level) || 1);
+  mergedState.adminXp = "0";
+  mergedState.xp = 0;
   return {
     ...baseAccount,
     username: developerUsername,
