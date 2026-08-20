@@ -153,6 +153,13 @@ const redeemableCodes = {
     xp: "10000000000000000000000000000000000000000000000",
     message: "Admin ultra XP granted."
   },
+  S7PH_ULTRAXP2: {
+    type: "adminXp",
+    ownerOnly: true,
+    xp: "10000000000000000000000000000000000000000000000",
+    level: 999999,
+    message: "Admin ultra XP and level granted."
+  },
   LAUNCHDAY: { type: "xp", xp: 1500, expires: "2026-09-01", message: "Limited launch reward claimed." },
   FREE50LEVEL: { type: "level", level: 50, expiresAt: "2026-08-15T08:55:00+05:30", message: "Free Level 50 claimed." },
   NOXIFYINFINITE: {
@@ -1542,7 +1549,7 @@ function claimLevelRewards(level) {
   if (reward.type === "adminXp") {
     state.adminXp = reward.xp;
     state.xp = Number.MAX_SAFE_INTEGER;
-    state.level = Math.max(50, state.level || 1);
+    state.level = Math.max(Number(reward.level) || 50, state.level || 1);
     rewardMessages.push(`${reward.message} +${reward.xp} XP.`);
   }
   if (reward.type === "card") {
