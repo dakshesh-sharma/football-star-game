@@ -77,7 +77,9 @@ function prototypeViewMarkup(view) {
 }
 
 function selectPrototypeView(view) {
-  document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', view !== 'Home');
+  const isHome = view === 'Home';
+  document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', !isHome);
+  document.querySelectorAll('.prototype-home-only').forEach((card) => { card.hidden = !isHome; });
   document.querySelectorAll('.desktop-rail [data-prototype-view]').forEach((item) => item.classList.toggle('rail-active', item.dataset.prototypeView === view));
   if (prototypeKicker) prototypeKicker.textContent = `${view.toUpperCase()} · FC STARS`;
   if (prototypeTitle) prototypeTitle.innerHTML = view === 'Home' ? 'Ready to build<br>your <em>legacy?</em>' : `${view} is<br><em>ready.</em>`;
