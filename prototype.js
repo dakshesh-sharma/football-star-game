@@ -77,6 +77,7 @@ function prototypeViewMarkup(view) {
 }
 
 function selectPrototypeView(view) {
+  document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', view !== 'Home');
   document.querySelectorAll('.desktop-rail [data-prototype-view]').forEach((item) => item.classList.toggle('rail-active', item.dataset.prototypeView === view));
   if (prototypeKicker) prototypeKicker.textContent = `${view.toUpperCase()} · FC STARS`;
   if (prototypeTitle) prototypeTitle.innerHTML = view === 'Home' ? 'Ready to build<br>your <em>legacy?</em>' : `${view} is<br><em>ready.</em>`;
