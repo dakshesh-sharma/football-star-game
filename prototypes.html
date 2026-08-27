@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FC Stars — Prototype Lab</title>
+    <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <main class="prototype-shell">
+      <header class="lab-header">
+        <a class="lab-brand" href="index.html"><span>FC</span> STARS</a>
+        <div>
+          <p>Prototype lab</p>
+          <h1>Mobile-first game concepts</h1>
+        </div>
+      </header>
+
+      <nav class="prototype-tabs" aria-label="Prototype screens">
+        <button class="tab is-active" data-screen="home">Club Home</button>
+        <button class="tab" data-screen="packs">Pack Reveal</button>
+        <button class="tab" data-screen="squad">Squad Builder</button>
+        <button class="tab" data-screen="match">Matchday</button>
+      </nav>
+
+      <section class="phone" aria-label="FC Stars mobile prototype">
+        <div class="phone-status"><span>9:41</span><span>● ● ● ᴡɪꜰɪ ▰</span></div>
+
+        <section class="screen is-active" data-screen-panel="home">
+          <div class="screen-scroll">
+            <div class="home-hero">
+              <div class="hero-nav"><button class="round-btn">☰</button><strong>FC STARS</strong><button class="round-btn">✦</button></div>
+              <div class="hero-copy"><p>SEASON 01 · RISING ICONS</p><h2>Your club is<br><em>on fire.</em></h2><span class="streak">⚡ 4 match win streak</span></div>
+              <div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
+            </div>
+            <div class="balance-row"><div><span>🪙</span><strong>2,450</strong></div><div><span>◆</span><strong>118</strong></div><button>+</button></div>
+            <section class="mission-card"><div><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div class="progress"><i></i></div><small>0 / 1 completed</small></div><button class="claim-btn">PLAY</button></section>
+            <div class="section-heading"><h3>Quick play</h3><button>See all</button></div>
+            <div class="mode-grid">
+              <button class="mode-card ranked"><span>⚔</span><strong>Ranked<br>Rush</strong><small>+ XP & rewards</small></button>
+              <button class="mode-card draft"><span>✦</span><strong>Draft<br>Challenge</strong><small>Build & battle</small></button>
+            </div>
+            <div class="section-heading"><h3>Club news</h3><button>Inbox</button></div>
+            <article class="news-card"><div class="news-art">99</div><div><p>NEW EVENT</p><h3>Icons are live</h3><small>Build your dream XI before Sunday.</small></div><b>→</b></article>
+          </div>
+          <nav class="bottom-nav"><button class="selected">⌂<span>Home</span></button><button>▣<span>Packs</span></button><button>♟<span>Squad</span></button><button>◉<span>Club</span></button></nav>
+        </section>
+
+        <section class="screen" data-screen-panel="packs">
+          <div class="screen-scroll pack-screen">
+            <div class="top-line"><button class="round-btn">‹</button><div><p>AVAILABLE NOW</p><h2>Rising Icons</h2></div><button class="round-btn">ⓘ</button></div>
+            <div class="pack-stage"><div class="pack-glow"></div><div id="pack" class="pack"><span>FC</span><strong>RISING<br>ICONS</strong><i>✦</i></div></div>
+            <div id="revealCard" class="reveal-card" hidden><p>YOU PACKED</p><div class="reveal-rating">91</div><h2>NEYMAR JR</h2><span>LW · BRAZIL</span></div>
+            <button id="openPack" class="open-pack">OPEN PACK <span>◆ 75</span></button>
+            <p id="packHint" class="pack-hint">Guaranteed: 1 player rated 82+</p>
+            <div class="odds"><div><span>82–87</span><b>72%</b></div><div><span>88–90</span><b>23%</b></div><div><span>91+</span><b>5%</b></div></div>
+          </div>
+          <nav class="bottom-nav"><button>⌂<span>Home</span></button><button class="selected">▣<span>Packs</span></button><button>♟<span>Squad</span></button><button>◉<span>Club</span></button></nav>
+        </section>
+
+        <section class="screen" data-screen-panel="squad">
+          <div class="screen-scroll squad-screen"><div class="top-line"><button class="round-btn">‹</button><div><p>MY CLUB</p><h2>Starting XI</h2></div><button class="round-btn">•••</button></div>
+            <div class="chemistry"><div><span>TEAM RATING</span><strong>88</strong></div><div><span>CHEMISTRY</span><strong>31 <i>/ 33</i></strong></div><button>EDIT</button></div>
+            <div class="pitch-prototype">
+              <div class="pitch-lines"></div>
+              <button class="player-card card-gk" data-player="Alisson"><b>89</b><span>GK</span><small>ALISSON</small></button>
+              <button class="player-card card-cb left" data-player="Saliba"><b>87</b><span>CB</span><small>SALIBA</small></button><button class="player-card card-cb right" data-player="Van Dijk"><b>89</b><span>CB</span><small>VAN DIJK</small></button>
+              <button class="player-card card-gold wide-left" data-player="Vinícius Jr"><b>90</b><span>LW</span><small>VINI JR</small></button><button class="player-card card-goat central" data-player="Neymar Jr"><b>91</b><span>CAM</span><small>NEYMAR</small></button><button class="player-card card-gold wide-right" data-player="Yamal"><b>88</b><span>RW</span><small>YAMAL</small></button>
+              <button class="player-card card-icon striker" data-player="Ronaldo"><b>95</b><span>ST</span><small>RONALDO</small></button>
+            </div>
+            <div id="playerInspector" class="player-inspector"><span>Tap a player card to inspect</span><button>Swap player</button></div>
+          </div>
+          <nav class="bottom-nav"><button>⌂<span>Home</span></button><button>▣<span>Packs</span></button><button class="selected">♟<span>Squad</span></button><button>◉<span>Club</span></button></nav>
+        </section>
+
+        <section class="screen" data-screen-panel="match">
+          <div class="match-header"><div><small>DIVISION 4 · RANKED</small><h2>FC Stars <span>vs</span> Rivals FC</h2></div><b>02:14</b></div>
+          <div class="match-pitch"><div class="score-pill"><strong>1</strong><span>–</span><strong>0</strong></div><div class="match-circle"></div><div class="goal-box top"></div><div class="goal-box bottom"></div><div class="field-player you">10</div><div class="field-player mate">7</div><div class="field-player rival">9</div><div class="ball"></div><div class="moment">NEYMAR IS ON THE BALL</div></div>
+          <div class="match-bottom"><div class="joystick"><i></i></div><div class="match-actions"><button class="pass">PASS</button><button class="sprint">SPRINT</button><button class="shoot">SHOOT</button></div></div>
+        </section>
+      </section>
+      <section class="desktop-prototype" aria-label="FC Stars laptop prototype">
+        <aside class="desktop-rail"><a class="desktop-logo" href="index.html"><span>FC</span>STARS</a><p>SEASON 01</p><button class="rail-active">⌂ <span>Home</span></button><button>▣ <span>Packs</span></button><button>♟ <span>Squad</span></button><button>⚔ <span>Play</span></button><button>◉ <span>Club</span></button><div class="rail-profile"><i>AR</i><span><b>ARJUN FC</b><small>Division 4</small></span><em>⌄</em></div></aside>
+        <main class="desktop-main"><div class="desktop-top"><div><p>GOOD EVENING, ARJUN</p><h2>Ready to build<br>your <em>legacy?</em></h2></div><div class="desktop-balance"><span>🪙 <b>2,450</b></span><span>◆ <b>118</b></span><button>+</button></div></div><section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button>OPEN PACK <span>◆ 75</span></button></div><strong>91<small>NEYMAR JR</small></strong></section><div class="desktop-section-title"><h3>Play now</h3><button>View all modes →</button></div><div class="desktop-modes"><button class="desktop-mode ranked"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>WIN +28 XP</small></button><button class="desktop-mode draft"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>ENDS IN 05:12:40</small></button><button class="desktop-mode friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div></main>
+        <aside class="desktop-side"><div class="side-heading"><h3>Club status</h3><button>•••</button></div><section class="desktop-rank"><p>DIVISION 4</p><div><b>1,240</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section><section class="desktop-mission"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i></i></div><small>0 / 1 completed</small><button>PLAY NOW</button></section><div class="side-heading"><h3>Starting XI</h3><button>Manage →</button></div><section class="desktop-xi"><div><b>95</b><span>RONALDO</span></div><div><b>91</b><span>NEYMAR</span></div><div><b>90</b><span>VINI JR</span></div><div><b>88</b><span>YAMAL</span></div><strong>88<small>TEAM RATING</small></strong></section></aside>
+      </section>
+      <p class="lab-note">Click the tabs above. The pack, squad cards, and prototype navigation are interactive.</p>
+    </main>
+    <script src="prototype.js"></script>
+  </body>
+</html>

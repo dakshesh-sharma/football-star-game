@@ -26,6 +26,52 @@ body {
   color: var(--text);
 }
 
+body.fc-stars-prototype-mode .app-shell,
+body.fc-stars-prototype-mode .start-splash,
+body.fc-stars-prototype-mode .quick-login-overlay,
+body.fc-stars-prototype-mode .game-prompt-overlay,
+body.fc-stars-prototype-mode .profile-overlay {
+  display: none !important;
+}
+
+.in-game-prototype {
+  min-height: 100vh;
+  padding: 26px;
+}
+
+.in-game-prototype-bar {
+  align-items: center;
+  color: #a3a6bc;
+  display: flex;
+  font-size: 0.7rem;
+  font-weight: 900;
+  justify-content: space-between;
+  letter-spacing: 0.1em;
+  margin: 0 auto 14px;
+  max-width: 1100px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 799px) {
+  .in-game-prototype {
+    padding: 12px;
+  }
+
+  .in-game-prototype .desktop-prototype {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .in-game-prototype .desktop-rail,
+  .in-game-prototype .desktop-side {
+    display: none;
+  }
+
+  .in-game-prototype .desktop-main {
+    padding: 18px;
+  }
+}
+
 button {
   border: 0;
   border-radius: 8px;
@@ -41,6 +87,17 @@ button {
 
 button:hover {
   filter: brightness(1.06);
+}
+
+.prototype-link {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  text-decoration: none;
 }
 
 button:disabled {
