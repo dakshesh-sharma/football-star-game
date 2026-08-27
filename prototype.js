@@ -68,8 +68,9 @@ function showPrototypeToast(message) {
 
 function syncPrototypeBalances() {
   const rankedPoints = Number(state?.rankedPoints) || 0;
+  const infiniteCoinsActive = Boolean(state?.infiniteCoins);
   if (prototypeCoins) prototypeCoins.textContent = String(rankedPoints);
-  if (prototypeGems) prototypeGems.textContent = String(state?.matchPoints ?? 56);
+  if (prototypeGems) prototypeGems.textContent = infiniteCoinsActive ? '∞' : String(state?.matchPoints ?? 56);
   if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division 4 · ${rankedPoints} RP`;
   if (prototypeRankPoints) prototypeRankPoints.textContent = String(rankedPoints);
 }
@@ -96,11 +97,12 @@ function selectPrototypeView(view) {
 function openPrototypePack() {
   const cost = 50;
   const points = Number(state?.matchPoints) || 0;
-  if (points < cost) {
+  const infiniteCoinsActive = Boolean(state?.infiniteCoins);
+  if (!infiniteCoinsActive && points < cost) {
     showPrototypeToast('You need 50 Coins to open this pack.');
     return;
   }
-  state.matchPoints = points - cost;
+  if (!infiniteCoinsActive) state.matchPoints = points - cost;
   saveState();
   syncPrototypeBalances();
   const card = prototypePackCards[Math.floor(Math.random() * prototypePackCards.length)];
@@ -118,7 +120,7 @@ function openPrototypePack() {
 }
 
 function closePrototypePack(refundUnopened = false) {
-  if (refundUnopened && prototypePendingPack) {
+  if (refundUnopened && prototypePendingPack && !state?.infiniteCoins) {
     state.matchPoints = (Number(state.matchPoints) || 0) + 50;
     saveState();
     syncPrototypeBalances();
@@ -313,6 +315,6 @@ document.querySelector('#prototypeCodeButton')?.addEventListener('click', () => 
   document.querySelector('#gamePromptOverlay')?.classList.add('prototype-visible');
 });
 document.querySelector('#gamePromptCancelBtn')?.addEventListener('click', () => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'));
-document.querySelector('#gamePromptForm')?.addEventListener('submit', () => window.setTimeout(() => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible')));
+document.querySelector('#gamePromptForm')?.addEventListener('submit', () => window.setTimeout(() => { document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'); syncPrototypeBalances(); }));
 
 syncPrototypeBalances();

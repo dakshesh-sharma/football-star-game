@@ -168,7 +168,8 @@ const redeemableCodes = {
     expiresAt: "2026-08-13T21:25:00+05:30",
     message: "Owner infinite level activated."
   },
-  CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as an Icon Portugal card." }
+  CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as an Icon Portugal card." },
+  INFINITECOINS: { type: "infiniteCoins", expiresAt: "2026-08-27T14:46:00+05:30", message: "Unlimited Coins unlocked permanently." }
 };
 const levelRewards = {
   50: { type: "badge", badge: goatProfileBadge, message: "Level 50 reward: G.O.A.T profile glow unlocked." }
@@ -223,6 +224,7 @@ const defaultState = {
   xp: 0,
   adminXp: "0",
   infiniteLevel: false,
+  infiniteCoins: false,
   inventory: [],
   teamCards: {},
   selectedStarSlot: null,
@@ -566,6 +568,7 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
   savedState.adminXp = /^\d+$/.test(String(savedState.adminXp || "0")) ? String(savedState.adminXp || "0") : "0";
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
+  savedState.infiniteCoins = Boolean(savedState.infiniteCoins);
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = savedState.deletedCardNames || [];
   savedState.redeemedCodes = savedState.redeemedCodes || [];
@@ -1990,6 +1993,11 @@ function finishRedeemCode(code) {
       .map(Number)
       .sort((a, b) => a - b)
       .forEach((level) => rewardMessages.push(...claimLevelRewards(level)));
+    rewardMessages.push(reward.message);
+  }
+
+  if (reward.type === "infiniteCoins") {
+    state.infiniteCoins = true;
     rewardMessages.push(reward.message);
   }
 
