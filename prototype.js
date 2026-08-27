@@ -41,6 +41,7 @@ const prototypeMissionLabel = document.querySelector('#prototypeMissionLabel');
 const prototypeUsername = document.querySelector('#prototypeUsername');
 const prototypeProfileMeta = document.querySelector('#prototypeProfileMeta');
 const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar');
+const prototypeSettingsModal = document.querySelector('#prototypeSettingsModal');
 
 function showPrototypeToast(message) {
   if (!prototypeToast) return;
@@ -85,6 +86,17 @@ if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
   prototypeProfileAvatar.style.backgroundSize = 'cover';
   prototypeProfileAvatar.style.backgroundPosition = 'center';
 }
-document.querySelector('#prototypeProfileButton')?.addEventListener('click', () => {
-  showPrototypeToast(`${prototypeUsername?.textContent || 'Profile'} profile opened`);
+document.querySelector('#prototypeSettingsButton')?.addEventListener('click', () => {
+  const nameInput = document.querySelector('#prototypeClubNameInput');
+  if (nameInput && prototypeUsername) nameInput.value = prototypeUsername.textContent;
+  prototypeSettingsModal.hidden = false;
+});
+document.querySelector('#prototypeSettingsClose')?.addEventListener('click', () => { prototypeSettingsModal.hidden = true; });
+document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const name = document.querySelector('#prototypeClubNameInput')?.value.trim();
+  const motto = document.querySelector('#prototypeClubMottoInput')?.value.trim();
+  if (name && prototypeUsername) prototypeUsername.textContent = name;
+  prototypeSettingsModal.hidden = true;
+  showPrototypeToast(motto ? `${name || 'Club'} · ${motto}` : 'Profile settings saved');
 });

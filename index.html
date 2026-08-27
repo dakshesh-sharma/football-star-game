@@ -35,7 +35,7 @@
           <section class="desktop-profile-card">
             <span id="prototypeProfileAvatar" class="desktop-profile-avatar">FC</span>
             <div><p>YOUR PROFILE</p><h3 id="prototypeUsername">FC Manager</h3><small id="prototypeProfileMeta">Division 4 · 1,240 RP</small></div>
-            <button id="prototypeProfileButton">VIEW</button>
+            <button id="prototypeSettingsButton" aria-label="Open profile settings">•••</button>
           </section>
           <section class="desktop-rank"><p>DIVISION 4</p><div><b>1,240</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section>
           <section class="desktop-mission"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i id="prototypeMissionProgress"></i></div><small id="prototypeMissionLabel">0 / 1 completed</small><button data-prototype-play="Ranked Rush">PLAY NOW</button></section>
@@ -49,6 +49,16 @@
           <button id="prototypeModalClose" class="prototype-modal-close" aria-label="Close pack reveal">×</button>
           <p>RISING ICONS PACK</p><div class="modal-card-rating">91</div><h2 id="prototypePackTitle">NEYMAR JR</h2><span>LW · BRAZIL · G.O.A.T.</span><button id="prototypeKeepCard">ADD TO SQUAD</button>
         </div>
+      </section>
+      <section id="prototypeSettingsModal" class="prototype-modal" hidden>
+        <form id="prototypeSettingsForm" class="prototype-modal-card prototype-settings-card" aria-labelledby="prototypeSettingsTitle">
+          <button id="prototypeSettingsClose" class="prototype-modal-close" type="button" aria-label="Close settings">×</button>
+          <p>PROFILE SETTINGS</p>
+          <h2 id="prototypeSettingsTitle">Your Club</h2>
+          <label>Club name<input id="prototypeClubNameInput" maxlength="24" value="FC Manager" /></label>
+          <label>Club motto<input id="prototypeClubMottoInput" maxlength="42" value="Build your legacy" /></label>
+          <button type="submit">SAVE SETTINGS</button>
+        </form>
       </section>
     </section>
     <main class="app-shell">
@@ -306,7 +316,7 @@
     </section>
 
     <script src="script.js?v=20260815-players1"></script>
-    <script src="prototype.js?v=20260827-interactions"></script>
+    <script src="prototype.js?v=20260827-settings"></script>
     <script type="module" src="three-match.js?v=20260815-players1"></script>
   </body>
 </html>
