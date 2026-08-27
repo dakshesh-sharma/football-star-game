@@ -32,7 +32,11 @@
           <div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>WIN +28 XP</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>ENDS IN 05:12:40</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div>
         </main>
         <aside class="desktop-side">
-          <div class="side-heading"><h3>Club status</h3><button data-prototype-action="Club settings">•••</button></div>
+          <section class="desktop-profile-card">
+            <span id="prototypeProfileAvatar" class="desktop-profile-avatar">FC</span>
+            <div><p>YOUR PROFILE</p><h3 id="prototypeUsername">FC Manager</h3><small id="prototypeProfileMeta">Division 4 · 1,240 RP</small></div>
+            <button id="prototypeProfileButton">VIEW</button>
+          </section>
           <section class="desktop-rank"><p>DIVISION 4</p><div><b>1,240</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section>
           <section class="desktop-mission"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i id="prototypeMissionProgress"></i></div><small id="prototypeMissionLabel">0 / 1 completed</small><button data-prototype-play="Ranked Rush">PLAY NOW</button></section>
           <div class="side-heading"><h3>Starting XI</h3><button data-prototype-view="Squad">Manage →</button></div>
@@ -302,6 +306,7 @@
     </section>
 
     <script src="script.js?v=20260815-players1"></script>
+    <script src="prototype.js?v=20260827-interactions"></script>
     <script type="module" src="three-match.js?v=20260815-players1"></script>
   </body>
 </html>

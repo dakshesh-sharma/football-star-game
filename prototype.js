@@ -38,6 +38,9 @@ const prototypeTitle = document.querySelector('#prototypeTitle');
 const prototypeKicker = document.querySelector('#prototypeKicker');
 const prototypeMissionProgress = document.querySelector('#prototypeMissionProgress');
 const prototypeMissionLabel = document.querySelector('#prototypeMissionLabel');
+const prototypeUsername = document.querySelector('#prototypeUsername');
+const prototypeProfileMeta = document.querySelector('#prototypeProfileMeta');
+const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar');
 
 function showPrototypeToast(message) {
   if (!prototypeToast) return;
@@ -70,3 +73,18 @@ document.querySelectorAll('[data-prototype-play]').forEach((button) => button.ad
   if (prototypeMissionLabel) prototypeMissionLabel.textContent = '1 / 1 completed · Reward claimed';
   showPrototypeToast(`${button.dataset.prototypePlay} match found — kickoff!`);
 }));
+
+const profile = typeof activeAccount === 'function' ? activeAccount() : null;
+if (profile && prototypeUsername) {
+  prototypeUsername.textContent = profile.username;
+  prototypeProfileMeta.textContent = `Division 4 · ${prototypeCoins?.textContent || '1,240'} RP`;
+}
+if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
+  prototypeProfileAvatar.textContent = profileAvatar.textContent || 'FC';
+  prototypeProfileAvatar.style.backgroundImage = profileAvatar.style.backgroundImage;
+  prototypeProfileAvatar.style.backgroundSize = 'cover';
+  prototypeProfileAvatar.style.backgroundPosition = 'center';
+}
+document.querySelector('#prototypeProfileButton')?.addEventListener('click', () => {
+  showPrototypeToast(`${prototypeUsername?.textContent || 'Profile'} profile opened`);
+});
