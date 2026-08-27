@@ -1716,9 +1716,10 @@ function spinCard() {
     return;
   }
   state.currentCard = { ...card, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` };
-  state.currentCardSaved = false;
+  state.inventory = addCardToInventory(state.inventory, state.currentCard);
+  state.currentCardSaved = true;
   reportTitle.textContent = `${card.name} rolled`;
-  reportText.textContent = `${card.rarity} ${card.position}. ${chanceLabel(card)}. Choose Become, Save, or click a pitch player and Replace Slot.`;
+  reportText.textContent = `${card.rarity} ${card.position}. ${chanceLabel(card)}. Added to your inventory — owned players cannot be rolled again.`;
   saveState();
   render();
 }

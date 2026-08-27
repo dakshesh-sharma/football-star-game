@@ -167,3 +167,14 @@ function closePrototypePitch() {
 
 document.querySelector('#prototypeManageSquad')?.addEventListener('click', openPrototypePitch);
 document.querySelector('#prototypePitchClose')?.addEventListener('click', closePrototypePitch);
+
+document.querySelector('#prototypeSpinButton')?.addEventListener('click', () => {
+  spinCard();
+  if (state.currentCard) showPrototypeToast(`${state.currentCard.name} rolled and saved to Inventory.`);
+});
+document.querySelector('#prototypeCodeButton')?.addEventListener('click', () => {
+  redeemCode();
+  document.querySelector('#gamePromptOverlay')?.classList.add('prototype-visible');
+});
+document.querySelector('#gamePromptCancelBtn')?.addEventListener('click', () => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'));
+document.querySelector('#gamePromptForm')?.addEventListener('submit', () => window.setTimeout(() => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible')));
