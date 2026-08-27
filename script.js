@@ -236,7 +236,7 @@ const defaultState = {
   badges: [],
   friends: [],
   playerStats: {},
-  rankedPoints: 1240,
+  rankedPoints: 0,
   matchPoints: 56,
   joinRequest: null,
   activeMatch: null
@@ -574,7 +574,7 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.playerStats = savedState.playerStats || {};
   savedState.rankedPoints = Number.isFinite(Number(savedState.rankedPoints))
     ? Math.max(0, Number(savedState.rankedPoints))
-    : 1240;
+    : 0;
   savedState.matchPoints = Number.isFinite(Number(savedState.matchPoints))
     ? Math.max(0, Number(savedState.matchPoints))
     : 56;

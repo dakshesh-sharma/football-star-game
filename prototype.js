@@ -40,6 +40,7 @@ const prototypeMissionProgress = document.querySelector('#prototypeMissionProgre
 const prototypeMissionLabel = document.querySelector('#prototypeMissionLabel');
 const prototypeUsername = document.querySelector('#prototypeUsername');
 const prototypeProfileMeta = document.querySelector('#prototypeProfileMeta');
+const prototypeRankPoints = document.querySelector('#prototypeRankPoints');
 const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar');
 const prototypeSettingsModal = document.querySelector('#prototypeSettingsModal');
 const prototypeWorkspace = document.querySelector('#prototypeWorkspace');
@@ -60,9 +61,11 @@ function showPrototypeToast(message) {
 }
 
 function syncPrototypeBalances() {
-  if (prototypeCoins) prototypeCoins.textContent = String(state?.rankedPoints ?? 1240);
+  const rankedPoints = Number(state?.rankedPoints) || 0;
+  if (prototypeCoins) prototypeCoins.textContent = String(rankedPoints);
   if (prototypeGems) prototypeGems.textContent = String(state?.matchPoints ?? 56);
-  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division 4 · ${state?.rankedPoints ?? 1240} RP`;
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division 4 · ${rankedPoints} RP`;
+  if (prototypeRankPoints) prototypeRankPoints.textContent = String(rankedPoints);
 }
 
 function prototypeViewMarkup(view) {
@@ -70,7 +73,7 @@ function prototypeViewMarkup(view) {
   if (view === 'Squad') return `<section class="workspace-card squad-workspace"><p>STARTING XI</p><h3>88 Team Rating</h3><div class="squad-list"><b>95 RONALDO</b><b>91 NEYMAR JR</b><b>90 VINI JR</b><b>88 YAMAL</b></div><button data-prototype-open-pitch>MANAGE STARTING XI</button></section>`;
   if (view === 'Play') return `<section class="workspace-card"><p>MATCHDAY</p><h3>Choose your game mode</h3><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>10 RP + 25 COINS / WIN</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>BUILD YOUR XI</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div></section>`;
   if (view === 'Club') return `<section class="workspace-card club-workspace"><p>MY CLUB</p><h3>Make it yours.</h3><div class="club-photo-row"><button id="prototypeAddPhoto" class="club-photo-add"><span id="prototypeClubPhoto">+</span><b>ADD CLUB PHOTO</b></button><input id="prototypeClubPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><div><strong>${prototypeUsername?.textContent || 'FC Manager'}</strong><small>Customise your identity, squad, and match style.</small><button data-prototype-action="Club settings">EDIT CLUB</button></div></div></section>`;
-  return `<section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div><strong>91<small>NEYMAR JR</small></strong></section><div class="desktop-section-title"><h3>Play now</h3><button data-prototype-view="Play">View all modes →</button></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>10 RP + 25 COINS / WIN</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>ENDS IN 05:12:40</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div>`;
+  return `<section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div><strong>91<small>NEYMAR JR</small></strong></section>`;
 }
 
 function selectPrototypeView(view) {
@@ -133,7 +136,7 @@ const profile = typeof activeAccount === 'function' ? activeAccount() : null;
 const savedPrototypeProfile = JSON.parse(localStorage.getItem('fc-stars-prototype-profile') || 'null');
 if (profile && prototypeUsername) {
   prototypeUsername.textContent = savedPrototypeProfile?.name || profile.username;
-  prototypeProfileMeta.textContent = `Division 4 · ${state?.rankedPoints ?? 1240} RP`;
+  prototypeProfileMeta.textContent = `Division 4 · ${Number(state?.rankedPoints) || 0} RP`;
 }
 if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
   prototypeProfileAvatar.textContent = profileAvatar.textContent || 'FC';
