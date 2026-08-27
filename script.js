@@ -173,7 +173,13 @@ const redeemableCodes = {
 const levelRewards = {
   50: { type: "badge", badge: goatProfileBadge, message: "Level 50 reward: G.O.A.T profile glow unlocked." }
 };
-const opponentLeaders = ["Rival Captain", "Street King", "Madrid Boss", "Barcelona Ace", "Legend XI"];
+const opponentTeams = [
+  { name: "Rival Academy", multiplier: 1 },
+  { name: "Street King", multiplier: 1.2 },
+  { name: "Madrid Boss", multiplier: 1.5 },
+  { name: "Barcelona Ace", multiplier: 1.8 },
+  { name: "Legend XI", multiplier: 2.2 }
+];
 let databasePromise = null;
 let databaseReady = false;
 let matchTimer = null;
@@ -230,6 +236,8 @@ const defaultState = {
   badges: [],
   friends: [],
   playerStats: {},
+  rankedPoints: 1240,
+  matchPoints: 56,
   joinRequest: null,
   activeMatch: null
 };
@@ -564,6 +572,12 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.badges = savedState.badges || [];
   savedState.friends = uniqueFriends(savedState.friends || []);
   savedState.playerStats = savedState.playerStats || {};
+  savedState.rankedPoints = Number.isFinite(Number(savedState.rankedPoints))
+    ? Math.max(0, Number(savedState.rankedPoints))
+    : 1240;
+  savedState.matchPoints = Number.isFinite(Number(savedState.matchPoints))
+    ? Math.max(0, Number(savedState.matchPoints))
+    : 56;
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch || null;
   savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
@@ -1310,13 +1324,15 @@ function startMatch() {
   }
 
   const featuredPlayer = state.selectedStar || buildTeam().find((player) => player.name && player.image) || cardPool[0];
+  const opponent = opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
   state.activeMatch = {
     home: 0,
     away: 0,
     minute: 1,
     goals: [],
     homeLeader: teamLeaderName(),
-    awayLeader: opponentLeaders[Math.floor(Math.random() * opponentLeaders.length)],
+    awayLeader: opponent.name,
+    opponentMultiplier: opponent.multiplier,
     playerX: 24,
     playerY: 50,
     ballX: 29,
@@ -1348,6 +1364,11 @@ function endMatch() {
   const won = state.activeMatch.home > state.activeMatch.away;
   const drew = state.activeMatch.home === state.activeMatch.away;
   const winXp = won ? matchWinXp(state.activeMatch.home, state.activeMatch.away) : 0;
+  const tablePoints = won ? Math.round(10 * Math.max(1, Number(state.activeMatch.opponentMultiplier) || 1)) : 0;
+  if (won) {
+    state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
+    state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + 28;
+  }
   const xpResult = won ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
@@ -1356,12 +1377,13 @@ function endMatch() {
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = "Full time";
   reportText.textContent = won
-    ? `Victory! FC Stars won ${score}. +${winXp} XP for the result.${levelMessage}`
+    ? `Victory! FC Stars won ${score}. +${tablePoints} Ranked Points, +28 Match Points, and +${winXp} XP.${levelMessage}`
     : drew
       ? `Draw ${score}. Win the next match to earn XP.`
       : `Defeat ${score}. Win a match to earn XP.`;
   saveState();
   render();
+  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won, tablePoints, score } }));
 }
 
 function matchWinXp(homeGoals, awayGoals) {

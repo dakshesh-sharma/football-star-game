@@ -64,7 +64,11 @@
       </section>
       <section id="prototypePitchOverlay" class="prototype-pitch-overlay" hidden aria-label="Squad pitch editor">
         <div class="prototype-pitch-toolbar"><div><p>STARTING XI</p><h2>Squad Builder</h2></div><button id="prototypePitchClose">← Back to dashboard</button></div>
-        <div id="prototypePitchHost" class="prototype-pitch-host"></div>
+        <div class="prototype-pitch-layout"><div id="prototypePitchHost" class="prototype-pitch-host"></div><div id="prototypeInventoryHost" class="prototype-inventory-host"></div></div>
+      </section>
+      <section id="prototypeMatchOverlay" class="prototype-pitch-overlay prototype-match-overlay" hidden aria-label="Live match">
+        <div class="prototype-pitch-toolbar"><div><p id="prototypeMatchMode">RANKED RUSH</p><h2>Live Match</h2></div><button id="prototypeMatchClose">← Leave match</button></div>
+        <div id="prototypeMatchHost" class="prototype-match-host"></div>
       </section>
     </section>
     <main class="app-shell">

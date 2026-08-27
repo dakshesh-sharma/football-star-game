@@ -59,6 +59,12 @@ function showPrototypeToast(message) {
   showPrototypeToast.timeout = window.setTimeout(() => prototypeToast.classList.remove('is-visible'), 2600);
 }
 
+function syncPrototypeBalances() {
+  if (prototypeCoins) prototypeCoins.textContent = String(state?.rankedPoints ?? 1240);
+  if (prototypeGems) prototypeGems.textContent = String(state?.matchPoints ?? 56);
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division 4 · ${state?.rankedPoints ?? 1240} RP`;
+}
+
 function prototypeViewMarkup(view) {
   if (view === 'Packs') return `<section class="workspace-card"><p>RISING ICONS</p><h3>One win. One pack.</h3><span>Every pack costs 28 Match Points — exactly one ranked win.</span><button data-prototype-open-pack>OPEN RISING ICONS PACK <b>28 MP</b></button><small>Top pulls include Neymar Jr, Vini Jr, Bellingham, and Yamal.</small></section>`;
   if (view === 'Squad') return `<section class="workspace-card squad-workspace"><p>STARTING XI</p><h3>88 Team Rating</h3><div class="squad-list"><b>95 RONALDO</b><b>91 NEYMAR JR</b><b>90 VINI JR</b><b>88 YAMAL</b></div><button data-prototype-open-pitch>MANAGE STARTING XI</button></section>`;
@@ -76,16 +82,22 @@ function selectPrototypeView(view) {
 
 function openPrototypePack() {
   const cost = 28;
-  const points = Number(prototypeGems?.textContent) || 0;
+  const points = Number(state?.matchPoints) || 0;
   if (points < cost) {
     showPrototypeToast('Win a match to earn 28 Match Points.');
     return;
   }
-  if (prototypeGems) prototypeGems.textContent = String(points - cost);
+  state.matchPoints = points - cost;
+  saveState();
+  syncPrototypeBalances();
   const card = prototypePackCards[Math.floor(Math.random() * prototypePackCards.length)];
   document.querySelector('#prototypePackRating').textContent = card.rating;
   document.querySelector('#prototypePackTitle').textContent = card.name;
   document.querySelector('#prototypePackMeta').textContent = card.meta;
+  const packCard = prototypeModal.querySelector('.prototype-modal-card');
+  packCard?.classList.remove('is-opening');
+  void packCard?.offsetWidth;
+  packCard?.classList.add('is-opening');
   prototypeModal.hidden = false;
   showPrototypeToast(`${card.name} packed!`);
 }
@@ -114,16 +126,14 @@ document.addEventListener('change', (event) => {
 document.addEventListener('click', (event) => {
   const playButton = event.target.closest('[data-prototype-play]');
   if (!playButton) return;
-  if (prototypeMissionProgress) prototypeMissionProgress.style.width = '100%';
-  if (prototypeMissionLabel) prototypeMissionLabel.textContent = '1 / 1 completed · Reward claimed';
-  if (prototypeGems) prototypeGems.textContent = String((Number(prototypeGems.textContent) || 0) + 28);
-  showPrototypeToast(`${playButton.dataset.prototypePlay} won! +28 Match Points`);
+  openPrototypeMatch(playButton.dataset.prototypePlay);
 });
 
 const profile = typeof activeAccount === 'function' ? activeAccount() : null;
+const savedPrototypeProfile = JSON.parse(localStorage.getItem('fc-stars-prototype-profile') || 'null');
 if (profile && prototypeUsername) {
-  prototypeUsername.textContent = profile.username;
-  prototypeProfileMeta.textContent = `Division 4 · ${prototypeCoins?.textContent || '1,240'} RP`;
+  prototypeUsername.textContent = savedPrototypeProfile?.name || profile.username;
+  prototypeProfileMeta.textContent = `Division 4 · ${state?.rankedPoints ?? 1240} RP`;
 }
 if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
   prototypeProfileAvatar.textContent = profileAvatar.textContent || 'FC';
@@ -134,6 +144,8 @@ if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
 document.querySelector('#prototypeSettingsButton')?.addEventListener('click', () => {
   const nameInput = document.querySelector('#prototypeClubNameInput');
   if (nameInput && prototypeUsername) nameInput.value = prototypeUsername.textContent;
+  const mottoInput = document.querySelector('#prototypeClubMottoInput');
+  if (mottoInput && savedPrototypeProfile?.motto) mottoInput.value = savedPrototypeProfile.motto;
   prototypeSettingsModal.hidden = false;
 });
 document.querySelector('#prototypeSettingsClose')?.addEventListener('click', () => { prototypeSettingsModal.hidden = true; });
@@ -142,18 +154,28 @@ document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (ev
   const name = document.querySelector('#prototypeClubNameInput')?.value.trim();
   const motto = document.querySelector('#prototypeClubMottoInput')?.value.trim();
   if (name && prototypeUsername) prototypeUsername.textContent = name;
+  localStorage.setItem('fc-stars-prototype-profile', JSON.stringify({ name: name || profile?.username || 'FC Manager', motto: motto || 'Build your legacy' }));
   prototypeSettingsModal.hidden = true;
   showPrototypeToast(motto ? `${name || 'Club'} · ${motto}` : 'Profile settings saved');
 });
 
 const prototypePitchOverlay = document.querySelector('#prototypePitchOverlay');
 const prototypePitchHost = document.querySelector('#prototypePitchHost');
+const prototypeInventoryHost = document.querySelector('#prototypeInventoryHost');
 const realPitch = document.querySelector('#pitch');
 const originalPitchParent = realPitch?.parentElement;
+const realInventory = document.querySelector('#inventoryPanel');
+const originalInventoryParent = realInventory?.parentElement;
 
 function openPrototypePitch() {
   if (!realPitch || !prototypePitchOverlay || !prototypePitchHost) return;
   prototypePitchHost.appendChild(realPitch);
+  if (realInventory && prototypeInventoryHost) {
+    prototypeInventoryHost.appendChild(realInventory);
+    realInventory.hidden = false;
+    state.inventoryOpen = true;
+    renderInventory();
+  }
   realPitch.hidden = false;
   prototypePitchOverlay.hidden = false;
   showPrototypeToast('Select a player card on the pitch to manage your XI.');
@@ -162,11 +184,42 @@ function openPrototypePitch() {
 function closePrototypePitch() {
   if (!realPitch || !prototypePitchOverlay || !originalPitchParent) return;
   originalPitchParent.appendChild(realPitch);
+  if (realInventory && originalInventoryParent) originalInventoryParent.appendChild(realInventory);
   prototypePitchOverlay.hidden = true;
 }
 
 document.querySelector('#prototypeManageSquad')?.addEventListener('click', openPrototypePitch);
 document.querySelector('#prototypePitchClose')?.addEventListener('click', closePrototypePitch);
+
+const prototypeMatchOverlay = document.querySelector('#prototypeMatchOverlay');
+const prototypeMatchHost = document.querySelector('#prototypeMatchHost');
+const realMatchPanel = document.querySelector('#matchPanel');
+const originalMatchParent = realMatchPanel?.parentElement;
+
+function openPrototypeMatch(mode) {
+  if (!realMatchPanel || !prototypeMatchOverlay || !prototypeMatchHost) return;
+  prototypeMatchHost.appendChild(realMatchPanel);
+  document.querySelector('#prototypeMatchMode').textContent = mode.toUpperCase();
+  prototypeMatchOverlay.hidden = false;
+  startMatch();
+}
+
+function closePrototypeMatch() {
+  if (state?.activeMatch) endMatch();
+  if (realMatchPanel && originalMatchParent) originalMatchParent.prepend(realMatchPanel);
+  if (prototypeMatchOverlay) prototypeMatchOverlay.hidden = true;
+}
+
+document.querySelector('#prototypeMatchClose')?.addEventListener('click', closePrototypeMatch);
+window.addEventListener('fc-stars-match-ended', (event) => {
+  syncPrototypeBalances();
+  if (event.detail.won) {
+    if (prototypeMissionProgress) prototypeMissionProgress.style.width = '100%';
+    if (prototypeMissionLabel) prototypeMissionLabel.textContent = '1 / 1 completed · Reward claimed';
+    showPrototypeToast(`Victory! +${event.detail.tablePoints} Ranked Points.`);
+  }
+  window.setTimeout(closePrototypeMatch, 1100);
+});
 
 document.querySelector('#prototypeSpinButton')?.addEventListener('click', () => {
   spinCard();
@@ -178,3 +231,5 @@ document.querySelector('#prototypeCodeButton')?.addEventListener('click', () => 
 });
 document.querySelector('#gamePromptCancelBtn')?.addEventListener('click', () => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'));
 document.querySelector('#gamePromptForm')?.addEventListener('submit', () => window.setTimeout(() => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible')));
+
+syncPrototypeBalances();
