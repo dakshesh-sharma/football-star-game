@@ -44,6 +44,7 @@ const prototypeRankPoints = document.querySelector('#prototypeRankPoints');
 const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar');
 const prototypeSettingsModal = document.querySelector('#prototypeSettingsModal');
 const prototypeWorkspace = document.querySelector('#prototypeWorkspace');
+const prototypeProfileStorageKey = 'fc-stars-prototype-profile';
 const prototypePackCards = [
   { name: 'Neymar Jr', rating: 91, meta: 'LW · BRAZIL · G.O.A.T.' },
   { name: 'Vinícius Jr', rating: 90, meta: 'LW · BRAZIL · ELITE' },
@@ -84,6 +85,7 @@ function selectPrototypeView(view) {
   if (prototypeKicker) prototypeKicker.textContent = `${view.toUpperCase()} · FC STARS`;
   if (prototypeTitle) prototypeTitle.innerHTML = view === 'Home' ? 'Ready to build<br>your <em>legacy?</em>' : `${view} is<br><em>ready.</em>`;
   if (prototypeWorkspace) prototypeWorkspace.innerHTML = prototypeViewMarkup(view);
+  if (view === 'Club') restorePrototypeClubPhoto();
 }
 
 function openPrototypePack() {
@@ -123,9 +125,17 @@ document.addEventListener('change', (event) => {
   if (event.target.id !== 'prototypeClubPhotoInput' || !event.target.files?.[0]) return;
   const reader = new FileReader();
   reader.onload = () => {
-    const photo = document.querySelector('#prototypeClubPhoto');
-    if (photo) { photo.textContent = ''; photo.style.backgroundImage = `url(${reader.result})`; photo.classList.add('has-photo'); }
-    showPrototypeToast('Club photo updated');
+    const image = new Image();
+    image.onload = () => {
+      const limit = 320;
+      const scale = Math.min(1, limit / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
+      savePrototypeClubPhoto(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    image.src = String(reader.result);
   };
   reader.readAsDataURL(event.target.files[0]);
 });
@@ -136,7 +146,36 @@ document.addEventListener('click', (event) => {
 });
 
 const profile = typeof activeAccount === 'function' ? activeAccount() : null;
-const savedPrototypeProfile = JSON.parse(localStorage.getItem('fc-stars-prototype-profile') || 'null');
+function readPrototypeProfile() {
+  try { return JSON.parse(localStorage.getItem(prototypeProfileStorageKey) || 'null') || {}; }
+  catch { return {}; }
+}
+
+function restorePrototypeClubPhoto() {
+  const photoUrl = readPrototypeProfile().photo;
+  const photo = document.querySelector('#prototypeClubPhoto');
+  if (!photo || !photoUrl) return;
+  photo.textContent = '';
+  photo.style.backgroundImage = `url(${photoUrl})`;
+  photo.classList.add('has-photo');
+}
+
+function savePrototypeClubPhoto(photoUrl) {
+  const photo = document.querySelector('#prototypeClubPhoto');
+  if (photo) {
+    photo.textContent = '';
+    photo.style.backgroundImage = `url(${photoUrl})`;
+    photo.classList.add('has-photo');
+  }
+  try {
+    localStorage.setItem(prototypeProfileStorageKey, JSON.stringify({ ...readPrototypeProfile(), photo: photoUrl }));
+    showPrototypeToast('Club photo saved');
+  } catch {
+    showPrototypeToast('Photo is too large to save. Try a smaller image.');
+  }
+}
+
+const savedPrototypeProfile = readPrototypeProfile();
 if (profile && prototypeUsername) {
   prototypeUsername.textContent = savedPrototypeProfile?.name || profile.username;
   prototypeProfileMeta.textContent = `Division 4 · ${Number(state?.rankedPoints) || 0} RP`;
@@ -160,7 +199,7 @@ document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (ev
   const name = document.querySelector('#prototypeClubNameInput')?.value.trim();
   const motto = document.querySelector('#prototypeClubMottoInput')?.value.trim();
   if (name && prototypeUsername) prototypeUsername.textContent = name;
-  localStorage.setItem('fc-stars-prototype-profile', JSON.stringify({ name: name || profile?.username || 'FC Manager', motto: motto || 'Build your legacy' }));
+  localStorage.setItem(prototypeProfileStorageKey, JSON.stringify({ ...readPrototypeProfile(), name: name || profile?.username || 'FC Manager', motto: motto || 'Build your legacy' }));
   prototypeSettingsModal.hidden = true;
   showPrototypeToast(motto ? `${name || 'Club'} · ${motto}` : 'Profile settings saved');
 });
