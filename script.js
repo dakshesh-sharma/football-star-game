@@ -1369,10 +1369,11 @@ function endMatch() {
   const drew = state.activeMatch.home === state.activeMatch.away;
   const winXp = won ? matchWinXp(state.activeMatch.home, state.activeMatch.away) : 0;
   const tablePoints = won ? 10 : 0;
+  const coinReward = Math.max(0, Number(state.activeMatch.home) || 0) * 25;
   if (won) {
     state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
-    state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + 25;
   }
+  state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + coinReward;
   const xpResult = won ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
@@ -1381,13 +1382,13 @@ function endMatch() {
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = "Full time";
   reportText.textContent = won
-    ? `Victory! FC Stars won ${score}. +10 Ranked Points, +25 Coins, and +${winXp} XP.${levelMessage}`
+    ? `Victory! FC Stars won ${score}. +10 Ranked Points, +${coinReward} Coins, and +${winXp} XP.${levelMessage}`
     : drew
-      ? `Draw ${score}. Win the next match to earn XP.`
-      : `Defeat ${score}. Win a match to earn XP.`;
+      ? `Draw ${score}. +${coinReward} Coins for your goals. Win the next match to earn XP.`
+      : `Defeat ${score}. +${coinReward} Coins for your goals. Win a match to earn XP.`;
   saveState();
   render();
-  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won, tablePoints, score } }));
+  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won, tablePoints, coinReward, score } }));
 }
 
 function matchWinXp(homeGoals, awayGoals) {
