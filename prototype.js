@@ -45,6 +45,11 @@ const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar')
 const prototypeSettingsModal = document.querySelector('#prototypeSettingsModal');
 const prototypeWorkspace = document.querySelector('#prototypeWorkspace');
 const prototypeProfileStorageKey = 'fc-stars-prototype-profile';
+const prototypeClosedPack = document.querySelector('#prototypeClosedPack');
+const prototypePackReveal = document.querySelector('#prototypePackReveal');
+const prototypePackTapCount = document.querySelector('#prototypePackTapCount');
+let prototypePackTaps = 0;
+let prototypePendingPack = null;
 const prototypePackCards = [
   { name: 'Neymar Jr', rating: 91, meta: 'LW · BRAZIL · G.O.A.T.' },
   { name: 'Vinícius Jr', rating: 90, meta: 'LW · BRAZIL · ELITE' },
@@ -99,19 +104,46 @@ function openPrototypePack() {
   saveState();
   syncPrototypeBalances();
   const card = prototypePackCards[Math.floor(Math.random() * prototypePackCards.length)];
+  prototypePendingPack = card;
+  prototypePackTaps = 0;
   document.querySelector('#prototypePackRating').textContent = card.rating;
   document.querySelector('#prototypePackTitle').textContent = card.name;
   document.querySelector('#prototypePackMeta').textContent = card.meta;
   const packCard = prototypeModal.querySelector('.prototype-modal-card');
   packCard?.classList.remove('is-opening');
-  void packCard?.offsetWidth;
-  packCard?.classList.add('is-opening');
+  if (prototypeClosedPack) prototypeClosedPack.hidden = false;
+  if (prototypePackReveal) prototypePackReveal.hidden = true;
+  if (prototypePackTapCount) prototypePackTapCount.textContent = 'Tap 3 times to reveal your player';
   prototypeModal.hidden = false;
-  showPrototypeToast(`${card.name} packed!`);
 }
 
-document.querySelector('#prototypeModalClose')?.addEventListener('click', () => { prototypeModal.hidden = true; });
-document.querySelector('#prototypeKeepCard')?.addEventListener('click', () => { prototypeModal.hidden = true; showPrototypeToast('Neymar Jr added to your squad.'); });
+function closePrototypePack(refundUnopened = false) {
+  if (refundUnopened && prototypePendingPack) {
+    state.matchPoints = (Number(state.matchPoints) || 0) + 50;
+    saveState();
+    syncPrototypeBalances();
+  }
+  prototypePendingPack = null;
+  prototypeModal.hidden = true;
+}
+
+document.querySelector('#prototypePackTapTarget')?.addEventListener('click', () => {
+  if (!prototypePendingPack) return;
+  prototypePackTaps += 1;
+  const packCard = prototypeModal.querySelector('.prototype-modal-card');
+  packCard?.classList.remove('is-opening');
+  void packCard?.offsetWidth;
+  packCard?.classList.add('is-opening');
+  if (prototypePackTaps < 3) {
+    if (prototypePackTapCount) prototypePackTapCount.textContent = `${3 - prototypePackTaps} tap${3 - prototypePackTaps === 1 ? '' : 's'} left`;
+    return;
+  }
+  if (prototypeClosedPack) prototypeClosedPack.hidden = true;
+  if (prototypePackReveal) prototypePackReveal.hidden = false;
+  showPrototypeToast(`${prototypePendingPack.name} packed!`);
+});
+document.querySelector('#prototypeModalClose')?.addEventListener('click', () => closePrototypePack(prototypePackTaps < 3));
+document.querySelector('#prototypeKeepCard')?.addEventListener('click', () => { const name = prototypePendingPack?.name || 'Player'; closePrototypePack(); showPrototypeToast(`${name} added to your squad.`); });
 document.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
