@@ -1367,7 +1367,6 @@ function endMatch() {
   const tablePoints = won ? Math.round(10 * Math.max(1, Number(state.activeMatch.opponentMultiplier) || 1)) : 0;
   if (won) {
     state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
-    state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + 28;
   }
   const xpResult = won ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
@@ -1377,7 +1376,7 @@ function endMatch() {
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = "Full time";
   reportText.textContent = won
-    ? `Victory! FC Stars won ${score}. +${tablePoints} Ranked Points, +28 Match Points, and +${winXp} XP.${levelMessage}`
+    ? `Victory! FC Stars won ${score}. +${tablePoints} Ranked Points and +${winXp} XP.${levelMessage}`
     : drew
       ? `Draw ${score}. Win the next match to earn XP.`
       : `Defeat ${score}. Win a match to earn XP.`;
