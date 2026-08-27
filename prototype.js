@@ -63,10 +63,6 @@ document.querySelector('#desktopOpenPack')?.addEventListener('click', () => {
 
 document.querySelector('#prototypeModalClose')?.addEventListener('click', () => { prototypeModal.hidden = true; });
 document.querySelector('#prototypeKeepCard')?.addEventListener('click', () => { prototypeModal.hidden = true; showPrototypeToast('Neymar Jr added to your squad.'); });
-document.querySelector('#prototypeAddCurrency')?.addEventListener('click', () => {
-  if (prototypeCoins) prototypeCoins.textContent = String(Number(prototypeCoins.textContent.replace(',', '')) + 500).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  showPrototypeToast('+500 prototype coins');
-});
 document.querySelector('#prototypeViewModes')?.addEventListener('click', () => showPrototypeToast('All game modes unlocked in this concept.'));
 document.querySelectorAll('[data-prototype-action]').forEach((button) => button.addEventListener('click', () => showPrototypeToast(`${button.dataset.prototypeAction} opened`)));
 document.querySelectorAll('[data-prototype-play]').forEach((button) => button.addEventListener('click', () => {

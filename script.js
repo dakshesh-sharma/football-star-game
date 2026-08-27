@@ -1321,6 +1321,8 @@ function startMatch() {
     playerY: 50,
     ballX: 29,
     ballY: 50,
+    lastShotAt: 0,
+    lastShotPosition: null,
     sprinting: false,
     playerImage: featuredPlayer?.image || "",
     homeTeam: buildTeam().map(({ id, name, position, team, rating, image, controlled }) => ({
@@ -1437,11 +1439,36 @@ function matchAction(action) {
     reportText.textContent = "Pass played into space.";
   }
   if (action === "shoot") {
+    const now = Date.now();
+    const distanceToBall = Math.hypot(match.ballX - match.playerX, match.ballY - match.playerY);
+    const distanceFromPreviousShot = match.lastShotPosition
+      ? Math.hypot(match.playerX - match.lastShotPosition.x, match.playerY - match.lastShotPosition.y)
+      : Infinity;
+    const scorer = state.selectedStar || buildTeam().find((player) => player.slot !== "GK") || cardPool[0];
+    const closeEnoughToGoal = attackDirection > 0 ? match.playerY > 78 : match.playerY < 22;
+    const inShootingLane = Math.abs(match.playerX - 50) < 19;
+    const shotOnCooldown = now - (match.lastShotAt || 0) < 1400;
+
+    if (distanceToBall > 10) {
+      sceneGoalText.textContent = "NO POSSESSION";
+      reportTitle.textContent = "Get to the ball";
+      reportText.textContent = "Move onto the ball before shooting again.";
+      updateMatchField();
+      return;
+    }
+    if (shotOnCooldown || distanceFromPreviousShot < 12) {
+      sceneGoalText.textContent = "BUILD THE PLAY";
+      reportTitle.textContent = "Shot blocked";
+      reportText.textContent = "Create space before your next attempt — holding Space will not score.";
+      updateMatchField();
+      return;
+    }
+
+    match.lastShotAt = now;
+    match.lastShotPosition = { x: match.playerX, y: match.playerY };
     match.ballX = match.playerX;
     match.ballY = attackDirection > 0 ? 94 : 6;
-    const scorer = state.selectedStar || buildTeam().find((player) => player.slot !== "GK") || cardPool[0];
-    const closeEnoughToGoal = attackDirection > 0 ? match.playerY > 60 : match.playerY < 40;
-    const scored = closeEnoughToGoal && Math.random() > 0.28;
+    const scored = closeEnoughToGoal && inShootingLane && Math.random() < 0.18;
     sceneGoalText.textContent = scored ? "GOAL!" : "SAVED";
     if (scored) {
       match.home += 1;
@@ -1449,9 +1476,15 @@ function matchAction(action) {
       match.goals = [{ scorer: scorer.name, minute: match.minute, goalNumber, celebration: "Goal" }, ...match.goals].slice(0, 12);
       reportTitle.textContent = `${scorer.name} scores`;
       reportText.textContent = `A controlled finish. FC Stars lead ${match.home}-${match.away}.`;
+      match.ballX = 50;
+      match.ballY = 50;
     } else {
       reportTitle.textContent = "Shot saved";
-      reportText.textContent = "The rival goalkeeper kept it out.";
+      reportText.textContent = closeEnoughToGoal && inShootingLane
+        ? "The rival goalkeeper kept it out. Reposition for another chance."
+        : "The angle was wrong. Get central and closer to goal.";
+      match.ballX = Math.max(8, Math.min(92, match.playerX + (match.playerX < 50 ? 11 : -11)));
+      match.ballY = Math.max(8, Math.min(92, match.playerY - attackDirection * 10));
     }
   }
   if (action === "dribble") {
