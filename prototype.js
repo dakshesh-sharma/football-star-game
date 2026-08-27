@@ -16,7 +16,7 @@ const packButton = document.querySelector('#openPack');
 const pack = document.querySelector('#pack');
 const reveal = document.querySelector('#revealCard');
 const packHint = document.querySelector('#packHint');
-packButton.addEventListener('click', () => {
+packButton?.addEventListener('click', () => {
   pack.classList.add('is-opening');
   packButton.disabled = true;
   packHint.textContent = 'A legend is walking out…';
@@ -27,5 +27,50 @@ const inspector = document.querySelector('#playerInspector');
 document.querySelectorAll('.player-card').forEach((card) => card.addEventListener('click', () => {
   document.querySelectorAll('.player-card').forEach((item) => item.classList.remove('is-selected'));
   card.classList.add('is-selected');
-  inspector.querySelector('span').textContent = `${card.dataset.player} selected · tap Swap player to explore options`;
+  inspector?.querySelector('span') && (inspector.querySelector('span').textContent = `${card.dataset.player} selected · tap Swap player to explore options`);
+}));
+
+const prototypeToast = document.querySelector('#prototypeToast');
+const prototypeModal = document.querySelector('#prototypePackModal');
+const prototypeCoins = document.querySelector('#prototypeCoins');
+const prototypeGems = document.querySelector('#prototypeGems');
+const prototypeTitle = document.querySelector('#prototypeTitle');
+const prototypeKicker = document.querySelector('#prototypeKicker');
+const prototypeMissionProgress = document.querySelector('#prototypeMissionProgress');
+const prototypeMissionLabel = document.querySelector('#prototypeMissionLabel');
+
+function showPrototypeToast(message) {
+  if (!prototypeToast) return;
+  prototypeToast.textContent = message;
+  prototypeToast.classList.add('is-visible');
+  window.clearTimeout(showPrototypeToast.timeout);
+  showPrototypeToast.timeout = window.setTimeout(() => prototypeToast.classList.remove('is-visible'), 2600);
+}
+
+document.querySelectorAll('[data-prototype-view]').forEach((button) => button.addEventListener('click', () => {
+  document.querySelectorAll('[data-prototype-view]').forEach((item) => item.classList.toggle('rail-active', item === button));
+  const view = button.dataset.prototypeView;
+  if (prototypeKicker) prototypeKicker.textContent = `${view.toUpperCase()} · FC STARS`;
+  if (prototypeTitle) prototypeTitle.innerHTML = view === 'Home' ? 'Ready to build<br>your <em>legacy?</em>' : `${view} is<br><em>ready.</em>`;
+  showPrototypeToast(`${view} prototype selected`);
+}));
+
+document.querySelector('#desktopOpenPack')?.addEventListener('click', () => {
+  if (prototypeGems && Number(prototypeGems.textContent) >= 75) prototypeGems.textContent = String(Number(prototypeGems.textContent) - 75);
+  prototypeModal.hidden = false;
+  showPrototypeToast('Rising Icons pack opened!');
+});
+
+document.querySelector('#prototypeModalClose')?.addEventListener('click', () => { prototypeModal.hidden = true; });
+document.querySelector('#prototypeKeepCard')?.addEventListener('click', () => { prototypeModal.hidden = true; showPrototypeToast('Neymar Jr added to your squad.'); });
+document.querySelector('#prototypeAddCurrency')?.addEventListener('click', () => {
+  if (prototypeCoins) prototypeCoins.textContent = String(Number(prototypeCoins.textContent.replace(',', '')) + 500).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  showPrototypeToast('+500 prototype coins');
+});
+document.querySelector('#prototypeViewModes')?.addEventListener('click', () => showPrototypeToast('All game modes unlocked in this concept.'));
+document.querySelectorAll('[data-prototype-action]').forEach((button) => button.addEventListener('click', () => showPrototypeToast(`${button.dataset.prototypeAction} opened`)));
+document.querySelectorAll('[data-prototype-play]').forEach((button) => button.addEventListener('click', () => {
+  if (prototypeMissionProgress) prototypeMissionProgress.style.width = '100%';
+  if (prototypeMissionLabel) prototypeMissionLabel.textContent = '1 / 1 completed · Reward claimed';
+  showPrototypeToast(`${button.dataset.prototypePlay} match found — kickoff!`);
 }));
