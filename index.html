@@ -41,7 +41,7 @@
           </section>
           <section class="desktop-rank"><p>DIVISION 4</p><div><b>1,240</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section>
           <section class="desktop-mission"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i id="prototypeMissionProgress"></i></div><small id="prototypeMissionLabel">0 / 1 completed</small><button data-prototype-play="Ranked Rush">PLAY NOW</button></section>
-          <div class="side-heading"><h3>Starting XI</h3><button data-prototype-view="Squad">Manage →</button></div>
+          <div class="side-heading"><h3>Starting XI</h3><button id="prototypeManageSquad">Manage →</button></div>
           <section class="desktop-xi"><div><b>95</b><span>RONALDO</span></div><div><b>91</b><span>NEYMAR</span></div><div><b>90</b><span>VINI JR</span></div><div><b>88</b><span>YAMAL</span></div><strong>88<small>TEAM RATING</small></strong></section>
         </aside>
       </section>
@@ -61,6 +61,10 @@
           <label>Club motto<input id="prototypeClubMottoInput" maxlength="42" value="Build your legacy" /></label>
           <button type="submit">SAVE SETTINGS</button>
         </form>
+      </section>
+      <section id="prototypePitchOverlay" class="prototype-pitch-overlay" hidden aria-label="Squad pitch editor">
+        <div class="prototype-pitch-toolbar"><div><p>STARTING XI</p><h2>Squad Builder</h2></div><button id="prototypePitchClose">← Back to dashboard</button></div>
+        <div id="prototypePitchHost" class="prototype-pitch-host"></div>
       </section>
     </section>
     <main class="app-shell">

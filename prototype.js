@@ -61,7 +61,7 @@ function showPrototypeToast(message) {
 
 function prototypeViewMarkup(view) {
   if (view === 'Packs') return `<section class="workspace-card"><p>RISING ICONS</p><h3>One win. One pack.</h3><span>Every pack costs 28 Match Points — exactly one ranked win.</span><button data-prototype-open-pack>OPEN RISING ICONS PACK <b>28 MP</b></button><small>Top pulls include Neymar Jr, Vini Jr, Bellingham, and Yamal.</small></section>`;
-  if (view === 'Squad') return `<section class="workspace-card squad-workspace"><p>STARTING XI</p><h3>88 Team Rating</h3><div class="squad-list"><b>95 RONALDO</b><b>91 NEYMAR JR</b><b>90 VINI JR</b><b>88 YAMAL</b></div><button data-prototype-action="Squad manager">MANAGE STARTING XI</button></section>`;
+  if (view === 'Squad') return `<section class="workspace-card squad-workspace"><p>STARTING XI</p><h3>88 Team Rating</h3><div class="squad-list"><b>95 RONALDO</b><b>91 NEYMAR JR</b><b>90 VINI JR</b><b>88 YAMAL</b></div><button data-prototype-open-pitch>MANAGE STARTING XI</button></section>`;
   if (view === 'Play') return `<section class="workspace-card"><p>MATCHDAY</p><h3>Choose your game mode</h3><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>WIN +28 MP</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>WIN +28 MP</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div></section>`;
   if (view === 'Club') return `<section class="workspace-card club-workspace"><p>MY CLUB</p><h3>Make it yours.</h3><div class="club-photo-row"><button id="prototypeAddPhoto" class="club-photo-add"><span id="prototypeClubPhoto">+</span><b>ADD CLUB PHOTO</b></button><input id="prototypeClubPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><div><strong>${prototypeUsername?.textContent || 'FC Manager'}</strong><small>Customise your identity, squad, and match style.</small><button data-prototype-action="Club settings">EDIT CLUB</button></div></div></section>`;
   return `<section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>+28 MP</span></button></div><strong>91<small>NEYMAR JR</small></strong></section><div class="desktop-section-title"><h3>Play now</h3><button data-prototype-view="Play">View all modes →</button></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>WIN +28 MP</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>ENDS IN 05:12:40</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div>`;
@@ -99,6 +99,7 @@ document.addEventListener('click', (event) => {
   if (actionButton) showPrototypeToast(`${actionButton.dataset.prototypeAction} opened`);
   if (event.target.closest('[data-prototype-open-pack]')) openPrototypePack();
   if (event.target.closest('#prototypeAddPhoto')) document.querySelector('#prototypeClubPhotoInput')?.click();
+  if (event.target.closest('[data-prototype-open-pitch]')) openPrototypePitch();
 });
 document.addEventListener('change', (event) => {
   if (event.target.id !== 'prototypeClubPhotoInput' || !event.target.files?.[0]) return;
@@ -144,3 +145,25 @@ document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (ev
   prototypeSettingsModal.hidden = true;
   showPrototypeToast(motto ? `${name || 'Club'} · ${motto}` : 'Profile settings saved');
 });
+
+const prototypePitchOverlay = document.querySelector('#prototypePitchOverlay');
+const prototypePitchHost = document.querySelector('#prototypePitchHost');
+const realPitch = document.querySelector('#pitch');
+const originalPitchParent = realPitch?.parentElement;
+
+function openPrototypePitch() {
+  if (!realPitch || !prototypePitchOverlay || !prototypePitchHost) return;
+  prototypePitchHost.appendChild(realPitch);
+  realPitch.hidden = false;
+  prototypePitchOverlay.hidden = false;
+  showPrototypeToast('Select a player card on the pitch to manage your XI.');
+}
+
+function closePrototypePitch() {
+  if (!realPitch || !prototypePitchOverlay || !originalPitchParent) return;
+  originalPitchParent.appendChild(realPitch);
+  prototypePitchOverlay.hidden = true;
+}
+
+document.querySelector('#prototypeManageSquad')?.addEventListener('click', openPrototypePitch);
+document.querySelector('#prototypePitchClose')?.addEventListener('click', closePrototypePitch);
