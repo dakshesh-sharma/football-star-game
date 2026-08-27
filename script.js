@@ -236,6 +236,7 @@ const defaultState = {
   badges: [],
   friends: [],
   playerStats: {},
+  clubPhoto: "",
   rankedPoints: 0,
   matchPoints: 56,
   joinRequest: null,
@@ -572,6 +573,9 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.badges = savedState.badges || [];
   savedState.friends = uniqueFriends(savedState.friends || []);
   savedState.playerStats = savedState.playerStats || {};
+  savedState.clubPhoto = typeof savedState.clubPhoto === "string" && savedState.clubPhoto.startsWith("data:image/")
+    ? savedState.clubPhoto
+    : "";
   savedState.rankedPoints = Number.isFinite(Number(savedState.rankedPoints))
     ? Math.max(0, Number(savedState.rankedPoints))
     : 0;

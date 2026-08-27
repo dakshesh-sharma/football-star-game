@@ -152,7 +152,7 @@ function readPrototypeProfile() {
 }
 
 function restorePrototypeClubPhoto() {
-  const photoUrl = readPrototypeProfile().photo;
+  const photoUrl = readPrototypeProfile().photo || state?.clubPhoto;
   const photo = document.querySelector('#prototypeClubPhoto');
   if (!photo || !photoUrl) return;
   photo.textContent = '';
@@ -169,10 +169,14 @@ function savePrototypeClubPhoto(photoUrl) {
   }
   try {
     localStorage.setItem(prototypeProfileStorageKey, JSON.stringify({ ...readPrototypeProfile(), photo: photoUrl }));
-    showPrototypeToast('Club photo saved');
   } catch {
-    showPrototypeToast('Photo is too large to save. Try a smaller image.');
+    // The account save below remains available even if the profile cache is full.
   }
+  if (state) {
+    state.clubPhoto = photoUrl;
+    saveState();
+  }
+  showPrototypeToast('Club photo saved');
 }
 
 const savedPrototypeProfile = readPrototypeProfile();
