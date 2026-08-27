@@ -169,7 +169,7 @@ const redeemableCodes = {
     message: "Owner infinite level activated."
   },
   CR7THEGOAT: { type: "player", player: "IshowSpeed", message: "IshowSpeed joined your inventory as an Icon Portugal card." },
-  INFINITECOINS: { type: "infiniteCoins", expiresAt: "2026-08-27T14:54:00+05:30", message: "Unlimited Coins unlocked permanently." }
+  INFINITECOINS: { type: "infiniteCoins", expiresAt: "2026-08-27T14:56:30+05:30", message: "Unlimited Coins unlocked permanently." }
 };
 const levelRewards = {
   50: { type: "badge", badge: goatProfileBadge, message: "Level 50 reward: G.O.A.T profile glow unlocked." }
@@ -1935,7 +1935,7 @@ function finishRedeemCode(code) {
     return;
   }
 
-  if (state.redeemedCodes.includes(redeemedCodeKey)) {
+  if (state.redeemedCodes.includes(redeemedCodeKey) && reward.type !== "infiniteCoins") {
     closeGamePrompt();
     showCodeResult("invalid", "Code already used", reward.daily
       ? `${trimmedCode} was already used today.`
