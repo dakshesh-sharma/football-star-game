@@ -56,7 +56,7 @@ def evaluate(js):
 call("Runtime.enable")
 call("Page.enable")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
-result=evaluate("""Promise.all(['tests/match-tests.js','tests/game-tests.js'].map(path=>fetch(path).then(r=>r.text()))).then(sources=>{
+result=evaluate("""Promise.all(['tests/match-tests.js','tests/game-tests.js'].map(path=>fetch(path,{cache:'no-store'}).then(r=>r.text()))).then(sources=>{
   const running=Boolean(matchPhysicsFrame);stopMatchPhysics();
   try{sources.forEach(source=>(0,eval)(source));return {match:runFCMatchTests(),game:runFCGameTests()};}
   finally{if(running)startMatchPhysics();}

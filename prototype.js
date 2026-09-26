@@ -1,33 +1,123 @@
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('[data-screen-panel]');
+const labRoot = document.querySelector('.prototype-lab');
+const tabs = labRoot?.querySelectorAll('.tab') || [];
+const panels = labRoot?.querySelectorAll('[data-screen-panel]') || [];
+const labToast = document.querySelector('#labToast');
+let labMatchSeconds = 0;
 
-tabs.forEach((tab) => tab.addEventListener('click', () => {
-  tabs.forEach((item) => item.classList.toggle('is-active', item === tab));
-  panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.screenPanel === tab.dataset.screen));
-}));
+function showLabToast(message) {
+  if (!labToast) return;
+  labToast.textContent = message;
+  labToast.classList.add('is-visible');
+  clearTimeout(showLabToast.timer);
+  showLabToast.timer = setTimeout(() => labToast.classList.remove('is-visible'), 2200);
+}
 
-document.querySelectorAll('.bottom-nav button').forEach((button) => button.addEventListener('click', () => {
-  const label = button.querySelector('span')?.textContent.toLowerCase();
-  const target = label === 'home' ? 'home' : label === 'packs' ? 'packs' : label === 'squad' ? 'squad' : null;
-  if (target) document.querySelector(`.tab[data-screen="${target}"]`).click();
-}));
+function selectLabScreen(screen, mode = '') {
+  tabs.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.screen === screen));
+  panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.screenPanel === screen));
+  if (screen === 'match' && mode) document.querySelector('#labMatchMode').textContent = `DIVISION 4 · ${mode.toUpperCase()}`;
+  document.querySelector('#labMenu')?.setAttribute('hidden', '');
+}
+
+tabs.forEach((tab) => tab.addEventListener('click', () => selectLabScreen(tab.dataset.screen)));
+labRoot?.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => selectLabScreen(button.dataset.go, button.dataset.mode)));
+labRoot?.querySelectorAll('[data-lab-toast]').forEach((button) => button.addEventListener('click', () => showLabToast(button.dataset.labToast)));
+document.querySelector('#labMenuButton')?.addEventListener('click', () => document.querySelector('#labMenu')?.toggleAttribute('hidden'));
+document.querySelector('#labThemeButton')?.addEventListener('click', () => {
+  labRoot.classList.toggle('is-cyan');
+  showLabToast(labRoot.classList.contains('is-cyan') ? 'Electric cyan club glow equipped.' : 'Ultra violet club glow equipped.');
+});
+document.querySelector('#labAddBalance')?.addEventListener('click', () => {
+  const coins = document.querySelector('#labCoins');
+  const gems = document.querySelector('#labGems');
+  coins.textContent = (Number(coins.textContent.replace(',', '')) + 500).toLocaleString();
+  gems.textContent = Number(gems.textContent) + 25;
+  showLabToast('+500 coins and +25 gems added for testing.');
+});
 
 const packButton = document.querySelector('#openPack');
 const pack = document.querySelector('#pack');
 const reveal = document.querySelector('#revealCard');
 const packHint = document.querySelector('#packHint');
+const labCards = [
+  ['91', 'NEYMAR JR', 'LW · BRAZIL'], ['90', 'VINÍCIUS JR', 'LW · BRAZIL'],
+  ['89', 'BELLINGHAM', 'CAM · ENGLAND'], ['88', 'YAMAL', 'RW · SPAIN']
+];
+let labPackOpen = false;
 packButton?.addEventListener('click', () => {
-  pack.classList.add('is-opening');
-  packButton.disabled = true;
-  packHint.textContent = 'A legend is walking out…';
-  setTimeout(() => { reveal.hidden = false; reveal.classList.add('is-revealed'); packHint.textContent = 'Rising Icons pack complete.'; }, 650);
+  if (labPackOpen) {
+    labPackOpen = false; reveal.hidden = true; pack.classList.remove('is-opening');
+    packButton.innerHTML = 'OPEN PACK <span>◆ 75</span>'; packHint.textContent = 'Guaranteed: 1 player rated 82+'; return;
+  }
+  const card = labCards[Math.floor(Math.random() * labCards.length)];
+  document.querySelector('#labRevealRating').textContent = card[0];
+  document.querySelector('#labRevealName').textContent = card[1];
+  document.querySelector('#labRevealMeta').textContent = card[2];
+  pack.classList.add('is-opening'); packButton.disabled = true; packHint.textContent = 'A superstar is walking out…';
+  setTimeout(() => {
+    reveal.hidden = false; labPackOpen = true; packButton.disabled = false;
+    packButton.textContent = 'OPEN ANOTHER'; packHint.textContent = `${card[1]} added to your club.`; showLabToast(`${card[1]} joins your squad!`);
+  }, 650);
 });
 
 const inspector = document.querySelector('#playerInspector');
+let selectedLabCard = null;
 document.querySelectorAll('.player-card').forEach((card) => card.addEventListener('click', () => {
   document.querySelectorAll('.player-card').forEach((item) => item.classList.remove('is-selected'));
-  card.classList.add('is-selected');
-  inspector?.querySelector('span') && (inspector.querySelector('span').textContent = `${card.dataset.player} selected · tap Swap player to explore options`);
+  card.classList.add('is-selected'); selectedLabCard = card;
+  if (inspector) inspector.querySelector('span').textContent = `${card.dataset.player} selected · ${card.querySelector('b').textContent} OVR`;
+}));
+document.querySelector('#labEditSquad')?.addEventListener('click', (event) => {
+  document.querySelector('.pitch-prototype')?.classList.toggle('is-editing');
+  event.currentTarget.textContent = event.currentTarget.textContent === 'EDIT' ? 'DONE' : 'EDIT';
+  showLabToast('Squad edit mode toggled. Pick a card to swap.');
+});
+document.querySelector('#labSwapPlayer')?.addEventListener('click', () => {
+  if (!selectedLabCard) return showLabToast('Select a player card first.');
+  const bench = [['MBAPPÉ', '92'], ['HAALAND', '91'], ['RODRI', '90']];
+  const next = bench[Math.floor(Math.random() * bench.length)];
+  selectedLabCard.dataset.player = next[0]; selectedLabCard.querySelector('small').textContent = next[0]; selectedLabCard.querySelector('b').textContent = next[1];
+  inspector.querySelector('span').textContent = `${next[0]} swapped in · ${next[1]} OVR`; document.querySelector('#labTeamRating').textContent = '89';
+  showLabToast(`${next[0]} is now in your Starting XI.`);
+});
+
+setInterval(() => {
+  if (!document.querySelector('[data-screen-panel="match"]')?.classList.contains('is-active')) return;
+  labMatchSeconds += 1;
+  const clock = document.querySelector('#labMatchClock');
+  if (clock) clock.textContent = `${String(Math.floor(labMatchSeconds / 60)).padStart(2, '0')}:${String(labMatchSeconds % 60).padStart(2, '0')}`;
+}, 1000);
+labRoot?.querySelectorAll('[data-match-action]').forEach((button) => button.addEventListener('click', () => {
+  const action = button.dataset.matchAction;
+  const moment = document.querySelector('#labMoment');
+  document.querySelector('.ball')?.classList.remove('action-pass', 'action-shot');
+  if (action === 'pass') { moment.textContent = 'PERFECT PASS TO NUMBER 7'; document.querySelector('.ball')?.classList.add('action-pass'); }
+  if (action === 'sprint') { moment.textContent = 'NEYMAR BURSTS INTO SPACE'; document.querySelector('.you')?.classList.add('is-sprinting'); setTimeout(() => document.querySelector('.you')?.classList.remove('is-sprinting'), 500); }
+  if (action === 'shoot') {
+    document.querySelector('.ball')?.classList.add('action-shot');
+    const goal = Math.random() > .25;
+    moment.textContent = goal ? 'GOAL! TOP CORNER!' : 'SAVED BY THE KEEPER';
+    if (goal) { const score = document.querySelector('#labHomeScore'); score.textContent = Number(score.textContent) + 1; document.querySelector('#labMissionProgress').style.width = '100%'; document.querySelector('#labMissionLabel').textContent = '1 / 1 completed'; }
+  }
+}));
+
+const joystick = document.querySelector('#labJoystick');
+function moveLabStick(event) {
+  if (!joystick?.hasPointerCapture(event.pointerId)) return;
+  const box = joystick.getBoundingClientRect(); const x = Math.max(-28, Math.min(28, event.clientX - box.left - box.width / 2)); const y = Math.max(-28, Math.min(28, event.clientY - box.top - box.height / 2));
+  joystick.querySelector('i').style.transform = `translate(${x}px,${y}px)`;
+  const player = document.querySelector('.field-player.you'); player.style.translate = `${x * .25}px ${y * .25}px`;
+}
+joystick?.addEventListener('pointerdown', (event) => { joystick.setPointerCapture(event.pointerId); moveLabStick(event); });
+joystick?.addEventListener('pointermove', moveLabStick);
+joystick?.addEventListener('pointerup', () => { joystick.querySelector('i').style.transform = ''; });
+document.querySelector('#labSaveClub')?.addEventListener('click', () => {
+  const name = document.querySelector('#labClubName').value.trim().slice(0, 18) || 'FC STARS';
+  document.querySelector('#labClubHeroName').textContent = name; showLabToast(`${name} club identity saved.`);
+});
+document.querySelectorAll('[data-club-colour]').forEach((button) => button.addEventListener('click', () => {
+  document.querySelectorAll('[data-club-colour]').forEach((item) => item.classList.toggle('selected', item === button));
+  document.querySelector('.club-hero-mobile').dataset.colour = button.dataset.clubColour; showLabToast(`${button.dataset.clubColour} colours equipped.`);
 }));
 
 const prototypeToast = document.querySelector('#prototypeToast');
@@ -421,4 +511,4 @@ document.addEventListener('keydown', (event) => {
   else if (!prototypeMatchOverlay?.hidden) closePrototypeMatch();
 });
 
-window.syncPrototypeShell();
+if (prototypeWorkspace && typeof state !== 'undefined') window.syncPrototypeShell();

@@ -228,3 +228,70 @@ button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid var
   .hero-live i,.home-card-kicker i { animation:none; }
   .desktop-rail>button,.dashboard-actions button,.desktop-mode,.home-command-grid button,.workspace-pack-art,.workspace-pack-art img { transition:none; }
 }
+
+/* Prototype Lab 2.0 — a fully interactive, graphic-first mobile concept. */
+body.prototype-lab { background:#070814 url("assets/generated/fc-stars-stadium-v2.png") center top/cover fixed no-repeat; }
+body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#080914ee 52%,#080914 100%); content:""; inset:0; position:fixed; z-index:-1; }
+.prototype-lab .prototype-shell { width:min(1180px,100%); }
+.prototype-lab .lab-header { background:#121425c7; border:1px solid #ffffff1a; border-radius:18px; padding:14px 18px; backdrop-filter:blur(18px); }
+.lab-title { flex:1; }
+.lab-live-link { background:var(--lime); border-radius:10px; color:#101308; font-size:.68rem; font-weight:900; padding:11px 14px; text-decoration:none; }
+.prototype-lab .prototype-tabs { background:#0f1120d9; border:1px solid #ffffff17; border-radius:999px; margin-inline:auto; padding:6px; width:max-content; max-width:100%; }
+.prototype-lab .phone { border-color:#464963; box-shadow:0 35px 100px #000b,0 0 70px #6c37ff30,0 0 0 1px #fff3; }
+.prototype-lab .home-hero { background:linear-gradient(90deg,#231465ed 0%,#5a1b90b5 52%,#c82a778c),url("assets/generated/fc-stars-stadium-v2.png") center/cover; }
+.prototype-lab .hero-orb { mix-blend-mode:screen; }
+.prototype-lab .lab-menu { background:#111424f2; border:1px solid #ffffff28; border-radius:12px; display:grid; gap:7px; left:17px; padding:9px; position:absolute; top:54px; width:160px; z-index:9; }
+.prototype-lab .lab-menu[hidden] { display:none; }
+.prototype-lab .lab-menu button { background:#ffffff10; border-radius:8px; font-size:.67rem; font-weight:800; padding:9px; text-align:left; }
+.prototype-lab.is-cyan { --lime:#35f5ff; --purple:#2168ff; }
+.prototype-lab .mode-card,.prototype-lab .news-card,.prototype-lab .mission-card { transition:filter .2s ease,transform .2s ease; }
+.prototype-lab .mode-card:hover,.prototype-lab .news-card:hover,.prototype-lab .mission-card:hover { filter:brightness(1.12); transform:translateY(-2px); }
+.prototype-lab .news-card { color:#fff; text-align:left; width:calc(100% - 32px); }
+.prototype-lab .pack { background:transparent; box-shadow:none; height:278px; width:208px; }
+.prototype-lab .pack:before,.prototype-lab .pack:after { display:none; }
+.prototype-lab .pack img { filter:drop-shadow(0 24px 24px #000b); height:100%; object-fit:contain; width:100%; }
+.prototype-lab .pack-stage { height:345px; }
+.prototype-lab .pitch-prototype.is-editing { box-shadow:0 0 0 3px var(--lime),0 0 38px #c7ff3738; }
+.prototype-lab .pitch-prototype.is-editing .player-card { animation:editFloat 1s ease-in-out infinite alternate; }
+@keyframes editFloat { to { translate:0 -4px; } }
+.prototype-lab .match-header { gap:10px; }
+.prototype-lab .match-header>div { flex:1; }
+.prototype-lab .match-pitch { background:linear-gradient(#07081470,#07081410 26%),repeating-linear-gradient(90deg,#168050,#168050 47px,#0e6b42 47px,#0e6b42 94px); }
+.stadium-lights { background:url("assets/generated/fc-stars-stadium-v2.png") center 68%/cover; height:84px; left:0; mask-image:linear-gradient(#000,transparent); opacity:.74; position:absolute; right:0; top:0; }
+.prototype-lab .ball { transition:transform .45s cubic-bezier(.2,.8,.2,1); }
+.prototype-lab .ball.action-pass { transform:translate(72px,-58px); }
+.prototype-lab .ball.action-shot { transform:translate(-3px,-262px) scale(.7); }
+.prototype-lab .field-player.you { transition:transform .3s ease,translate .15s ease; }
+.prototype-lab .field-player.you.is-sprinting { transform:translateY(-55px); }
+.prototype-lab .joystick { touch-action:none; }
+.prototype-lab .joystick i { transition:transform .08s linear; }
+.club-mobile-screen { background:radial-gradient(circle at 80% 18%,#8c3eff40,transparent 26%),#10121f; padding:14px 17px; }
+.club-hero-mobile { background:linear-gradient(120deg,#4b2bd0b8,#da367cb8),url("assets/generated/fc-stars-stadium-v2.png") center/cover; border:1px solid #ffffff30; border-radius:17px; display:grid; height:210px; margin-top:18px; overflow:hidden; padding:20px; position:relative; }
+.club-hero-mobile:after { border:25px solid #ffffff16; border-radius:50%; content:""; height:180px; position:absolute; right:-65px; top:7px; width:180px; }
+.club-hero-mobile[data-colour="cyan"] { background:linear-gradient(120deg,#06657ec7,#1172d4a8),url("assets/generated/fc-stars-stadium-v2.png") center/cover; }
+.club-hero-mobile[data-colour="coral"] { background:linear-gradient(120deg,#8c183de0,#ff6746a8),url("assets/generated/fc-stars-stadium-v2.png") center/cover; }
+.club-hero-mobile[data-colour="gold"] { background:linear-gradient(120deg,#6d4109d9,#d89a21a8),url("assets/generated/fc-stars-stadium-v2.png") center/cover; }
+.club-hero-mobile span,.club-label { color:var(--lime); font-size:.58rem; font-weight:900; letter-spacing:.12em; }
+.club-hero-mobile b { align-self:end; font:900 2.6rem/.85 "Barlow Condensed"; text-transform:uppercase; z-index:1; }
+.club-hero-mobile small { font-size:.66rem; opacity:.82; z-index:1; }
+.club-name-editor { background:#1c1f32; border:1px solid #ffffff16; border-radius:12px; display:grid; gap:7px; grid-template-columns:1fr auto; margin:15px 0; padding:12px; }
+.club-name-editor>span { color:#989db2; font-size:.5rem; font-weight:900; grid-column:1/-1; }
+.club-name-editor input { background:#10121f; border:1px solid #ffffff1f; border-radius:7px; color:#fff; font:800 .85rem "DM Sans"; padding:10px; }
+.club-name-editor button { background:var(--lime); border-radius:7px; color:#121506; font-size:.6rem; font-weight:900; padding:0 13px; }
+.club-colours { display:flex; gap:10px; margin:10px 0 18px; }
+.club-colours button { background:#7838ef; border:3px solid #ffffff20; border-radius:50%; height:34px; width:34px; }
+.club-colours button:nth-child(2) { background:#21ddec; }.club-colours button:nth-child(3) { background:#ff5d68; }.club-colours button:nth-child(4) { background:#eeb63f; }
+.club-colours button.selected { border-color:#fff; box-shadow:0 0 0 3px var(--lime); }
+.club-stats { display:grid; gap:8px; grid-template-columns:repeat(3,1fr); }
+.club-stats span { background:#ffffff0b; border:1px solid #ffffff12; border-radius:10px; display:grid; padding:12px 8px; }
+.club-stats b { font:900 1.45rem "Barlow Condensed"; }.club-stats small { color:#9499ad; font-size:.45rem; font-weight:900; }
+.achievement-card { align-items:center; background:linear-gradient(120deg,#352258,#1c1e31); border:1px solid #9b60ff55; border-radius:13px; display:flex; gap:12px; margin-top:14px; padding:14px; }
+.achievement-card i { font-size:2rem; font-style:normal; }.achievement-card p { color:var(--lime); font-size:.5rem; font-weight:900; margin:0; }.achievement-card h3 { font:800 1.1rem "Barlow Condensed"; margin:2px 0; }.achievement-card small { color:#a5a9bb; font-size:.56rem; }
+@media (min-width:800px) {
+  body.prototype-lab .phone { display:block; }
+  body.prototype-lab .desktop-prototype { display:none; }
+  body.prototype-lab .prototype-shell { align-items:start; display:grid; grid-template-columns:1fr 410px 1fr; }
+  body.prototype-lab .lab-header,body.prototype-lab .prototype-tabs,body.prototype-lab .lab-note { grid-column:1/-1; }
+  body.prototype-lab .phone { grid-column:2; }
+}
+@media (max-width:520px) { .prototype-lab .prototype-shell { padding:14px 8px 26px; }.prototype-lab .lab-header { border-radius:14px; gap:10px; padding:10px; }.prototype-lab .lab-header h1 { font-size:1rem; }.lab-live-link { font-size:.55rem; padding:9px; }.prototype-lab .prototype-tabs { border-radius:16px; justify-content:flex-start; overflow:auto; width:100%; }.prototype-lab .tab { flex:0 0 auto; padding:8px 11px; }.prototype-lab .phone { border-width:5px; border-radius:29px; } }

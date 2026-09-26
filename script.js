@@ -132,6 +132,7 @@ const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
 const developerUsername = "S7ph_Vo1d";
 const legacyDeveloperUsernames = ["Sync_Vo1d"];
+const additionalDeveloperUsernames = ["S7ph_Void4"];
 const specialFullInventoryUsernames = ["1029384756", "ROBLOXBESTGAME"];
 const allCardAccessUsernames = ["Shiva Porwal"];
 const defaultProfileMotto = "Build your XI";
@@ -469,11 +470,11 @@ function isRecoverableDeveloperSave(legacySave) {
 
 function normalizeAccounts(savedAccounts, preferredActiveAccountId = null) {
   const validAccounts = savedAccounts.filter((account) => account && typeof account === "object");
-  const devAccounts = validAccounts.filter((account) => isDeveloperUsername(account.username));
+  const devAccounts = validAccounts.filter((account) => isPrimaryDeveloperUsername(account.username));
   const mergedDevAccount = mergeDeveloperAccounts(devAccounts, preferredActiveAccountId);
   const normalized = [
     ...(mergedDevAccount ? [mergedDevAccount] : []),
-    ...validAccounts.filter((account) => !isDeveloperUsername(account.username))
+    ...validAccounts.filter((account) => !isPrimaryDeveloperUsername(account.username))
   ]
     .map((account, index) => normalizeAccount(account, index, preferredActiveAccountId));
   const names = new Set();
@@ -505,7 +506,7 @@ function normalizeAccount(account, index) {
   }
   return {
     id,
-    username: isDev ? developerUsername : username,
+    username: legacyDeveloperUsernames.includes(username) ? developerUsername : username,
     motto: cleanText(account.motto, 42) || defaultProfileMotto,
     avatarStyle: avatarStyles[account.avatarStyle] ? account.avatarStyle : "gold",
     profilePhoto: account.profilePhoto || "",
@@ -574,6 +575,13 @@ function mergeStates(baseState, incomingState) {
 }
 
 function isDeveloperUsername(username) {
+  const normalizedUsername = String(username || "").trim();
+  return normalizedUsername === developerUsername
+    || legacyDeveloperUsernames.includes(normalizedUsername)
+    || additionalDeveloperUsernames.includes(normalizedUsername);
+}
+
+function isPrimaryDeveloperUsername(username) {
   const normalizedUsername = String(username || "").trim();
   return normalizedUsername === developerUsername || legacyDeveloperUsernames.includes(normalizedUsername);
 }

@@ -38,6 +38,17 @@ window.runFCGameTests = function () {
       assert(!isUsernameTaken('Fresh Club'), 'Unique name rejected');
     });
 
+    check('S7ph_Void4 is a separate administrator account', () => {
+      assert(isDeveloperUsername('S7ph_Void4'), 'New administrator username was not recognized');
+      const normalized = normalizeAccounts([
+        { id: 'primary-admin', username: developerUsername, state: freshState('dev') },
+        { id: 'void4-admin', username: 'S7ph_Void4', state: freshState(false) }
+      ]);
+      const admin = normalized.find((item) => item.username === 'S7ph_Void4');
+      assert(normalized.length === 2 && admin?.isDev, 'New administrator was merged or downgraded');
+      assert(admin.state.level >= 50 && admin.state.inventory.length >= cardPool.length, 'Administrator privileges were not granted');
+    });
+
     check('User-created names render as text, never executable markup', () => {
       window.__fcInjected = 0;
       state.friends = [{ id: 'evil', username: '<img src=x onerror=window.__fcInjected=1>', status: 'accepted' }];
