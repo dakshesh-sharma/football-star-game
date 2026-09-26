@@ -134,7 +134,7 @@ window.runFCGameTests = function () {
     });
 
     check('All six primary views remain reachable', () => {
-      const views = ['Home', 'Packs', 'Squad', 'Play', 'Club', 'News'];
+      const views = ['Home', 'Packs', 'Squad', 'Play', 'Club', 'Profile'];
       activeAccountId = account.id; state = account.state = freshState(false);
       for (const view of views) {
         selectPrototypeView(view);
@@ -143,11 +143,17 @@ window.runFCGameTests = function () {
       }
     });
 
-    check('News search finds every Ronaldo story newest first', () => {
-      selectPrototypeView('News');
-      const results = filteredNewsStories('Ronaldo');
-      assert(results.length >= 4 && results.every((story) => `${story.title} ${story.player} ${story.tags.join(' ')}`.toLowerCase().includes('ronaldo')), 'Ronaldo search missed or included the wrong stories');
-      assert(results.every((story, index) => index === 0 || new Date(results[index - 1].published) >= new Date(story.published)), 'News was not newest first');
+    check('Profiles support search, tasks, backgrounds and player showcases', () => {
+      state = account.state = freshState(false); activeAccountId = account.id;
+      state.inventory = [{ ...cardPool.find((card) => card.name === 'Cristiano Ronaldo'), id:'profile-ronaldo' }];
+      state.taskProgress = { ronaldoWinStreak: 10, totalWins: 10 };
+      assert(profileTitles(state).find((title) => title.name === 'Siuuu Streak').unlocked, 'Ronaldo task title stayed locked');
+      state.profileBackground = 'royal'; state.profileTitle = 'Siuuu Streak'; state.showcasePlayerNames = ['Cristiano Ronaldo'];
+      const markup = profileWorkspaceMarkup();
+      assert(markup.includes('background-royal') && markup.includes('Cristiano Ronaldo') && markup.includes('Siuuu Streak'), 'Profile customization did not render');
+      prototypeProfileQuery = 'renamed';
+      assert(profileWorkspaceMarkup().includes('Renamed Club'), 'Username search did not find a local account');
+      prototypeProfileQuery = '';
     });
   } finally {
     closePrototypePack(false);

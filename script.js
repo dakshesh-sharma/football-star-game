@@ -264,7 +264,11 @@ const defaultState = {
   rankedPoints: 0,
   matchPoints: 56,
   joinRequest: null,
-  activeMatch: null
+  activeMatch: null,
+  profileTitle: "Club Founder",
+  profileBackground: "stadium",
+  showcasePlayerNames: [],
+  taskProgress: { ronaldoWinStreak: 0, totalWins: 0 }
 };
 
 let accounts = loadAccounts();
@@ -436,6 +440,8 @@ function freshState(inventoryGrant = false) {
     deletedCardNames: [],
     friends: [],
     playerStats: {},
+    showcasePlayerNames: [],
+    taskProgress: { ronaldoWinStreak: 0, totalWins: 0 },
     joinRequest: null,
     activeMatch: null
   };
@@ -579,6 +585,10 @@ function mergeStates(baseState, incomingState) {
     badges: uniqueNames([...list(baseState.badges), ...list(incomingState.badges)]),
     friends: uniqueFriends([...list(baseState.friends), ...list(incomingState.friends)]),
     playerStats: { ...record(baseState.playerStats), ...record(incomingState.playerStats) },
+    taskProgress: {
+      ronaldoWinStreak: Math.max(Number(baseState.taskProgress?.ronaldoWinStreak) || 0, Number(incomingState.taskProgress?.ronaldoWinStreak) || 0),
+      totalWins: Math.max(Number(baseState.taskProgress?.totalWins) || 0, Number(incomingState.taskProgress?.totalWins) || 0)
+    },
     selectedStar: baseState.selectedStar || incomingState.selectedStar || null,
     selectedStarSlot: baseState.selectedStarSlot || incomingState.selectedStarSlot || null,
     currentCard: baseState.currentCard || incomingState.currentCard || null,
@@ -629,6 +639,12 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.friends = uniqueFriends(Array.isArray(savedState.friends) ? savedState.friends : []);
   savedState.playerStats = savedState.playerStats && typeof savedState.playerStats === "object" && !Array.isArray(savedState.playerStats)
     ? savedState.playerStats : {};
+  savedState.profileTitle = cleanText(savedState.profileTitle, 32) || "Club Founder";
+  savedState.profileBackground = ["stadium", "royal", "midnight", "crimson"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
+  savedState.showcasePlayerNames = uniqueNames(Array.isArray(savedState.showcasePlayerNames) ? savedState.showcasePlayerNames : []).slice(0, 3);
+  savedState.taskProgress = savedState.taskProgress && typeof savedState.taskProgress === "object" ? savedState.taskProgress : {};
+  savedState.taskProgress.ronaldoWinStreak = Math.max(0, Number(savedState.taskProgress.ronaldoWinStreak) || 0);
+  savedState.taskProgress.totalWins = Math.max(0, Number(savedState.taskProgress.totalWins) || 0);
   savedState.replaceSlot = formation.some((spot) => spot.id === savedState.replaceSlot) ? savedState.replaceSlot : null;
   savedState.dailyRankedWinDate = /^\d{4}-\d{2}-\d{2}$/.test(savedState.dailyRankedWinDate || "")
     ? savedState.dailyRankedWinDate : "";
@@ -1509,6 +1525,10 @@ function endMatch({ abandoned = false } = {}) {
   const drew = finishedMatch.home === finishedMatch.away;
   const ranked = finishedMatch.mode === "Ranked Rush";
   const completedWin = won && !abandoned;
+  const controlledName = finishedMatch.controlledPlayerName || state.selectedStar?.name || "";
+  state.taskProgress = state.taskProgress || { ronaldoWinStreak: 0, totalWins: 0 };
+  if (completedWin) state.taskProgress.totalWins = (Number(state.taskProgress.totalWins) || 0) + 1;
+  if (controlledName === "Cristiano Ronaldo") state.taskProgress.ronaldoWinStreak = completedWin ? (Number(state.taskProgress.ronaldoWinStreak) || 0) + 1 : 0;
   const winXp = completedWin ? matchWinXp(finishedMatch.home, finishedMatch.away) : 0;
   const tablePoints = completedWin && ranked ? 10 : 0;
   const coinReward = abandoned ? 0 : Math.max(0, Number(finishedMatch.home) || 0) * 25;

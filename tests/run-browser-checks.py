@@ -9,7 +9,7 @@ parser.add_argument("--screenshot",help="Write a PNG of the restored game page a
 parser.add_argument("--width",type=int,default=1440)
 parser.add_argument("--height",type=int,default=1000)
 parser.add_argument("--dashboard",action="store_true",help="Hide blocking dialogs before capturing the dashboard")
-parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club","News"),help="Dashboard view to capture")
+parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club","Profile"),help="Dashboard view to capture")
 parser.add_argument("--login",action="store_true",help="Show the login experience before capturing")
 parser.add_argument("--prototype-lab",action="store_true",help="Run the standalone laptop prototype interaction checks")
 args=parser.parse_args()
@@ -60,8 +60,8 @@ call("Page.enable")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
 if args.prototype_lab:
  result=evaluate("""(async()=>{const results=[];const check=(name,value)=>results.push({name,passed:Boolean(value)});
-  for(const screen of ['home','packs','squad','match','club','news']){document.querySelector(`[data-screen="${screen}"]`).click();check(`${screen} opens`,document.querySelector(`[data-screen-panel="${screen}"]`).classList.contains('is-active'));}
-  const newsSearch=document.querySelector('#labNewsSearch');newsSearch.value='Ronaldo';newsSearch.dispatchEvent(new Event('input',{bubbles:true}));const visibleNews=[...document.querySelectorAll('#labNewsFeed [data-news-id]')];check('Ronaldo search returns every matching story',visibleNews.length>=4&&visibleNews.every(card=>card.textContent.toLowerCase().includes('ronaldo')));check('latest news stays first',visibleNews[0]?.dataset.newsId==='ronaldo-finishing');
+  for(const screen of ['home','packs','squad','match','club','profile']){document.querySelector(`[data-screen="${screen}"]`).click();check(`${screen} opens`,document.querySelector(`[data-screen-panel="${screen}"]`).classList.contains('is-active'));}
+  document.querySelector('[data-lab-profile-bg="royal"]').click();check('profile background changes',document.querySelector('#labProfileHero').classList.contains('background-royal'));document.querySelector('[data-lab-title]').click();check('profile title equips',document.querySelector('#labProfileTitle').textContent==='SIUUU STREAK');
   document.querySelector('[data-club-colour="cyan"]').click();check('preset colour changes whole theme',document.body.style.getPropertyValue('--club-primary')==='#087f9a');
   document.querySelector('#labSeeAllColours').click();const picker=document.querySelector('#labCustomColour');picker.value='#12ab67';picker.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#labApplyCustomColour').click();check('custom colour is added and applied',document.body.style.getPropertyValue('--club-primary')==='#12ab67'&&document.querySelector('#labCustomSwatch').classList.contains('selected'));
   document.querySelector('#labClubName').value='TEST UNITED';document.querySelector('#labSaveClub').click();check('club name saves',document.querySelector('#labClubHeroName').textContent==='TEST UNITED');

@@ -21,6 +21,8 @@ let labNewsFilter = 'All';
 let prototypeNewsQuery = '';
 let prototypeNewsFilter = 'All';
 const prototypeSavedNews = new Set();
+let prototypeProfileQuery = '';
+let prototypeViewedProfileId = null;
 
 function newsEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[character]);
@@ -181,6 +183,18 @@ document.querySelector('#labSaveClub')?.addEventListener('click', () => {
   const name = document.querySelector('#labClubName').value.trim().slice(0, 18) || 'FC STARS';
   document.querySelector('#labClubHeroName').textContent = name; showLabToast(`${name} club identity saved.`);
 });
+document.querySelector('.lab-profile-backgrounds')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-lab-profile-bg]'); if (!button) return;
+  document.querySelectorAll('[data-lab-profile-bg]').forEach((item) => item.classList.toggle('selected', item === button));
+  const hero = document.querySelector('#labProfileHero'); hero.className = `lab-profile-hero background-${button.dataset.labProfileBg}`;
+  showLabToast(`${button.textContent.trim()} profile background equipped.`);
+});
+document.querySelector('[data-lab-title]')?.addEventListener('click', (event) => {
+  document.querySelector('#labProfileTitle').textContent = event.currentTarget.dataset.labTitle.toUpperCase(); showLabToast('Title equipped.');
+});
+document.querySelector('#labProfileSearch')?.addEventListener('input', (event) => {
+  const value = event.target.value.trim(); document.querySelector('#labProfileName').textContent = value || 'ARJUN FC';
+});
 document.querySelector('.club-colours')?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-club-colour]');
   if (!button) return;
@@ -309,7 +323,7 @@ window.syncPrototypeShell = () => {
   syncPrototypeBalances();
   syncPrototypeProfile();
   const activeView = document.querySelector('.desktop-rail .rail-active')?.dataset.prototypeView;
-  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'News') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
+  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'Profile') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
   if (activeView === 'Club') restorePrototypeClubPhoto();
 };
 
@@ -357,7 +371,45 @@ function updatePrototypeNewsResults() {
   if (pulse) pulse.textContent = stories.length;
 }
 
+function profileTitles(accountState) {
+  const iconCount = (accountState.inventory || []).filter((card) => card.rarity === 'Icon' || card.rarity === 'G.O.A.T').length;
+  const ronaldoStreak = Number(accountState.taskProgress?.ronaldoWinStreak) || 0;
+  const totalWins = Number(accountState.taskProgress?.totalWins) || 0;
+  return [
+    { name:'Club Founder', unlocked:true, progress:1, target:1, task:'Create your club' },
+    { name:'Siuuu Streak', unlocked:ronaldoStreak >= 10, progress:ronaldoStreak, target:10, task:'Win 10 matches in a row controlling Ronaldo' },
+    { name:'Icon Collector', unlocked:iconCount >= 5, progress:iconCount, target:5, task:'Own 5 Icon or G.O.A.T players' },
+    { name:'Division Climber', unlocked:(Number(accountState.rankedPoints) || 0) >= 100, progress:Number(accountState.rankedPoints) || 0, target:100, task:'Earn 100 Ranked Points' },
+    { name:'Serial Winner', unlocked:totalWins >= 25, progress:totalWins, target:25, task:'Win 25 matches' }
+  ];
+}
+
+function profileOwnedPlayers(accountState) {
+  const cards = [accountState.selectedStar, ...(accountState.inventory || []), ...Object.values(accountState.teamCards || {})].filter(Boolean).map(enrichCard).filter(Boolean);
+  return [...new Map(cards.map((card) => [card.name, card])).values()];
+}
+
+function profileWorkspaceMarkup() {
+  const current = activeAccount();
+  const viewed = accounts.find((account) => account.id === prototypeViewedProfileId) || current;
+  const viewedState = viewed?.state || freshState(false);
+  const isOwn = viewed?.id === current?.id;
+  const query = prototypeProfileQuery.trim().toLocaleLowerCase();
+  const matches = query ? accounts.filter((account) => account.username.toLocaleLowerCase().includes(query)).slice(0, 6) : [];
+  const titles = profileTitles(viewedState);
+  const owned = profileOwnedPlayers(viewedState);
+  const showcaseNames = (viewedState.showcasePlayerNames || []).filter((name) => owned.some((card) => card.name === name)).slice(0, 3);
+  const showcase = showcaseNames.map((name) => owned.find((card) => card.name === name)).filter(Boolean);
+  const selectedTitle = titles.some((title) => title.name === viewedState.profileTitle && title.unlocked) ? viewedState.profileTitle : 'Club Founder';
+  return `<section class="workspace-card profile-workspace">
+    <div class="profile-search-panel"><div><p>FIND A MANAGER</p><h3>Search profiles</h3></div><label><span>⌕</span><input id="prototypeProfileSearch" value="${newsEscape(prototypeProfileQuery)}" placeholder="Search exact or partial username" autocomplete="off"></label><div id="prototypeProfileResults" class="profile-search-results">${query ? (matches.length ? matches.map((account) => `<button data-profile-account="${account.id}"><i>${newsEscape(avatarStyles[account.avatarStyle] || 'FC')}</i><span><b>${newsEscape(account.username)}</b><small>${newsEscape(account.state?.profileTitle || 'Club Founder')} · Level ${newsEscape(levelDisplay(account.state?.level || 1, account.state?.infiniteLevel))}</small></span><em>VIEW →</em></button>`).join('') : '<p>No local profile found.</p>') : '<p>Profiles created on this game installation appear here.</p>'}</div></div>
+    <section class="profile-showcase-card background-${newsEscape(viewedState.profileBackground || 'stadium')}"><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">${newsEscape(avatarStyles[viewed?.avatarStyle] || 'FC')}</span><div><small>LEVEL ${newsEscape(levelDisplay(viewedState.level || 1, viewedState.infiniteLevel))} · DIVISION ${prototypeDivision(viewedState.rankedPoints)}</small><h3>${newsEscape(viewed?.username || 'FC Manager')}</h3><p>${newsEscape(viewed?.motto || 'Build your XI')}</p></div><b>${newsEscape(selectedTitle)}</b></header><div class="profile-player-showcase">${showcase.length ? showcase.map((card) => `<article><img src="${newsEscape(playerPhoto(card))}" alt="${newsEscape(card.name)}"><span><b>${newsEscape(ratingLabel(card))}</b><small>${newsEscape(card.position)}</small></span><strong>${newsEscape(shortName(card.name))}</strong></article>`).join('') : '<div class="profile-empty-showcase">No showcased players yet</div>'}</div></section>
+    ${isOwn ? `<section class="profile-customize"><div class="profile-section-heading"><div><p>PROFILE BACKGROUND</p><h3>Set the atmosphere</h3></div><span>Saved automatically</span></div><div class="profile-backgrounds">${['stadium','royal','midnight','crimson'].map((background) => `<button class="background-${background} ${viewedState.profileBackground === background ? 'selected' : ''}" data-profile-background="${background}"><i></i><b>${background}</b></button>`).join('')}</div><div class="profile-section-heading"><div><p>SHOWCASE PLAYERS</p><h3>Choose up to three</h3></div><span>${showcaseNames.length} / 3 selected</span></div><div class="profile-player-picker">${owned.length ? owned.map((card) => `<button class="${showcaseNames.includes(card.name) ? 'selected' : ''}" data-profile-player="${newsEscape(card.name)}"><img src="${newsEscape(playerPhoto(card))}" alt=""><span><b>${newsEscape(shortName(card.name))}</b><small>${newsEscape(card.rarity)}</small></span></button>`).join('') : '<p>Collect players to build your showcase.</p>'}</div><div class="profile-section-heading"><div><p>UNLOCKABLE TITLES</p><h3>Complete tasks. Earn status.</h3></div></div><div class="profile-title-grid">${titles.map((title) => `<button class="${title.unlocked ? 'unlocked' : 'locked'} ${selectedTitle === title.name ? 'selected' : ''}" data-profile-title="${newsEscape(title.name)}" ${title.unlocked ? '' : 'disabled'}><span>${title.unlocked ? '◆' : '🔒'}</span><b>${newsEscape(title.name)}</b><small>${newsEscape(title.task)}</small><i><em style="width:${Math.min(100,title.progress/title.target*100)}%"></em></i><u>${Math.min(title.progress,title.target)} / ${title.target}</u></button>`).join('')}</div></section>` : '<p class="profile-viewing-note">Viewing another manager’s public profile.</p>'}
+  </section>`;
+}
+
 function prototypeViewMarkup(view) {
+  if (view === 'Profile') return profileWorkspaceMarkup();
   if (view === 'News') return newsWorkspaceMarkup();
   if (view === 'Packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Three taps. One walkout. A new superstar for your collection.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> ICONS</span><span><b>0</b> DUPLICATES</span></div><button data-prototype-open-pack>OPEN PACK <b>50 COINS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal · Alisson</small></div><button class="workspace-pack-art" data-prototype-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
   if (view === 'Squad') {
@@ -381,7 +433,8 @@ function selectPrototypeView(view) {
     Squad: ['SQUAD · STARTING XI', 'Build your<br><em>best XI.</em>'],
     Play: ['PLAY · MATCHDAY', 'Own the<br><em>matchday.</em>'],
     Club: ['CLUB · IDENTITY', 'Wear your<br><em>identity.</em>'],
-    News: ['NEWS · THE DAILY TOUCHLINE', 'Know the<br><em>whole game.</em>']
+    News: ['NEWS · THE DAILY TOUCHLINE', 'Know the<br><em>whole game.</em>'],
+    Profile: ['PROFILE · MANAGER ID', 'Show your<br><em>football story.</em>']
   };
   document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', !isHome);
   document.querySelectorAll('.prototype-home-only').forEach((card) => { card.hidden = !isHome; });
@@ -474,6 +527,18 @@ document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPro
 document.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
+  const profileAccount = event.target.closest('[data-profile-account]');
+  if (profileAccount) { prototypeViewedProfileId = profileAccount.dataset.profileAccount; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }
+  const profileBackground = event.target.closest('[data-profile-background]');
+  if (profileBackground && activeAccount()) { state.profileBackground = profileBackground.dataset.profileBackground; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Profile background equipped.'); }
+  const profilePlayer = event.target.closest('[data-profile-player]');
+  if (profilePlayer && activeAccount()) {
+    const name = profilePlayer.dataset.profilePlayer; const selected = [...(state.showcasePlayerNames || [])]; const index = selected.indexOf(name);
+    if (index >= 0) selected.splice(index, 1); else if (selected.length < 3) selected.push(name); else { showPrototypeToast('Choose up to three showcase players.'); return; }
+    state.showcasePlayerNames = selected; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup();
+  }
+  const profileTitle = event.target.closest('[data-profile-title]');
+  if (profileTitle && !profileTitle.disabled && activeAccount()) { state.profileTitle = profileTitle.dataset.profileTitle; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast(`${state.profileTitle} title equipped.`); }
   const newsFilter = event.target.closest('#prototypeNewsFilters [data-news-filter]');
   if (newsFilter) {
     prototypeNewsFilter = newsFilter.dataset.newsFilter;
@@ -498,6 +563,10 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-prototype-open-pitch]')) openPrototypePitch();
 });
 document.addEventListener('input', (event) => {
+  if (event.target.id === 'prototypeProfileSearch') {
+    prototypeProfileQuery = event.target.value; prototypeWorkspace.innerHTML = profileWorkspaceMarkup();
+    const input = document.querySelector('#prototypeProfileSearch'); input?.focus(); input?.setSelectionRange(prototypeProfileQuery.length, prototypeProfileQuery.length); return;
+  }
   if (event.target.id !== 'prototypeNewsSearch') return;
   prototypeNewsQuery = event.target.value;
   updatePrototypeNewsResults();
