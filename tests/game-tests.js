@@ -129,8 +129,10 @@ window.runFCGameTests = function () {
     check('Logout clears live state and stops simulation', () => {
       activeAccountId = account.id; state = account.state = freshState(false);
       state.activeMatch = { home: 0, away: 0 };
-      logoutAccount();
+      prototypeSettingsModal.hidden = false;
+      document.querySelector('#prototypeLogoutButton').click();
       assert(activeAccountId === null && state.activeMatch === null && !matchPhysicsFrame, 'Previous account remained active');
+      assert(prototypeSettingsModal.hidden && !quickLoginOverlay.hidden, 'Logout did not return to account selection');
     });
 
     check('All six primary views remain reachable', () => {

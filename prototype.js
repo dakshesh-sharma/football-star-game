@@ -738,6 +738,10 @@ document.querySelector('#prototypeSettingsButton')?.addEventListener('click', ()
   requestAnimationFrame(() => nameInput?.focus());
 });
 document.querySelector('#prototypeSettingsClose')?.addEventListener('click', () => { prototypeSettingsModal.hidden = true; });
+document.querySelector('#prototypeLogoutButton')?.addEventListener('click', () => {
+  prototypeSettingsModal.hidden = true;
+  logoutAccount();
+});
 document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (event) => {
   event.preventDefault();
   const account = activeAccount();
