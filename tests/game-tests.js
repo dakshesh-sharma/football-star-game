@@ -151,6 +151,15 @@ window.runFCGameTests = function () {
       state.profileBackground = 'royal'; state.profileTitle = 'Siuuu Streak'; state.showcasePlayerNames = ['Cristiano Ronaldo'];
       const markup = profileWorkspaceMarkup();
       assert(markup.includes('background-royal') && markup.includes('Cristiano Ronaldo') && markup.includes('Siuuu Streak'), 'Profile customization did not render');
+      assert(markup.indexOf('profile-search-panel') < markup.indexOf('profile-showcase-card'), 'Profile search is not above the main profile');
+      prototypeBackgroundStudioOpen = true; prototypeBackgroundMode = 'library';
+      const studioMarkup = profileWorkspaceMarkup();
+      assert(profileBackgroundOptions.every((background) => studioMarkup.includes(`data-profile-background="${background}"`)), 'All 10 background presets did not render');
+      prototypeBackgroundMode = 'ai';
+      assert(profileWorkspaceMarkup().includes('data-generate-profile-background'), 'AI background maker did not render');
+      prototypeBackgroundMode = 'upload';
+      assert(profileWorkspaceMarkup().includes('prototypeProfileBackgroundInput'), 'Device background upload did not render');
+      prototypeBackgroundStudioOpen = false; prototypeBackgroundMode = 'library';
       prototypeProfileQuery = 'renamed';
       assert(profileWorkspaceMarkup().includes('Renamed Club'), 'Username search did not find a local account');
       prototypeProfileQuery = '';

@@ -23,9 +23,56 @@ let prototypeNewsFilter = 'All';
 const prototypeSavedNews = new Set();
 let prototypeProfileQuery = '';
 let prototypeViewedProfileId = null;
+let prototypeBackgroundStudioOpen = false;
+let prototypeBackgroundMode = 'library';
+const profileBackgroundOptions = ['stadium', 'royal', 'midnight', 'crimson', 'aurora', 'ocean', 'sunset', 'galaxy', 'trophy', 'electric'];
 
 function newsEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[character]);
+}
+
+function profilePromptHue(prompt) {
+  let hash = 0;
+  for (const character of String(prompt || 'FC Stars')) hash = ((hash << 5) - hash + character.charCodeAt(0)) | 0;
+  return Math.abs(hash) % 360;
+}
+
+function profileBackgroundHeroAttributes(accountState, baseClass = 'profile-showcase-card') {
+  const background = accountState?.profileBackground || 'stadium';
+  if (background === 'ai') {
+    const hue = Math.max(0, Math.min(359, Number(accountState?.profileAiBackground?.hue) || 268));
+    return `class="${baseClass} background-ai" style="--ai-hue:${hue}"`;
+  }
+  if (background === 'upload' && /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(accountState?.profileUploadedBackground || '')) {
+    return `class="${baseClass} background-upload" style="background-image:linear-gradient(90deg,#090a14d9,#090a1430),url(${newsEscape(accountState.profileUploadedBackground)})"`;
+  }
+  const safeBackground = profileBackgroundOptions.includes(background) ? background : 'stadium';
+  return `class="${baseClass} background-${safeBackground}"`;
+}
+
+function backgroundLibraryMarkup(accountState, attribute = 'data-profile-background') {
+  return profileBackgroundOptions.map((background) => `<button class="background-${background} ${accountState?.profileBackground === background ? 'selected' : ''}" ${attribute}="${background}"><i></i><b>${background}</b></button>`).join('');
+}
+
+function resizeProfileBackground(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\/(?:png|jpeg|webp)$/.test(file.type)) return reject(new Error('Choose a JPG, PNG or WebP image.'));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('That image could not be opened.'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('That image could not be opened.'));
+      image.onload = () => {
+        const scale = Math.min(1, 1400 / image.width, 800 / image.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale)); canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', .82));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function filteredNewsStories(query = '', filter = 'All') {
@@ -188,6 +235,41 @@ document.querySelector('.lab-profile-backgrounds')?.addEventListener('click', (e
   document.querySelectorAll('[data-lab-profile-bg]').forEach((item) => item.classList.toggle('selected', item === button));
   const hero = document.querySelector('#labProfileHero'); hero.className = `lab-profile-hero background-${button.dataset.labProfileBg}`;
   showLabToast(`${button.textContent.trim()} profile background equipped.`);
+});
+const labBackgroundLibrary = document.querySelector('[data-lab-bg-pane="library"] .background-library');
+if (labBackgroundLibrary) labBackgroundLibrary.innerHTML = backgroundLibraryMarkup({ profileBackground:'stadium' }, 'data-lab-profile-bg');
+document.querySelector('#labSeeAllBackgrounds')?.addEventListener('click', (event) => {
+  const studio = document.querySelector('#labBackgroundStudio'); studio.toggleAttribute('hidden');
+  event.currentTarget.textContent = studio.hidden ? 'SEE ALL +' : 'CLOSE ×';
+});
+document.querySelector('#labBackgroundStudio')?.addEventListener('click', (event) => {
+  const modeButton = event.target.closest('[data-lab-bg-mode]');
+  if (modeButton) {
+    document.querySelectorAll('[data-lab-bg-mode]').forEach((button) => button.classList.toggle('selected', button === modeButton));
+    document.querySelectorAll('[data-lab-bg-pane]').forEach((pane) => pane.hidden = pane.dataset.labBgPane !== modeButton.dataset.labBgMode);
+    return;
+  }
+  const backgroundButton = event.target.closest('[data-lab-profile-bg]');
+  if (backgroundButton) {
+    document.querySelectorAll('[data-lab-profile-bg]').forEach((button) => button.classList.toggle('selected', button.dataset.labProfileBg === backgroundButton.dataset.labProfileBg));
+    const hero = document.querySelector('#labProfileHero'); hero.removeAttribute('style'); hero.className = `lab-profile-hero background-${backgroundButton.dataset.labProfileBg}`;
+    showLabToast(`${backgroundButton.textContent.trim()} profile background equipped.`);
+  }
+});
+document.querySelector('#labGenerateBackground')?.addEventListener('click', () => {
+  const prompt = document.querySelector('#labAiBackgroundPrompt').value.trim();
+  if (!prompt) return showLabToast('Describe your background first.');
+  const hero = document.querySelector('#labProfileHero'); hero.className = 'lab-profile-hero background-ai'; hero.style.setProperty('--ai-hue', profilePromptHue(prompt));
+  showLabToast(`AI scene “${prompt.slice(0, 28)}” generated and equipped.`);
+});
+document.querySelector('#labUploadBackgroundButton')?.addEventListener('click', () => document.querySelector('#labUploadBackgroundInput')?.click());
+document.querySelector('#labUploadBackgroundInput')?.addEventListener('change', async (event) => {
+  try {
+    const image = await resizeProfileBackground(event.target.files?.[0]);
+    const hero = document.querySelector('#labProfileHero'); hero.className = 'lab-profile-hero background-upload'; hero.style.backgroundImage = `linear-gradient(90deg,#090a14d9,#090a1430),url(${image})`;
+    showLabToast('Your photo is now the profile background.');
+  } catch (error) { showLabToast(error.message); }
+  event.target.value = '';
 });
 document.querySelector('[data-lab-title]')?.addEventListener('click', (event) => {
   document.querySelector('#labProfileTitle').textContent = event.currentTarget.dataset.labTitle.toUpperCase(); showLabToast('Title equipped.');
@@ -401,10 +483,15 @@ function profileWorkspaceMarkup() {
   const showcaseNames = (viewedState.showcasePlayerNames || []).filter((name) => owned.some((card) => card.name === name)).slice(0, 3);
   const showcase = showcaseNames.map((name) => owned.find((card) => card.name === name)).filter(Boolean);
   const selectedTitle = titles.some((title) => title.name === viewedState.profileTitle && title.unlocked) ? viewedState.profileTitle : 'Club Founder';
+  const studioPane = prototypeBackgroundMode === 'library'
+    ? `<div class="background-library">${backgroundLibraryMarkup(viewedState)}</div>`
+    : prototypeBackgroundMode === 'ai'
+      ? `<label class="ai-background-maker"><span>Describe the background you want</span><input id="prototypeAiBackgroundPrompt" maxlength="80" value="${newsEscape(viewedState.profileAiBackground?.prompt || '')}" placeholder="e.g. neon Champions League night"><button type="button" data-generate-profile-background>✦ GENERATE BACKGROUND</button><small>Creates a unique colour scene from your words.</small></label>`
+      : `<button type="button" class="upload-background-button" data-upload-profile-background><b>↑</b><span>CHOOSE FROM FINDER OR PHOTOS</span><small>Works on laptop and phone · JPG, PNG or WebP</small></button><input id="prototypeProfileBackgroundInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>`;
   return `<section class="workspace-card profile-workspace">
-    <div class="profile-search-panel"><div><p>FIND A MANAGER</p><h3>Search profiles</h3></div><label><span>⌕</span><input id="prototypeProfileSearch" value="${newsEscape(prototypeProfileQuery)}" placeholder="Search exact or partial username" autocomplete="off"></label><div id="prototypeProfileResults" class="profile-search-results">${query ? (matches.length ? matches.map((account) => `<button data-profile-account="${account.id}"><i>${newsEscape(avatarStyles[account.avatarStyle] || 'FC')}</i><span><b>${newsEscape(account.username)}</b><small>${newsEscape(account.state?.profileTitle || 'Club Founder')} · Level ${newsEscape(levelDisplay(account.state?.level || 1, account.state?.infiniteLevel))}</small></span><em>VIEW →</em></button>`).join('') : '<p>No local profile found.</p>') : '<p>Profiles created on this game installation appear here.</p>'}</div></div>
-    <section class="profile-showcase-card background-${newsEscape(viewedState.profileBackground || 'stadium')}"><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">${newsEscape(avatarStyles[viewed?.avatarStyle] || 'FC')}</span><div><small>LEVEL ${newsEscape(levelDisplay(viewedState.level || 1, viewedState.infiniteLevel))} · DIVISION ${prototypeDivision(viewedState.rankedPoints)}</small><h3>${newsEscape(viewed?.username || 'FC Manager')}</h3><p>${newsEscape(viewed?.motto || 'Build your XI')}</p></div><b>${newsEscape(selectedTitle)}</b></header><div class="profile-player-showcase">${showcase.length ? showcase.map((card) => `<article><img src="${newsEscape(playerPhoto(card))}" alt="${newsEscape(card.name)}"><span><b>${newsEscape(ratingLabel(card))}</b><small>${newsEscape(card.position)}</small></span><strong>${newsEscape(shortName(card.name))}</strong></article>`).join('') : '<div class="profile-empty-showcase">No showcased players yet</div>'}</div></section>
-    ${isOwn ? `<section class="profile-customize"><div class="profile-section-heading"><div><p>PROFILE BACKGROUND</p><h3>Set the atmosphere</h3></div><span>Saved automatically</span></div><div class="profile-backgrounds">${['stadium','royal','midnight','crimson'].map((background) => `<button class="background-${background} ${viewedState.profileBackground === background ? 'selected' : ''}" data-profile-background="${background}"><i></i><b>${background}</b></button>`).join('')}</div><div class="profile-section-heading"><div><p>SHOWCASE PLAYERS</p><h3>Choose up to three</h3></div><span>${showcaseNames.length} / 3 selected</span></div><div class="profile-player-picker">${owned.length ? owned.map((card) => `<button class="${showcaseNames.includes(card.name) ? 'selected' : ''}" data-profile-player="${newsEscape(card.name)}"><img src="${newsEscape(playerPhoto(card))}" alt=""><span><b>${newsEscape(shortName(card.name))}</b><small>${newsEscape(card.rarity)}</small></span></button>`).join('') : '<p>Collect players to build your showcase.</p>'}</div><div class="profile-section-heading"><div><p>UNLOCKABLE TITLES</p><h3>Complete tasks. Earn status.</h3></div></div><div class="profile-title-grid">${titles.map((title) => `<button class="${title.unlocked ? 'unlocked' : 'locked'} ${selectedTitle === title.name ? 'selected' : ''}" data-profile-title="${newsEscape(title.name)}" ${title.unlocked ? '' : 'disabled'}><span>${title.unlocked ? '◆' : '🔒'}</span><b>${newsEscape(title.name)}</b><small>${newsEscape(title.task)}</small><i><em style="width:${Math.min(100,title.progress/title.target*100)}%"></em></i><u>${Math.min(title.progress,title.target)} / ${title.target}</u></button>`).join('')}</div></section>` : '<p class="profile-viewing-note">Viewing another manager’s public profile.</p>'}
+    <div class="profile-search-panel"><div><p>FIND A MANAGER</p><h3>Search profiles</h3></div><label><span>⌕</span><input id="prototypeProfileSearch" value="${newsEscape(prototypeProfileQuery)}" placeholder="Search any username" autocomplete="off"></label><div id="prototypeProfileResults" class="profile-search-results">${query ? (matches.length ? matches.map((account) => `<button data-profile-account="${account.id}"><i>${newsEscape(avatarStyles[account.avatarStyle] || 'FC')}</i><span><b>${newsEscape(account.username)}</b><small>${newsEscape(account.state?.profileTitle || 'Club Founder')} · Level ${newsEscape(levelDisplay(account.state?.level || 1, account.state?.infiniteLevel))}</small></span><em>VIEW →</em></button>`).join('') : '<p>No local profile found.</p>') : '<p>Search profiles created on this game.</p>'}</div></div>
+    <section ${profileBackgroundHeroAttributes(viewedState)}><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">${newsEscape(avatarStyles[viewed?.avatarStyle] || 'YOU')}</span><div><small>LEVEL ${newsEscape(levelDisplay(viewedState.level || 1, viewedState.infiniteLevel))} · DIVISION ${prototypeDivision(viewedState.rankedPoints)}</small><h3>${newsEscape(viewed?.username || 'FC Manager')}</h3><p>${newsEscape(viewed?.motto || 'Build your XI')}</p></div><b>${newsEscape(selectedTitle)}</b></header><div class="profile-player-showcase">${showcase.length ? showcase.map((card) => `<article><img src="${newsEscape(playerPhoto(card))}" alt="${newsEscape(card.name)}"><span><b>${newsEscape(ratingLabel(card))}</b><small>${newsEscape(card.position)}</small></span><strong>${newsEscape(shortName(card.name))}</strong></article>`).join('') : '<div class="profile-empty-showcase">Choose up to three players below to build your showcase.</div>'}</div></section>
+    ${isOwn ? `<section class="profile-customize"><div class="profile-section-heading"><div><p>PROFILE BACKGROUND</p><h3>Set the atmosphere</h3></div><button class="profile-see-all" data-profile-see-all>${prototypeBackgroundStudioOpen ? 'CLOSE ×' : 'SEE ALL +'}</button></div><div class="profile-backgrounds profile-backgrounds-quick">${['stadium','royal','midnight','crimson'].map((background) => `<button class="background-${background} ${viewedState.profileBackground === background ? 'selected' : ''}" data-profile-background="${background}"><i></i><b>${background}</b></button>`).join('')}</div>${prototypeBackgroundStudioOpen ? `<section class="background-studio"><div class="background-studio-options"><button class="${prototypeBackgroundMode === 'library' ? 'selected' : ''}" data-profile-bg-mode="library"><b>10</b><span>Choose backgrounds</span><small>Pick a ready-made scene</small></button><button class="${prototypeBackgroundMode === 'ai' ? 'selected' : ''}" data-profile-bg-mode="ai"><b>✦</b><span>Make with AI</span><small>Describe your dream scene</small></button><button class="${prototypeBackgroundMode === 'upload' ? 'selected' : ''}" data-profile-bg-mode="upload"><b>↑</b><span>Finder or Photos</span><small>Add your own image</small></button></div><div class="background-studio-pane">${studioPane}</div></section>` : ''}<div class="profile-section-heading"><div><p>SHOWCASE PLAYERS</p><h3>Choose up to three</h3></div><span>${showcaseNames.length} / 3 selected</span></div><div class="profile-player-picker">${owned.length ? owned.map((card) => `<button class="${showcaseNames.includes(card.name) ? 'selected' : ''}" data-profile-player="${newsEscape(card.name)}"><img src="${newsEscape(playerPhoto(card))}" alt=""><span><b>${newsEscape(shortName(card.name))}</b><small>${newsEscape(card.rarity)}</small></span></button>`).join('') : '<p>Collect players to build your showcase.</p>'}</div><div class="profile-section-heading"><div><p>UNLOCKABLE TITLES</p><h3>Complete tasks. Earn status.</h3></div></div><div class="profile-title-grid">${titles.map((title) => `<button class="${title.unlocked ? 'unlocked' : 'locked'} ${selectedTitle === title.name ? 'selected' : ''}" data-profile-title="${newsEscape(title.name)}" ${title.unlocked ? '' : 'disabled'}><span>${title.unlocked ? '◆' : '🔒'}</span><b>${newsEscape(title.name)}</b><small>${newsEscape(title.task)}</small><i><em style="width:${Math.min(100,title.progress/title.target*100)}%"></em></i><u>${Math.min(title.progress,title.target)} / ${title.target}</u></button>`).join('')}</div></section>` : '<p class="profile-viewing-note">Viewing another manager’s public profile.</p>'}
   </section>`;
 }
 
@@ -529,6 +616,16 @@ document.addEventListener('click', (event) => {
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
   const profileAccount = event.target.closest('[data-profile-account]');
   if (profileAccount) { prototypeViewedProfileId = profileAccount.dataset.profileAccount; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }
+  if (event.target.closest('[data-profile-see-all]')) { prototypeBackgroundStudioOpen = !prototypeBackgroundStudioOpen; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }
+  const profileBackgroundMode = event.target.closest('[data-profile-bg-mode]');
+  if (profileBackgroundMode) { prototypeBackgroundMode = profileBackgroundMode.dataset.profileBgMode; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }
+  if (event.target.closest('[data-generate-profile-background]') && activeAccount()) {
+    const prompt = document.querySelector('#prototypeAiBackgroundPrompt')?.value.trim() || '';
+    if (!prompt) { showPrototypeToast('Describe your dream background first.'); return; }
+    state.profileAiBackground = { prompt, hue:profilePromptHue(prompt) }; state.profileBackground = 'ai'; saveState();
+    prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Your AI-style background is ready.');
+  }
+  if (event.target.closest('[data-upload-profile-background]')) document.querySelector('#prototypeProfileBackgroundInput')?.click();
   const profileBackground = event.target.closest('[data-profile-background]');
   if (profileBackground && activeAccount()) { state.profileBackground = profileBackground.dataset.profileBackground; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Profile background equipped.'); }
   const profilePlayer = event.target.closest('[data-profile-player]');
@@ -570,6 +667,13 @@ document.addEventListener('input', (event) => {
   if (event.target.id !== 'prototypeNewsSearch') return;
   prototypeNewsQuery = event.target.value;
   updatePrototypeNewsResults();
+});
+document.addEventListener('change', async (event) => {
+  if (event.target.id !== 'prototypeProfileBackgroundInput' || !activeAccount()) return;
+  try {
+    state.profileUploadedBackground = await resizeProfileBackground(event.target.files?.[0]); state.profileBackground = 'upload'; saveState();
+    prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Custom background uploaded and equipped.');
+  } catch (error) { showPrototypeToast(error.message); }
 });
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'k' && prototypeWorkspace) {

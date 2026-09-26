@@ -153,7 +153,7 @@ const avatarStyles = {
   gold: "FC",
   blue: "XI",
   red: "ST",
-  goat: "99"
+  goat: "YOU"
 };
 const redeemableCodes = {
   DAILY: { type: "xp", xp: 300, daily: true, message: "Daily XP claimed." },
@@ -267,6 +267,8 @@ const defaultState = {
   activeMatch: null,
   profileTitle: "Club Founder",
   profileBackground: "stadium",
+  profileAiBackground: { prompt: "", hue: 268 },
+  profileUploadedBackground: "",
   showcasePlayerNames: [],
   taskProgress: { ronaldoWinStreak: 0, totalWins: 0 }
 };
@@ -640,7 +642,13 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.playerStats = savedState.playerStats && typeof savedState.playerStats === "object" && !Array.isArray(savedState.playerStats)
     ? savedState.playerStats : {};
   savedState.profileTitle = cleanText(savedState.profileTitle, 32) || "Club Founder";
-  savedState.profileBackground = ["stadium", "royal", "midnight", "crimson"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
+  savedState.profileBackground = ["stadium", "royal", "midnight", "crimson", "aurora", "ocean", "sunset", "galaxy", "trophy", "electric", "ai", "upload"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
+  savedState.profileAiBackground = savedState.profileAiBackground && typeof savedState.profileAiBackground === "object"
+    ? { prompt: cleanText(savedState.profileAiBackground.prompt, 80), hue: Math.max(0, Math.min(359, Number(savedState.profileAiBackground.hue) || 268)) }
+    : { prompt: "", hue: 268 };
+  savedState.profileUploadedBackground = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(savedState.profileUploadedBackground || "")
+    ? savedState.profileUploadedBackground
+    : "";
   savedState.showcasePlayerNames = uniqueNames(Array.isArray(savedState.showcasePlayerNames) ? savedState.showcasePlayerNames : []).slice(0, 3);
   savedState.taskProgress = savedState.taskProgress && typeof savedState.taskProgress === "object" ? savedState.taskProgress : {};
   savedState.taskProgress.ronaldoWinStreak = Math.max(0, Number(savedState.taskProgress.ronaldoWinStreak) || 0);
