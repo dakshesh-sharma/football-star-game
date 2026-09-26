@@ -160,6 +160,13 @@ window.runFCGameTests = function () {
       prototypeBackgroundMode = 'upload';
       assert(profileWorkspaceMarkup().includes('prototypeProfileBackgroundInput'), 'Device background upload did not render');
       prototypeBackgroundStudioOpen = false; prototypeBackgroundMode = 'library';
+      state.inventory = allInventoryCards('dev');
+      state.showcasePlayerNames = ['Cristiano Ronaldo', 'Lionel Messi', 'Pelé'];
+      selectPrototypeView('Profile');
+      const profileMain = document.querySelector('.desktop-main');
+      const profileHero = document.querySelector('.profile-showcase-card');
+      assert(profileMain.scrollWidth <= profileMain.clientWidth + 1, 'A full collection pushed the profile underneath the sidebar');
+      assert([...profileHero.querySelectorAll('.profile-player-showcase article')].every((card) => card.getBoundingClientRect().right <= profileHero.getBoundingClientRect().right + 1), 'Showcase cards escaped the profile frame');
       prototypeProfileQuery = 'renamed';
       assert(profileWorkspaceMarkup().includes('Renamed Club'), 'Username search did not find a local account');
       prototypeProfileQuery = '';
