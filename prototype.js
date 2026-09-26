@@ -41,22 +41,18 @@ const prototypeMissionLabel = document.querySelector('#prototypeMissionLabel');
 const prototypeUsername = document.querySelector('#prototypeUsername');
 const prototypeProfileMeta = document.querySelector('#prototypeProfileMeta');
 const prototypeRankPoints = document.querySelector('#prototypeRankPoints');
+const prototypeDivisionLabel = document.querySelector('#prototypeDivisionLabel');
+const prototypeRailDivision = document.querySelector('#prototypeRailDivision');
 const prototypeProfileAvatar = document.querySelector('#prototypeProfileAvatar');
 const prototypeSettingsModal = document.querySelector('#prototypeSettingsModal');
 const prototypeWorkspace = document.querySelector('#prototypeWorkspace');
-const prototypeProfileStorageKey = 'fc-stars-prototype-profile';
 const prototypeClosedPack = document.querySelector('#prototypeClosedPack');
 const prototypePackReveal = document.querySelector('#prototypePackReveal');
 const prototypePackTapCount = document.querySelector('#prototypePackTapCount');
 let prototypePackTaps = 0;
 let prototypePendingPack = null;
-const prototypePackCards = [
-  { name: 'Neymar Jr', rating: 91, meta: 'LW · BRAZIL · G.O.A.T.' },
-  { name: 'Vinícius Jr', rating: 90, meta: 'LW · BRAZIL · ELITE' },
-  { name: 'Jude Bellingham', rating: 89, meta: 'CM · ENGLAND · ELITE' },
-  { name: 'Lamine Yamal', rating: 88, meta: 'RW · SPAIN · GOLD' },
-  { name: 'Alisson', rating: 89, meta: 'GK · BRAZIL · GOLD' }
-];
+let prototypePackClaimed = false;
+const featuredPackNames = ['Neymar Jr', 'Vinicius Jr', 'Jude Bellingham', 'Lamine Yamal', 'Alisson'];
 
 function showPrototypeToast(message) {
   if (!prototypeToast) return;
@@ -68,28 +64,97 @@ function showPrototypeToast(message) {
 
 function syncPrototypeBalances() {
   const rankedPoints = Number(state?.rankedPoints) || 0;
+  const division = prototypeDivision(rankedPoints);
   const infiniteCoinsActive = Boolean(state?.infiniteCoins);
   if (prototypeCoins) prototypeCoins.textContent = String(rankedPoints);
   if (prototypeGems) prototypeGems.textContent = infiniteCoinsActive ? '∞' : String(state?.matchPoints ?? 56);
-  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division 4 · ${rankedPoints} RP`;
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division ${division} · ${rankedPoints} RP`;
+  if (prototypeDivisionLabel) prototypeDivisionLabel.textContent = `DIVISION ${division}`;
+  if (prototypeRailDivision) prototypeRailDivision.textContent = `Division ${division}`;
   if (prototypeRankPoints) prototypeRankPoints.textContent = String(rankedPoints);
+  const missionComplete = state?.dailyRankedWinDate === localDateKey();
+  if (prototypeMissionProgress) prototypeMissionProgress.style.width = missionComplete ? '100%' : '0%';
+  if (prototypeMissionLabel) prototypeMissionLabel.textContent = missionComplete ? '1 / 1 completed' : '0 / 1 completed';
+}
+
+function syncPrototypeProfile() {
+  const account = typeof activeAccount === 'function' ? activeAccount() : null;
+  if (prototypeUsername) prototypeUsername.textContent = account?.username || 'FC Manager';
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division ${prototypeDivision()} · ${Number(state?.rankedPoints) || 0} RP`;
+  if (prototypeProfileAvatar) {
+    const photo = account?.profilePhoto || '';
+    prototypeProfileAvatar.textContent = photo ? '' : avatarStyles[account?.avatarStyle] || 'FC';
+    prototypeProfileAvatar.style.backgroundImage = photo ? `url("${photo}")` : '';
+    prototypeProfileAvatar.style.backgroundSize = 'cover';
+    prototypeProfileAvatar.style.backgroundPosition = 'center';
+  }
+  const railName = document.querySelector('.rail-profile b');
+  if (railName) railName.textContent = account?.username || 'YOUR CLUB';
+}
+
+window.syncPrototypeShell = () => {
+  syncPrototypeBalances();
+  syncPrototypeProfile();
+  const activeView = document.querySelector('.desktop-rail .rail-active')?.dataset.prototypeView;
+  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
+  if (activeView === 'Club') restorePrototypeClubPhoto();
+};
+
+function prototypeDivision(points = Number(state?.rankedPoints) || 0) {
+  return Math.max(1, 4 - Math.floor(Math.max(0, points) / 100));
+}
+
+function prototypeTeamRating() {
+  const team = buildTeam();
+  return Math.round(team.reduce((sum, player) => sum + Number(player.rating === '∞' ? 99 : player.rating || 60), 0) / Math.max(1, team.length));
+}
+
+function homeWorkspaceMarkup() {
+  const points = Math.max(0, Number(state?.rankedPoints) || 0);
+  const division = prototypeDivision(points);
+  const divisionProgress = Math.min(100, points % 100);
+  const collectionCount = new Set((state?.inventory || []).map(card => card.name)).size;
+  const latest = state?.currentCard;
+  return `<section class="desktop-hero">
+    <div class="desktop-hero-copy"><span class="hero-live"><i></i> RISING ICONS</span><p>FEATURED PACK · 50 COINS</p><h3>Make football<br>history.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div>
+    <div class="hero-player" aria-hidden="true"><img src="assets/neymar-jr.png" alt=""><span><b>91</b><small>LW</small></span><strong>NEYMAR JR<small>RISING ICON</small></strong></div>
+  </section>
+  <section class="home-command-grid" aria-label="Club overview">
+    <button class="home-arena-card" data-prototype-play="Ranked Rush"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>25 COINS PER GOAL · +10 RP FOR A WIN</small><em>PLAY NOW →</em></button>
+    <article class="home-progress-card"><span class="home-card-kicker">${division > 1 ? `ROAD TO DIVISION ${division - 1}` : 'DIVISION 1 MASTERY'}</span><div><b>${divisionProgress}</b><small>/ 100 RP</small></div><i><b style="width:${divisionProgress}%"></b></i><small>${Math.max(0, 100 - divisionProgress)} RP TO ${division > 1 ? 'PROMOTION' : 'THE NEXT MILESTONE'}</small></article>
+    <article class="home-club-card"><span class="home-card-kicker">CLUB SNAPSHOT</span><div><span><b>${prototypeTeamRating()}</b><small>XI RATING</small></span><span><b>${collectionCount}</b><small>CARDS</small></span></div><p>${latest ? `LATEST PULL · ${escapeHtml(latest.name).toUpperCase()}` : 'YOUR NEXT STAR IS WAITING'}</p><button data-prototype-view="Squad">VIEW SQUAD →</button></article>
+  </section>`;
 }
 
 function prototypeViewMarkup(view) {
-  if (view === 'Packs') return `<section class="workspace-card"><p>RISING ICONS</p><h3>Build your collection.</h3><span>Every Rising Icons pack costs 50 Coins.</span><button data-prototype-open-pack>OPEN RISING ICONS PACK <b>50 COINS</b></button><small>Top pulls include Neymar Jr, Vini Jr, Bellingham, and Yamal.</small></section>`;
-  if (view === 'Squad') return `<section class="workspace-card squad-workspace"><div class="side-heading"><h3>Starting XI</h3><button data-prototype-open-pitch>Manage →</button></div><section class="desktop-xi"><div><b>95</b><span>RONALDO</span></div><div><b>91</b><span>NEYMAR</span></div><div><b>90</b><span>VINI JR</span></div><div><b>88</b><span>YAMAL</span></div><strong>88<small>TEAM RATING</small></strong></section></section>`;
-  if (view === 'Play') return `<section class="workspace-card"><p>MATCHDAY</p><h3>Choose your game mode</h3><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>25 COINS / GOAL · 10 RP / WIN</small></button><button class="desktop-mode draft" data-prototype-play="Draft Challenge"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>BUILD YOUR XI</small></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div></section>`;
-  if (view === 'Club') return `<section class="workspace-card club-workspace"><p>MY CLUB</p><h3>Make it yours.</h3><div class="club-photo-row"><button id="prototypeAddPhoto" class="club-photo-add"><span id="prototypeClubPhoto">+</span><b>ADD CLUB PHOTO</b></button><input id="prototypeClubPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><div><strong>${prototypeUsername?.textContent || 'FC Manager'}</strong><small>Customise your identity, squad, and match style.</small><button data-prototype-action="Club settings">EDIT CLUB</button></div></div></section>`;
-  return `<section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div><strong>91<small>NEYMAR JR</small></strong></section>`;
+  if (view === 'Packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Three taps. One walkout. A new superstar for your collection.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> ICONS</span><span><b>0</b> DUPLICATES</span></div><button data-prototype-open-pack>OPEN PACK <b>50 COINS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal · Alisson</small></div><button class="workspace-pack-art" data-prototype-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
+  if (view === 'Squad') {
+    const team = buildTeam().slice().sort((a,b) => ratingSortValue(b) - ratingSortValue(a));
+    const rating = prototypeTeamRating();
+    return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>4-3-3</b><small>FORMATION</small></span></div><section class="desktop-xi">${team.slice(0,5).map((player,index) => `<div class="${index === 0 ? 'squad-star' : ''}"><small>${escapeHtml(player.position || 'XI')}</small><b>${escapeHtml(ratingLabel(player))}</b><span>${escapeHtml(shortName(player.name).toUpperCase())}</span></div>`).join('')}<strong>${rating}<small>OVR</small></strong></section><p class="squad-tip">Select Manage XI to swap cards, inspect positions, and build your strongest lineup.</p></section>`;
+  }
+  if (view === 'Play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCHDAY</p><h3>Pick your arena.</h3><span>Every match uses your real Starting XI.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><i>♛</i><span>RANKED RUSH</span><b>Climb the<br>divisions</b><small>25 COINS / GOAL · 10 RP / WIN</small><em>PLAY RANKED →</em></button><button class="desktop-mode draft" data-prototype-play="Quick Match"><i>⚡</i><span>QUICK MATCH</span><b>Instant<br>kickoff</b><small>XP AND COIN REWARDS</small><em>PLAY NOW →</em></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><i>∞</i><span>FRIENDLY</span><b>Play with<br>no pressure</b><small>NO RANKED POINTS</small><em>PLAY FRIENDLY →</em></button></div></section>`;
+  if (view === 'Club') {
+    const account = typeof activeAccount === 'function' ? activeAccount() : null;
+    return `<section class="workspace-card club-workspace"><div class="club-banner"><span>EST. 2026</span><b>${escapeHtml(prototypeUsername?.textContent || 'FC Manager')}</b><small>${escapeHtml(account?.motto || 'Build your legacy')}</small></div><div class="club-profile-grid"><div><p>CLUB IDENTITY</p><div class="club-photo-row"><button id="prototypeAddPhoto" class="club-photo-add"><span id="prototypeClubPhoto">+</span><b>ADD BADGE PHOTO</b></button><input id="prototypeClubPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="club-edit-button" data-prototype-action="Club settings">EDIT CLUB DETAILS →</button></div></div><div class="club-record"><p>CLUB RECORD</p><span><b>${Number(state?.rankedPoints) || 0}</b><small>RANKED POINTS</small></span><span><b>${prototypeTeamRating()}</b><small>XI RATING</small></span><span><b>${new Set((state?.inventory || []).map(card => card.name)).size}</b><small>COLLECTED</small></span></div></div></section>`;
+  }
+  return homeWorkspaceMarkup();
 }
 
 function selectPrototypeView(view) {
   const isHome = view === 'Home';
+  const headings = {
+    Home: ['HOME · FC STARS', 'Ready to build<br>your <em>legacy?</em>'],
+    Packs: ['PACK STORE · RISING ICONS', 'Open the next<br><em>superstar.</em>'],
+    Squad: ['SQUAD · STARTING XI', 'Build your<br><em>best XI.</em>'],
+    Play: ['PLAY · MATCHDAY', 'Own the<br><em>matchday.</em>'],
+    Club: ['CLUB · IDENTITY', 'Wear your<br><em>identity.</em>']
+  };
   document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', !isHome);
   document.querySelectorAll('.prototype-home-only').forEach((card) => { card.hidden = !isHome; });
   document.querySelectorAll('.desktop-rail [data-prototype-view]').forEach((item) => item.classList.toggle('rail-active', item.dataset.prototypeView === view));
-  if (prototypeKicker) prototypeKicker.textContent = `${view.toUpperCase()} · FC STARS`;
-  if (prototypeTitle) prototypeTitle.innerHTML = view === 'Home' ? 'Ready to build<br>your <em>legacy?</em>' : `${view} is<br><em>ready.</em>`;
+  if (prototypeKicker) prototypeKicker.textContent = (headings[view] || headings.Home)[0];
+  if (prototypeTitle) prototypeTitle.innerHTML = (headings[view] || headings.Home)[1];
   if (prototypeWorkspace) prototypeWorkspace.innerHTML = prototypeViewMarkup(view);
   if (view === 'Club') restorePrototypeClubPhoto();
 }
@@ -102,31 +167,58 @@ function openPrototypePack() {
     showPrototypeToast('You need 50 Coins to open this pack.');
     return;
   }
+  const availableFeatured = featuredPackNames
+    .map(name => cardPool.find(card => card.name === name))
+    .filter(card => card && !ownedPlayerNames().has(card.name));
+  const available = availableFeatured.length
+    ? availableFeatured
+    : cardPool.filter(card => !card.specialAccess && !ownedPlayerNames().has(card.name));
+  if (!available.length) {
+    showPrototypeToast('Collection complete — no duplicate card was charged.');
+    return;
+  }
   if (!infiniteCoinsActive) state.matchPoints = points - cost;
-  saveState();
-  syncPrototypeBalances();
-  const card = prototypePackCards[Math.floor(Math.random() * prototypePackCards.length)];
-  prototypePendingPack = card;
+  const card = available[Math.floor(Math.random() * available.length)];
+  prototypePendingPack = { ...card, id: `pack-${Date.now()}-${Math.random().toString(16).slice(2)}` };
+  prototypePackClaimed = false;
   prototypePackTaps = 0;
-  document.querySelector('#prototypePackRating').textContent = card.rating;
+  document.querySelector('#prototypePackRating').textContent = ratingLabel(card);
   document.querySelector('#prototypePackTitle').textContent = card.name;
-  document.querySelector('#prototypePackMeta').textContent = card.meta;
+  document.querySelector('#prototypePackMeta').textContent = `${card.position} · ${card.team} · ${card.rarity}`.toUpperCase();
   const packCard = prototypeModal.querySelector('.prototype-modal-card');
   packCard?.classList.remove('is-opening');
   if (prototypeClosedPack) prototypeClosedPack.hidden = false;
   if (prototypePackReveal) prototypePackReveal.hidden = true;
   if (prototypePackTapCount) prototypePackTapCount.textContent = 'Tap 3 times to reveal your player';
   prototypeModal.hidden = false;
+  document.querySelector('#prototypePackTapTarget')?.focus();
+  saveState();
+  syncPrototypeBalances();
 }
 
-function closePrototypePack(refundUnopened = false) {
-  if (refundUnopened && prototypePendingPack && !state?.infiniteCoins) {
+function closePrototypePack(refundUnclaimed = false) {
+  if (refundUnclaimed && prototypePendingPack && !prototypePackClaimed && !state?.infiniteCoins) {
     state.matchPoints = (Number(state.matchPoints) || 0) + 50;
     saveState();
     syncPrototypeBalances();
   }
   prototypePendingPack = null;
+  prototypePackClaimed = false;
   prototypeModal.hidden = true;
+}
+
+function claimPrototypePack() {
+  if (!prototypePendingPack || prototypePackClaimed) return;
+  state.inventory = addCardToInventory(state.inventory, prototypePendingPack);
+  state.currentCard = prototypePendingPack;
+  state.currentCardSaved = true;
+  prototypePackClaimed = true;
+  const name = prototypePendingPack.name;
+  saveState();
+  render();
+  closePrototypePack();
+  selectPrototypeView('Squad');
+  showPrototypeToast(`${name} added to your collection.`);
 }
 
 document.querySelector('#prototypePackTapTarget')?.addEventListener('click', () => {
@@ -144,13 +236,13 @@ document.querySelector('#prototypePackTapTarget')?.addEventListener('click', () 
   if (prototypePackReveal) prototypePackReveal.hidden = false;
   showPrototypeToast(`${prototypePendingPack.name} packed!`);
 });
-document.querySelector('#prototypeModalClose')?.addEventListener('click', () => closePrototypePack(prototypePackTaps < 3));
-document.querySelector('#prototypeKeepCard')?.addEventListener('click', () => { const name = prototypePendingPack?.name || 'Player'; closePrototypePack(); showPrototypeToast(`${name} added to your squad.`); });
+document.querySelector('#prototypeModalClose')?.addEventListener('click', () => closePrototypePack(true));
+document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPrototypePack);
 document.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
   const actionButton = event.target.closest('[data-prototype-action]');
-  if (actionButton) showPrototypeToast(`${actionButton.dataset.prototypeAction} opened`);
+  if (actionButton?.dataset.prototypeAction === 'Club settings') document.querySelector('#prototypeSettingsButton')?.click();
   if (event.target.closest('[data-prototype-open-pack]')) openPrototypePack();
   if (event.target.closest('#prototypeAddPhoto')) document.querySelector('#prototypeClubPhotoInput')?.click();
   if (event.target.closest('[data-prototype-open-pitch]')) openPrototypePitch();
@@ -179,19 +271,13 @@ document.addEventListener('click', (event) => {
   openPrototypeMatch(playButton.dataset.prototypePlay);
 });
 
-const profile = typeof activeAccount === 'function' ? activeAccount() : null;
-function readPrototypeProfile() {
-  try { return JSON.parse(localStorage.getItem(prototypeProfileStorageKey) || 'null') || {}; }
-  catch { return {}; }
-}
-
 function restorePrototypeClubPhoto() {
-  const photoUrl = readPrototypeProfile().photo || state?.clubPhoto;
+  const photoUrl = state?.clubPhoto;
   const photo = document.querySelector('#prototypeClubPhoto');
-  if (!photo || !photoUrl) return;
-  photo.textContent = '';
-  photo.style.backgroundImage = `url(${photoUrl})`;
-  photo.classList.add('has-photo');
+  if (!photo) return;
+  photo.textContent = photoUrl ? '' : '+';
+  photo.style.backgroundImage = photoUrl ? `url("${photoUrl}")` : '';
+  photo.classList.toggle('has-photo', Boolean(photoUrl));
 }
 
 function savePrototypeClubPhoto(photoUrl) {
@@ -201,11 +287,6 @@ function savePrototypeClubPhoto(photoUrl) {
     photo.style.backgroundImage = `url(${photoUrl})`;
     photo.classList.add('has-photo');
   }
-  try {
-    localStorage.setItem(prototypeProfileStorageKey, JSON.stringify({ ...readPrototypeProfile(), photo: photoUrl }));
-  } catch {
-    // The account save below remains available even if the profile cache is full.
-  }
   if (state) {
     state.clubPhoto = photoUrl;
     saveState();
@@ -213,33 +294,35 @@ function savePrototypeClubPhoto(photoUrl) {
   showPrototypeToast('Club photo saved');
 }
 
-const savedPrototypeProfile = readPrototypeProfile();
-if (profile && prototypeUsername) {
-  prototypeUsername.textContent = savedPrototypeProfile?.name || profile.username;
-  prototypeProfileMeta.textContent = `Division 4 · ${Number(state?.rankedPoints) || 0} RP`;
-}
-if (prototypeProfileAvatar && typeof profileAvatar !== 'undefined') {
-  prototypeProfileAvatar.textContent = profileAvatar.textContent || 'FC';
-  prototypeProfileAvatar.style.backgroundImage = profileAvatar.style.backgroundImage;
-  prototypeProfileAvatar.style.backgroundSize = 'cover';
-  prototypeProfileAvatar.style.backgroundPosition = 'center';
-}
 document.querySelector('#prototypeSettingsButton')?.addEventListener('click', () => {
+  const account = activeAccount();
+  if (!account) { showQuickLogin(); return; }
   const nameInput = document.querySelector('#prototypeClubNameInput');
-  if (nameInput && prototypeUsername) nameInput.value = prototypeUsername.textContent;
+  if (nameInput) nameInput.value = account.username;
   const mottoInput = document.querySelector('#prototypeClubMottoInput');
-  if (mottoInput && savedPrototypeProfile?.motto) mottoInput.value = savedPrototypeProfile.motto;
+  if (mottoInput) mottoInput.value = account.motto || defaultProfileMotto;
   prototypeSettingsModal.hidden = false;
+  requestAnimationFrame(() => nameInput?.focus());
 });
 document.querySelector('#prototypeSettingsClose')?.addEventListener('click', () => { prototypeSettingsModal.hidden = true; });
 document.querySelector('#prototypeSettingsForm')?.addEventListener('submit', (event) => {
   event.preventDefault();
-  const name = document.querySelector('#prototypeClubNameInput')?.value.trim();
-  const motto = document.querySelector('#prototypeClubMottoInput')?.value.trim();
-  if (name && prototypeUsername) prototypeUsername.textContent = name;
-  localStorage.setItem(prototypeProfileStorageKey, JSON.stringify({ ...readPrototypeProfile(), name: name || profile?.username || 'FC Manager', motto: motto || 'Build your legacy' }));
+  const account = activeAccount();
+  if (!account) return;
+  const name = cleanText(document.querySelector('#prototypeClubNameInput')?.value, 24);
+  const motto = cleanText(document.querySelector('#prototypeClubMottoInput')?.value, 42) || defaultProfileMotto;
+  if (!name || isUsernameTaken(name, account.id)) {
+    showPrototypeToast(name ? 'That club name is already in use.' : 'Club name cannot be empty.');
+    return;
+  }
+  account.username = name;
+  account.motto = motto;
+  account.isDev = isDeveloperUsername(name);
+  account.state = state;
+  saveAccounts();
   prototypeSettingsModal.hidden = true;
-  showPrototypeToast(motto ? `${name || 'Club'} · ${motto}` : 'Profile settings saved');
+  render();
+  showPrototypeToast(`${name} · ${motto}`);
 });
 
 const prototypePitchOverlay = document.querySelector('#prototypePitchOverlay');
@@ -278,17 +361,19 @@ const prototypeMatchOverlay = document.querySelector('#prototypeMatchOverlay');
 const prototypeMatchHost = document.querySelector('#prototypeMatchHost');
 const realMatchPanel = document.querySelector('#matchPanel');
 const originalMatchParent = realMatchPanel?.parentElement;
+let prototypeMatchCloseTimer = null;
 
 function openPrototypeMatch(mode) {
+  window.clearTimeout(prototypeMatchCloseTimer);
   if (!realMatchPanel || !prototypeMatchOverlay || !prototypeMatchHost) return;
   prototypeMatchHost.appendChild(realMatchPanel);
   document.querySelector('#prototypeMatchMode').textContent = mode.toUpperCase();
   prototypeMatchOverlay.hidden = false;
-  startMatch();
+  startMatch(mode);
 }
 
 function closePrototypeMatch() {
-  if (state?.activeMatch) endMatch();
+  if (state?.activeMatch) endMatch({ abandoned: true });
   if (realMatchPanel && originalMatchParent) originalMatchParent.prepend(realMatchPanel);
   if (prototypeMatchOverlay) prototypeMatchOverlay.hidden = true;
 }
@@ -296,14 +381,18 @@ function closePrototypeMatch() {
 document.querySelector('#prototypeMatchClose')?.addEventListener('click', closePrototypeMatch);
 window.addEventListener('fc-stars-match-ended', (event) => {
   syncPrototypeBalances();
-  if (event.detail.won) {
-    if (prototypeMissionProgress) prototypeMissionProgress.style.width = '100%';
-    if (prototypeMissionLabel) prototypeMissionLabel.textContent = '1 / 1 completed · Reward claimed';
-    showPrototypeToast(`Victory! +${event.detail.tablePoints} RP and +${event.detail.coinReward} Coins.`);
+  if (event.detail.abandoned) {
+    showPrototypeToast('Match left. No rewards awarded.');
+  } else if (event.detail.won) {
+    syncPrototypeBalances();
+    const ranked = event.detail.tablePoints > 0 ? ` +${event.detail.tablePoints} RP.` : '';
+    showPrototypeToast(`Victory! +${event.detail.coinReward} Coins.${ranked}`);
   } else if (event.detail.coinReward) {
     showPrototypeToast(`+${event.detail.coinReward} Coins for your goals.`);
   }
-  window.setTimeout(closePrototypeMatch, 1100);
+  prototypeMatchCloseTimer = window.setTimeout(() => {
+    if (!state.activeMatch) closePrototypeMatch();
+  }, 1100);
 });
 
 document.querySelector('#prototypeSpinButton')?.addEventListener('click', () => {
@@ -317,4 +406,19 @@ document.querySelector('#prototypeCodeButton')?.addEventListener('click', () => 
 document.querySelector('#gamePromptCancelBtn')?.addEventListener('click', () => document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'));
 document.querySelector('#gamePromptForm')?.addEventListener('submit', () => window.setTimeout(() => { document.querySelector('#gamePromptOverlay')?.classList.remove('prototype-visible'); syncPrototypeBalances(); }));
 
-syncPrototypeBalances();
+for (const modal of [prototypeModal, prototypeSettingsModal]) {
+  modal?.addEventListener('click', (event) => {
+    if (event.target !== modal) return;
+    if (modal === prototypeModal) closePrototypePack(true);
+    else modal.hidden = true;
+  });
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if (!prototypeModal?.hidden) closePrototypePack(true);
+  else if (!prototypeSettingsModal?.hidden) prototypeSettingsModal.hidden = true;
+  else if (!prototypePitchOverlay?.hidden) closePrototypePitch();
+  else if (!prototypeMatchOverlay?.hidden) closePrototypeMatch();
+});
+
+window.syncPrototypeShell();

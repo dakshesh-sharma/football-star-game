@@ -26,6 +26,11 @@ body {
   color: var(--text);
 }
 
+body.fc-stars-prototype-mode .quick-login-overlay:not([hidden]) {
+  display: grid !important;
+  z-index: 100;
+}
+
 body.fc-stars-prototype-mode .app-shell,
 body.fc-stars-prototype-mode .start-splash,
 body.fc-stars-prototype-mode .quick-login-overlay,
@@ -676,6 +681,21 @@ h3 {
   padding: 8px 12px;
 }
 
+.match-score-center {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.match-score-center time {
+  color: #fff;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
 .match-scene {
   background:
     radial-gradient(ellipse at 50% 78%, rgba(255, 255, 255, 0.2), transparent 22%),
@@ -810,8 +830,68 @@ h3 {
 .match-controls {
   align-items: center;
   display: flex;
+  gap: 16px;
   justify-content: space-between;
-  min-height: 116px;
+  min-height: 136px;
+  padding-bottom: 14px;
+  position: relative;
+}
+
+.match-player-hud {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 20px;
+}
+
+.match-player-hud > span:first-child {
+  align-items: center;
+  display: flex;
+  font-size: 0.7rem;
+  gap: 7px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.match-player-hud > span:first-child i {
+  background: var(--accent);
+  border: 2px solid #fff4ad;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.16);
+  height: 10px;
+  width: 10px;
+}
+
+.match-stamina {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  width: min(190px, 40%);
+}
+
+.match-stamina small {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.match-stamina > i {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  display: block;
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+}
+
+.match-stamina b {
+  background: linear-gradient(90deg, #e4ad3e, #62d28c);
+  display: block;
+  height: 100%;
+  transition: width 120ms linear;
+  width: 100%;
 }
 
 .match-joystick {
@@ -845,7 +925,9 @@ h3 {
 .match-action-buttons {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .match-control-btn {
@@ -884,6 +966,53 @@ h3 {
 .match-control-btn.dribble {
   background: #3c9f72;
   color: #fff;
+}
+
+.match-control-btn.through,
+.match-control-btn.cross,
+.match-control-btn.switch {
+  background: #263d55;
+  color: #fff;
+}
+
+.match-control-btn.shoot.is-charging {
+  box-shadow: 0 0 0 5px rgba(217, 85, 79, 0.18);
+  transform: scale(1.05);
+}
+
+.match-control-btn.shoot.is-overpowered {
+  background: #f08b3d;
+}
+
+.match-shot-meter {
+  align-items: center;
+  bottom: 0;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.62rem;
+  font-weight: 900;
+  gap: 7px;
+  left: 112px;
+  letter-spacing: 0.08em;
+  position: absolute;
+  right: 0;
+}
+
+.match-shot-meter i {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  display: block;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+}
+
+.match-shot-meter b {
+  background: linear-gradient(90deg, #58c884, #f2c14e 62%, #e95d4f);
+  display: block;
+  height: 100%;
+  transition: width 40ms linear;
+  width: 0;
 }
 
 .scene-stand {
@@ -2505,6 +2634,81 @@ h3 {
   }
 }
 
+/* Matchday 2 entrance experience */
+.start-splash {
+  background:radial-gradient(circle at 50% 35%,rgba(199,255,55,.2),transparent 20%),radial-gradient(circle at 20% 10%,#6536cf55,transparent 30%),#090a13;
+}
+.start-splash-mark { animation:splashMarkIn .65s cubic-bezier(.17,.84,.24,1.28) both; background:var(--lime); border-color:#efffc4; border-radius:21px; box-shadow:0 0 0 10px #c7ff3712,0 25px 70px #000b; color:#11140a; transform:rotate(-6deg); }
+.start-splash h2 { animation:splashTitleIn .6s .12s ease both; font-family:"Barlow Condensed",Impact,sans-serif; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+
+.quick-login-overlay { background:#070812e8; backdrop-filter:blur(7px); padding:24px; }
+.quick-login-overlay:after { background:radial-gradient(circle at 50% 15%,#7d41ff30,transparent 32%); content:""; inset:0; pointer-events:none; position:absolute; }
+.login-card-backdrop { filter:saturate(.55); gap:14px; opacity:.19; transform:rotate(-5deg) scale(1.15); }
+.login-mini-card { border-color:#ffffff1a; border-radius:13px; min-height:135px; }
+.login-stage { background:#141625; border:1px solid #ffffff20; border-radius:24px; box-shadow:0 45px 120px #000d,0 0 0 1px #c7ff3708; display:grid; grid-template-columns:minmax(0,1.08fr) minmax(350px,.92fr); max-height:min(720px,92vh); max-width:920px; overflow:hidden; position:relative; width:min(920px,96vw); z-index:2; }
+.login-showcase { background:radial-gradient(circle at 75% 22%,#ff6fb048,transparent 25%),linear-gradient(145deg,#3e22a6,#872b9d 58%,#d63773); min-height:610px; overflow:hidden; padding:34px; position:relative; }
+.login-showcase:before { background:linear-gradient(90deg,#ffffff12 1px,transparent 1px),linear-gradient(#ffffff12 1px,transparent 1px); background-size:32px 32px; content:""; inset:0; mask-image:linear-gradient(#000,transparent 70%); opacity:.55; position:absolute; }
+.login-showcase:after { border:38px solid #ffffff12; border-radius:50%; content:""; height:330px; position:absolute; right:-115px; top:64px; width:330px; }
+.login-showcase-brand { align-items:center; display:flex; font:900 1.18rem "Barlow Condensed",Impact,sans-serif; gap:8px; letter-spacing:.08em; position:relative; z-index:3; }
+.login-showcase-brand span { background:var(--lime); border-radius:8px; color:#131608; display:grid; height:38px; place-items:center; width:38px; }
+.login-showcase-copy { position:relative; z-index:3; }
+.login-showcase-copy p { align-items:center; color:#edffc1; display:flex; font-size:.58rem; font-weight:900; gap:7px; letter-spacing:.14em; margin-top:66px; }
+.login-showcase-copy p i { animation:loginLive 1.3s ease-in-out infinite; background:var(--lime); border-radius:50%; box-shadow:0 0 0 5px #c7ff3720; height:6px; width:6px; }
+.login-showcase-copy h1 { font:900 clamp(3.6rem,6vw,5.4rem)/.72 "Barlow Condensed",Impact,sans-serif; letter-spacing:-.015em; margin-top:17px; text-transform:uppercase; }
+.login-showcase-copy h1 em { color:var(--lime); font-style:normal; }
+.login-showcase-copy>span { color:#eceafa; display:block; font-size:.72rem; line-height:1.5; margin-top:24px; max-width:260px; }
+.login-showcase>img { bottom:-25px; filter:saturate(.86) contrast(1.1); height:58%; object-fit:cover; object-position:50% 20%; opacity:.86; position:absolute; right:-30px; transform:rotate(-2deg); width:68%; z-index:1; }
+.login-showcase-rating { align-items:center; background:var(--lime); border:2px solid #f0ffc6; box-shadow:0 12px 30px #0007; color:#121507; display:grid; height:78px; justify-items:center; position:absolute; right:30px; top:30px; transform:rotate(5deg); width:65px; z-index:4; }
+.login-showcase-rating b { font:900 2.25rem/.8 "Barlow Condensed",Impact,sans-serif; }
+.login-showcase-rating small { font-size:.38rem; font-weight:900; }
+.login-showcase-features { bottom:26px; display:flex; gap:6px; left:28px; position:absolute; z-index:4; }
+.login-showcase-features span { backdrop-filter:blur(8px); background:#090a16b8; border:1px solid #ffffff24; border-radius:99px; color:#fff; font-size:.42rem; font-weight:900; letter-spacing:.06em; padding:7px 8px; }
+
+.quick-login-box { align-content:center; background:radial-gradient(circle at 100% 0,#7049ff19,transparent 30%),#151725; border:0; border-radius:0; box-shadow:none; gap:12px; max-height:none; max-width:none; overflow:auto; padding:42px; width:auto; }
+.login-kicker { color:var(--lime); font-size:.57rem; font-weight:900; letter-spacing:.15em; }
+.quick-login-box h2 { font:900 2.7rem/.9 "Barlow Condensed",Impact,sans-serif; letter-spacing:.01em; margin-top:1px; text-align:left; text-transform:uppercase; }
+.login-subtitle { color:#9da2b6; font-size:.72rem; line-height:1.45; margin-bottom:10px; }
+.account-list { gap:9px; }
+.account-row { gap:7px; }
+.account-card { align-items:center; background:#222538; border:1px solid #ffffff12; border-radius:11px; display:grid; gap:10px; grid-template-columns:42px minmax(0,1fr) auto; min-height:70px; padding:9px 11px; }
+.account-card:hover { background:#2b2e45; border-color:#c7ff3755; transform:translateX(3px); }
+.login-account-avatar { align-items:center; background:linear-gradient(145deg,#f8e98d,#b26d13); border:2px solid #fff2a7; border-radius:50%; color:#201504; display:flex; font-size:.64rem; font-style:normal; font-weight:950; height:40px; justify-content:center; width:40px; }
+.account-card .login-account-copy { display:grid; gap:3px; min-width:0; }
+.account-card .login-account-copy strong { color:#fff; font:800 1.02rem "Barlow Condensed",Impact,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.account-card .login-account-copy small { color:#9095aa; font-size:.61rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.account-card>em { color:var(--lime); font-size:1rem; font-style:normal; }
+.account-delete-btn { background:#ffffff08; border:1px solid #ffffff12; border-radius:10px; color:#9ba0b3; font-size:0; min-height:70px; padding:0; width:44px; }
+.account-delete-btn:after { content:"×"; font-size:1.1rem; }
+.account-delete-btn:hover { background:#e95d4f22; border-color:#e95d4f66; color:#ff8c80; }
+.login-create-button { background:var(--lime); border-radius:10px; color:#121507; font-size:.64rem; letter-spacing:.06em; margin-top:4px; min-height:48px; }
+.login-create-button:hover { box-shadow:0 10px 28px #c7ff3725; transform:translateY(-2px); }
+.login-save-note { color:#696e83; font-size:.54rem; text-align:center; }
+
+@keyframes splashMarkIn { from { opacity:0; transform:scale(.55) rotate(-20deg); } }
+@keyframes splashTitleIn { from { opacity:0; transform:translateY(12px); } }
+@keyframes loginLive { 50% { box-shadow:0 0 0 9px #c7ff3700; opacity:.5; } }
+
+@media (max-width:720px) {
+  .quick-login-overlay { align-items:flex-start; overflow:auto; padding:14px; }
+  .login-stage { grid-template-columns:1fr; max-height:none; width:min(100%,430px); }
+  .login-showcase { min-height:285px; padding:23px; }
+  .login-showcase-copy p { margin-top:31px; }
+  .login-showcase-copy h1 { font-size:3.55rem; }
+  .login-showcase-copy>span { font-size:.62rem; margin-top:17px; max-width:205px; }
+  .login-showcase>img { height:78%; right:-54px; width:70%; }
+  .login-showcase-rating { height:61px; right:18px; top:18px; width:51px; }
+  .login-showcase-rating b { font-size:1.7rem; }
+  .login-showcase-features { bottom:14px; left:18px; }
+  .login-showcase-features span { font-size:.34rem; padding:6px; }
+  .quick-login-box { padding:27px 23px 25px; }
+  .quick-login-box h2 { font-size:2.25rem; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .start-splash-mark,.start-splash h2,.login-showcase-copy p i { animation:none; }
+  .account-card,.login-create-button { transition:none; }
+}
+
 @keyframes eliteEnergy {
   from {
     background-position: 0% 50%, 0 0;
@@ -2782,7 +2986,18 @@ h3 {
   }
 
   .match-scoreboard {
-    grid-template-columns: 1fr;
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .match-scoreboard span {
+    font-size: 0.67rem;
+  }
+
+  .match-scoreboard strong {
+    font-size: 1.15rem;
+    min-width: 74px;
+    padding: 6px 9px;
   }
 
   .match-scene {
@@ -2790,6 +3005,8 @@ h3 {
   }
 
   .match-controls {
+    align-items: flex-start;
+    flex-wrap: wrap;
     min-height: 104px;
   }
 
@@ -2803,7 +3020,7 @@ h3 {
     gap: 5px;
     flex-wrap: wrap;
     justify-content: flex-end;
-    max-width: 250px;
+    max-width: calc(100% - 92px);
   }
 
   .match-control-btn {
@@ -2811,6 +3028,10 @@ h3 {
     min-height: 48px;
     min-width: 58px;
     padding: 0 8px;
+  }
+
+  .match-shot-meter {
+    left: 92px;
   }
 
   .scene-player {

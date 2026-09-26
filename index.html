@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=20260815-players1" />
-    <link rel="stylesheet" href="prototype.css?v=20260827-pack-art" />
+    <link rel="stylesheet" href="styles.css?v=20260926-matchday2" />
+    <link rel="stylesheet" href="prototype.css?v=20260926-matchday2" />
+    <link rel="stylesheet" href="match.css?v=20260926-matchday2" />
   </head>
   <body class="fc-stars-prototype-mode">
     <section class="in-game-prototype" aria-label="FC Stars laptop prototype">
       <div class="in-game-prototype-bar">
-        <span>FC STARS · CONCEPT BUILD</span>
-        <span>Desktop prototype</span>
+        <span>FC STARS · MATCHDAY</span>
+        <span>Web edition</span>
       </div>
       <section class="desktop-prototype">
         <aside class="desktop-rail">
@@ -23,12 +24,12 @@
           <button data-prototype-view="Squad">♟ <span>Squad</span></button>
           <button data-prototype-view="Play">⚔ <span>Play</span></button>
           <button data-prototype-view="Club">◉ <span>Club</span></button>
-          <div class="rail-profile"><i>FC</i><span><b>YOUR CLUB</b><small>Division 4</small></span><em>⌄</em></div>
+          <div class="rail-profile"><i>FC</i><span><b>YOUR CLUB</b><small id="prototypeRailDivision">Division 4</small></span><em>⌄</em></div>
         </aside>
         <main class="desktop-main">
           <div class="desktop-top"><div><p id="prototypeKicker">GOOD EVENING, MANAGER</p><h2 id="prototypeTitle">Ready to build<br>your <em>legacy?</em></h2></div><div class="desktop-top-controls"><div class="desktop-balance"><span class="balance-score ranked-points">♛ <b id="prototypeCoins">0</b><small>RANKED POINTS</small></span><span class="balance-score match-points">🪙 <b id="prototypeGems">56</b><small>COINS</small></span></div><div class="dashboard-actions"><button id="prototypeSpinButton">SPIN PLAYER</button><button id="prototypeCodeButton">CODE</button></div></div></div>
           <div id="prototypeWorkspace">
-            <section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div><strong>91<small>NEYMAR JR</small></strong></section>
+            <section class="desktop-hero"><div><p>RISING ICONS · FEATURED PACK</p><h3>Legends are<br>walking out.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div><strong>91<small>NEYMAR JR</small></strong></section>
           </div>
         </main>
         <aside class="desktop-side">
@@ -37,7 +38,7 @@
             <div><p>YOUR PROFILE</p><h3 id="prototypeUsername">FC Manager</h3><small id="prototypeProfileMeta">Division 4 · 0 RP</small></div>
             <button id="prototypeSettingsButton" aria-label="Open profile settings">•••</button>
           </section>
-          <section class="desktop-rank prototype-home-only"><p>DIVISION 4</p><div><b id="prototypeRankPoints">0</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section>
+          <section class="desktop-rank prototype-home-only"><p id="prototypeDivisionLabel">DIVISION 4</p><div><b id="prototypeRankPoints">0</b><span>RANK POINTS</span></div><i>Win Ranked Rush to climb</i></section>
           <section class="desktop-mission prototype-home-only"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i id="prototypeMissionProgress"></i></div><small id="prototypeMissionLabel">0 / 1 completed</small><button data-prototype-play="Ranked Rush">PLAY NOW</button></section>
         </aside>
       </section>
@@ -46,7 +47,7 @@
         <div class="prototype-modal-card prototype-pack-modal-card" role="dialog" aria-modal="true" aria-labelledby="prototypePackTitle">
           <button id="prototypeModalClose" class="prototype-modal-close" aria-label="Close pack reveal">×</button>
           <div id="prototypeClosedPack" class="prototype-closed-pack"><button id="prototypePackTapTarget" type="button" aria-label="Tap the FC Stars Rising Icons pack to open"></button><p id="prototypePackTapLabel">TAP TO OPEN</p><small id="prototypePackTapCount">Tap 3 times to reveal your player</small></div>
-          <div id="prototypePackReveal" hidden><p>RISING ICONS PACK</p><div id="prototypePackRating" class="modal-card-rating">91</div><h2 id="prototypePackTitle">NEYMAR JR</h2><span id="prototypePackMeta">LW · BRAZIL · G.O.A.T.</span><button id="prototypeKeepCard">ADD TO SQUAD</button></div>
+          <div id="prototypePackReveal" hidden><p>RISING ICONS PACK</p><div id="prototypePackRating" class="modal-card-rating">91</div><h2 id="prototypePackTitle">NEYMAR JR</h2><span id="prototypePackMeta">LW · BRAZIL · G.O.A.T.</span><button id="prototypeKeepCard">ADD TO COLLECTION</button></div>
         </div>
       </section>
       <section id="prototypeSettingsModal" class="prototype-modal" hidden>
@@ -146,10 +147,10 @@
           <section id="matchPanel" class="match-panel" hidden>
             <div class="match-scoreboard">
               <span id="homeLeaderLabel">FC Stars</span>
-              <strong id="matchScoreLabel">0 - 0</strong>
+              <div class="match-score-center"><strong id="matchScoreLabel">0 - 0</strong><time id="matchHudClock">00:00</time></div>
               <span id="awayLeaderLabel">Rival XI</span>
             </div>
-            <div id="matchScene" class="match-scene" aria-live="polite">
+            <div id="matchScene" class="match-scene">
               <canvas id="matchCanvas" class="match-canvas" aria-label="3D football match"></canvas>
               <div class="match-field-markings" aria-hidden="true">
                 <div class="match-field-halfway"></div>
@@ -161,7 +162,11 @@
               <div id="matchTeammate" class="match-avatar match-teammate">XI</div>
               <div id="matchAvatar" class="match-avatar match-controlled">YOU</div>
               <div id="matchBall" class="match-ball"></div>
-              <div id="sceneGoalText" class="scene-goal-text">Kickoff</div>
+              <div id="sceneGoalText" class="scene-goal-text" role="status"></div>
+            </div>
+            <div class="match-player-hud">
+              <span><i></i><b id="matchControlledLabel">CONTROLLED PLAYER</b></span>
+              <span class="match-stamina"><small>STAMINA</small><i><b id="matchStaminaFill"></b></i></span>
             </div>
             <div class="match-controls" aria-label="Match controls">
               <div id="matchJoystick" class="match-joystick" aria-label="Move player" role="application">
@@ -169,11 +174,15 @@
               </div>
               <div class="match-action-buttons">
                 <button id="matchPassBtn" class="match-control-btn secondary" type="button"><span>Pass</span><kbd>P</kbd></button>
+                <button id="matchThroughBtn" class="match-control-btn through" type="button"><span>Through</span><kbd>Q</kbd></button>
+                <button id="matchCrossBtn" class="match-control-btn cross" type="button"><span>Cross</span><kbd>C</kbd></button>
                 <button id="matchSprintBtn" class="match-control-btn sprint" type="button"><span>Sprint</span><kbd>Shift</kbd></button>
                 <button id="matchShootBtn" class="match-control-btn shoot" type="button"><span>Shoot</span><kbd>Space</kbd></button>
                 <button id="matchTackleBtn" class="match-control-btn tackle" type="button"><span>Tackle</span><kbd>T</kbd></button>
                 <button id="matchDribbleBtn" class="match-control-btn dribble" type="button"><span>Dribble</span><kbd>E</kbd></button>
+                <button id="matchSwitchBtn" class="match-control-btn switch" type="button"><span>Switch</span><kbd>Tab</kbd></button>
               </div>
+              <div class="match-shot-meter" aria-label="Shot power"><span>POWER</span><i><b id="matchShotPowerFill"></b></i></div>
             </div>
             <div class="match-actions">
               <span id="matchClockLabel" class="match-clock">Waiting for kickoff</span>
@@ -252,11 +261,27 @@
 
     <section id="quickLoginOverlay" class="quick-login-overlay" hidden>
       <div id="loginCardBackdrop" class="login-card-backdrop" aria-hidden="true"></div>
-      <div class="quick-login-box" role="dialog" aria-modal="true" aria-labelledby="quickLoginTitle">
-        <h2 id="quickLoginTitle">Quick Login</h2>
-        <p id="quickLoginMessage" class="quick-login-message" hidden></p>
-        <div id="accountList" class="account-list"></div>
-        <button id="createAccountBtn" type="button">Create Account</button>
+      <div class="login-stage" role="dialog" aria-modal="true" aria-labelledby="quickLoginTitle">
+        <section class="login-showcase" aria-label="FC Stars Matchday">
+          <div class="login-showcase-brand"><span>FC</span><b>FC STARS</b></div>
+          <div class="login-showcase-copy">
+            <p><i></i> SEASON 01 IS LIVE</p>
+            <h1>BUILD.<br>PLAY.<br><em>BECOME.</em></h1>
+            <span>Build your dream XI, walk out under the lights, and take your club to the top.</span>
+          </div>
+          <img src="assets/neymar-jr.png" alt="" />
+          <div class="login-showcase-rating"><b>91</b><small>RISING ICON</small></div>
+          <div class="login-showcase-features"><span>11v11 MATCHES</span><span>ICON PACKS</span><span>RANKED RUSH</span></div>
+        </section>
+        <div class="quick-login-box">
+          <p class="login-kicker">YOUR CLUB AWAITS</p>
+          <h2 id="quickLoginTitle">Choose Your Club</h2>
+          <p class="login-subtitle">Jump back into your career or create a new legacy.</p>
+          <p id="quickLoginMessage" class="quick-login-message" hidden></p>
+          <div id="accountList" class="account-list"></div>
+          <button id="createAccountBtn" class="login-create-button" type="button">Create New Club</button>
+          <small class="login-save-note">Progress saves automatically on this device.</small>
+        </div>
       </div>
     </section>
 
@@ -322,8 +347,9 @@
       </form>
     </section>
 
-    <script src="script.js?v=20260815-players1"></script>
-    <script src="prototype.js?v=20260827-infinite-coins-10min"></script>
-    <script type="module" src="three-match.js?v=20260815-players1"></script>
+    <script src="match-physics.js?v=20260926-matchday2"></script>
+    <script src="script.js?v=20260926-matchday2"></script>
+    <script src="prototype.js?v=20260926-matchday2"></script>
+    <script type="module" src="three-match.js?v=20260926-matchday2"></script>
   </body>
 </html>

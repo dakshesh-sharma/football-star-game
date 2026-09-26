@@ -1,0 +1,45 @@
+/* Match-only presentation: leave the existing dashboard and squad intact. */
+#prototypeMatchOverlay { padding: 12px 18px; background: #0c1419; }
+#prototypeMatchOverlay .prototype-pitch-toolbar { max-width: 1060px; margin-bottom: 8px; }
+#prototypeMatchOverlay .prototype-pitch-toolbar h2 { font: 600 16px system-ui; }
+#prototypeMatchOverlay .prototype-pitch-toolbar p { color: #94aea5; font-size: 9px; }
+#prototypeMatchHost { max-width: 1060px; }
+#prototypeMatchHost .match-panel { background: #111f25; padding: 12px; gap: 9px; margin: 0; border-color: #ffffff17; }
+#prototypeMatchHost .match-panel[hidden] { display: none; }
+#prototypeMatchHost .match-scoreboard { max-width: 560px; width: 100%; margin: auto; gap: 18px; }
+#prototypeMatchHost .match-scoreboard span { font-size: 12px; color: #e3ece8; letter-spacing: .04em; }
+#prototypeMatchHost .match-scoreboard strong { border: 0; background: none; padding: 0; font: 700 25px system-ui; color: #fff; }
+#prototypeMatchHost .match-score-center { gap: 0; }
+#prototypeMatchHost .match-score-center time { font: 500 11px system-ui; font-variant-numeric: tabular-nums; color: #abc3b7; }
+#prototypeMatchHost .match-scene { height: clamp(240px, calc(100dvh - 295px), 620px); min-height: 0; aspect-ratio: auto; border: 1px solid #ffffff20; }
+.match-scene .scene-goal-text { inset: 20px 12px auto; opacity: 0; transform: translateY(-4px); transition: opacity .18s, transform .18s; font: 700 clamp(16px, 2.7vw, 28px) system-ui; letter-spacing: .08em; text-shadow: 0 2px 8px #001a12; }
+.match-scene .scene-goal-text.is-visible { opacity: 1; transform: translateY(0); }
+#prototypeMatchHost .match-controls { gap: 14px; min-height: 92px; padding-bottom: 16px; }
+#prototypeMatchHost .match-joystick { flex-shrink: 0; }
+#prototypeMatchHost .match-action-buttons { gap: 6px; }
+#prototypeMatchHost .match-control-btn { border-radius: 8px; min-width: 62px; min-height: 46px; padding: 7px 9px; font: 600 12px system-ui; border: 1px solid #ffffff25; background: #263b43; color: #e7eeeb; box-shadow: none; touch-action: none; }
+#prototypeMatchHost .match-control-btn.shoot { background: #a75046; }
+#prototypeMatchHost .match-control-btn.sprint { background: #aa8539; color: #fff; }
+#prototypeMatchHost .match-control-btn:active, #prototypeMatchHost .match-control-btn.is-charging { filter: brightness(1.25); transform: translateY(1px); }
+#prototypeMatchHost .match-control-btn:focus-visible { outline: 2px solid #ffe291; outline-offset: 2px; }
+#prototypeMatchHost .goal-feed-wrap, #prototypeMatchHost .match-actions { display: none; }
+#prototypeMatchHost .match-player-hud { padding: 0 2px; }
+#prototypeMatchHost .match-player-hud b { font-size: 10px; }
+#prototypeMatchHost .match-shot-meter { left: 110px; right: 0; bottom: 0; }
+@media (max-width: 600px) {
+  #prototypeMatchOverlay { padding: 8px; }
+  #prototypeMatchHost .match-panel { padding: 8px; gap: 8px; }
+  #prototypeMatchHost .match-scene { height: max(265px, calc(100dvh - 335px)); }
+  #prototypeMatchHost .match-scoreboard { gap: 8px; }
+  #prototypeMatchHost .match-scoreboard span { font-size: 10px; }
+  #prototypeMatchHost .match-action-buttons { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; }
+  #prototypeMatchHost .match-control-btn { min-width: 0; min-height: 45px; padding: 5px; font-size: 10px; }
+  #prototypeMatchHost .match-controls { gap: 8px; }
+  #prototypeMatchHost .match-player-hud > span:first-child { max-width: 60%; overflow: hidden; white-space: nowrap; }
+}
+@media (max-height: 500px) and (min-width: 601px) {
+  #prototypeMatchHost .match-scene { height: 270px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .match-scene .scene-goal-text { transition: none; }
+}

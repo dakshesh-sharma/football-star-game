@@ -184,9 +184,17 @@ const opponentTeams = [
 let databasePromise = null;
 let databaseReady = false;
 let matchTimer = null;
-let matchMoveTimer = null;
+let matchPhysicsFrame = null;
+let matchPhysicsPreviousTime = 0;
+let matchAccumulator = 0;
+let pendingMatchLogin = false;
+let pendingMatchMode = "Quick Match";
+let matchShootCharging = false;
+let matchShootChargeStarted = 0;
+let matchShootChargeFrame = null;
 let activeJoystickPointer = null;
 let joystickVector = { x: 0, y: 0 };
+const matchMovementKeys = new Set();
 let startSplashActive = true;
 
 const formation = [
@@ -239,6 +247,7 @@ const defaultState = {
   friends: [],
   playerStats: {},
   clubPhoto: "",
+  dailyRankedWinDate: "",
   rankedPoints: 0,
   matchPoints: 56,
   joinRequest: null,
@@ -263,13 +272,20 @@ const matchAvatar = document.querySelector("#matchAvatar");
 const matchOpponent = document.querySelector("#matchOpponent");
 const matchTeammate = document.querySelector("#matchTeammate");
 const matchBall = document.querySelector("#matchBall");
+const matchHudClock = document.querySelector("#matchHudClock");
+const matchControlledLabel = document.querySelector("#matchControlledLabel");
+const matchStaminaFill = document.querySelector("#matchStaminaFill");
 const matchJoystick = document.querySelector("#matchJoystick");
 const matchJoystickKnob = document.querySelector("#matchJoystickKnob");
 const matchPassBtn = document.querySelector("#matchPassBtn");
+const matchThroughBtn = document.querySelector("#matchThroughBtn");
+const matchCrossBtn = document.querySelector("#matchCrossBtn");
 const matchSprintBtn = document.querySelector("#matchSprintBtn");
 const matchShootBtn = document.querySelector("#matchShootBtn");
 const matchTackleBtn = document.querySelector("#matchTackleBtn");
 const matchDribbleBtn = document.querySelector("#matchDribbleBtn");
+const matchSwitchBtn = document.querySelector("#matchSwitchBtn");
+const matchShotPowerFill = document.querySelector("#matchShotPowerFill");
 const selectedPlayerLabel = document.querySelector("#selectedPlayerLabel");
 const levelLabel = document.querySelector("#levelLabel");
 const currentCardName = document.querySelector("#currentCardName");
@@ -452,19 +468,33 @@ function isRecoverableDeveloperSave(legacySave) {
 }
 
 function normalizeAccounts(savedAccounts, preferredActiveAccountId = null) {
-  const devAccounts = savedAccounts.filter((account) => isDeveloperUsername(account.username));
+  const validAccounts = savedAccounts.filter((account) => account && typeof account === "object");
+  const devAccounts = validAccounts.filter((account) => isDeveloperUsername(account.username));
   const mergedDevAccount = mergeDeveloperAccounts(devAccounts, preferredActiveAccountId);
-  return [
+  const normalized = [
     ...(mergedDevAccount ? [mergedDevAccount] : []),
-    ...savedAccounts.filter((account) => !isDeveloperUsername(account.username))
+    ...validAccounts.filter((account) => !isDeveloperUsername(account.username))
   ]
     .map((account, index) => normalizeAccount(account, index, preferredActiveAccountId));
+  const names = new Set();
+  normalized.forEach((account, index) => {
+    const base = cleanText(account.username, 24) || `Player ${index + 1}`;
+    let candidate = base, suffix = 2;
+    while (names.has(candidate.toLocaleLowerCase())) {
+      const ending = ` ${suffix++}`;
+      candidate = `${base.slice(0, 24 - ending.length)}${ending}`;
+    }
+    account.username = candidate;
+    names.add(candidate.toLocaleLowerCase());
+  });
+  return normalized;
 }
 
 function normalizeAccount(account, index) {
   const id = account.id || `account-${Date.now()}-${index}`;
-  const isDev = isDeveloperUsername(account.username);
-  const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(account.username) ? "special" : false;
+  const username = cleanText(account.username, 24) || `Player ${index + 1}`;
+  const isDev = isDeveloperUsername(username);
+  const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(username) ? "special" : false;
   const normalizedState = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
   if (isDev) {
     normalizedState.level = Math.max(50, Number(normalizedState.level) || 1);
@@ -475,8 +505,8 @@ function normalizeAccount(account, index) {
   }
   return {
     id,
-    username: isDev ? developerUsername : account.username || `Player ${index + 1}`,
-    motto: account.motto || defaultProfileMotto,
+    username: isDev ? developerUsername : username,
+    motto: cleanText(account.motto, 42) || defaultProfileMotto,
     avatarStyle: avatarStyles[account.avatarStyle] ? account.avatarStyle : "gold",
     profilePhoto: account.profilePhoto || "",
     isDev,
@@ -517,6 +547,8 @@ function accountProgressScore(account) {
 }
 
 function mergeStates(baseState, incomingState) {
+  const list = (value) => Array.isArray(value) ? value : [];
+  const record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
   return {
     ...baseState,
     ...incomingState,
@@ -526,14 +558,14 @@ function mergeStates(baseState, incomingState) {
       ? String(baseState.adminXp || "0")
       : String(incomingState.adminXp || "0"),
     infiniteLevel: Boolean(baseState.infiniteLevel || incomingState.infiniteLevel),
-    inventory: uniqueCards([...(baseState.inventory || []), ...(incomingState.inventory || [])]),
-    teamCards: { ...(baseState.teamCards || {}), ...(incomingState.teamCards || {}) },
-    deletedCardNames: uniqueNames([...(baseState.deletedCardNames || []), ...(incomingState.deletedCardNames || [])]),
-    redeemedCodes: uniqueNames([...(baseState.redeemedCodes || []), ...(incomingState.redeemedCodes || [])]),
-    claimedLevelRewards: uniqueNames([...(baseState.claimedLevelRewards || []), ...(incomingState.claimedLevelRewards || [])]),
-    badges: uniqueNames([...(baseState.badges || []), ...(incomingState.badges || [])]),
-    friends: uniqueFriends([...(baseState.friends || []), ...(incomingState.friends || [])]),
-    playerStats: { ...(baseState.playerStats || {}), ...(incomingState.playerStats || {}) },
+    inventory: uniqueCards([...list(baseState.inventory), ...list(incomingState.inventory)]),
+    teamCards: { ...record(baseState.teamCards), ...record(incomingState.teamCards) },
+    deletedCardNames: uniqueNames([...list(baseState.deletedCardNames), ...list(incomingState.deletedCardNames)]),
+    redeemedCodes: uniqueNames([...list(baseState.redeemedCodes), ...list(incomingState.redeemedCodes)]),
+    claimedLevelRewards: uniqueNames([...list(baseState.claimedLevelRewards), ...list(incomingState.claimedLevelRewards)]),
+    badges: uniqueNames([...list(baseState.badges), ...list(incomingState.badges)]),
+    friends: uniqueFriends([...list(baseState.friends), ...list(incomingState.friends)]),
+    playerStats: { ...record(baseState.playerStats), ...record(incomingState.playerStats) },
     selectedStar: baseState.selectedStar || incomingState.selectedStar || null,
     selectedStarSlot: baseState.selectedStarSlot || incomingState.selectedStarSlot || null,
     currentCard: baseState.currentCard || incomingState.currentCard || null,
@@ -570,12 +602,16 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
   savedState.infiniteCoins = Boolean(savedState.infiniteCoins);
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
-  savedState.deletedCardNames = savedState.deletedCardNames || [];
-  savedState.redeemedCodes = savedState.redeemedCodes || [];
-  savedState.claimedLevelRewards = savedState.claimedLevelRewards || [];
-  savedState.badges = savedState.badges || [];
-  savedState.friends = uniqueFriends(savedState.friends || []);
-  savedState.playerStats = savedState.playerStats || {};
+  savedState.deletedCardNames = Array.isArray(savedState.deletedCardNames) ? savedState.deletedCardNames : [];
+  savedState.redeemedCodes = Array.isArray(savedState.redeemedCodes) ? savedState.redeemedCodes : [];
+  savedState.claimedLevelRewards = Array.isArray(savedState.claimedLevelRewards) ? savedState.claimedLevelRewards : [];
+  savedState.badges = Array.isArray(savedState.badges) ? savedState.badges : [];
+  savedState.friends = uniqueFriends(Array.isArray(savedState.friends) ? savedState.friends : []);
+  savedState.playerStats = savedState.playerStats && typeof savedState.playerStats === "object" && !Array.isArray(savedState.playerStats)
+    ? savedState.playerStats : {};
+  savedState.replaceSlot = formation.some((spot) => spot.id === savedState.replaceSlot) ? savedState.replaceSlot : null;
+  savedState.dailyRankedWinDate = /^\d{4}-\d{2}-\d{2}$/.test(savedState.dailyRankedWinDate || "")
+    ? savedState.dailyRankedWinDate : "";
   savedState.clubPhoto = typeof savedState.clubPhoto === "string" && savedState.clubPhoto.startsWith("data:image/")
     ? savedState.clubPhoto
     : "";
@@ -586,8 +622,8 @@ function migrateState(savedState, inventoryGrant = false) {
     ? Math.max(0, Number(savedState.matchPoints))
     : 56;
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
-  savedState.activeMatch = savedState.activeMatch || null;
-  savedState.inventory = uniqueCards((savedState.inventory || []).map(enrichCard));
+  savedState.activeMatch = savedState.activeMatch && typeof savedState.activeMatch === "object" ? savedState.activeMatch : null;
+  savedState.inventory = uniqueCards((Array.isArray(savedState.inventory) ? savedState.inventory : []).map(enrichCard));
   if (!isDeveloperInventory) {
     savedState.inventory = savedState.inventory.filter((card) => !isExcludedFullInventoryGrant(card));
   }
@@ -619,11 +655,12 @@ function migrateState(savedState, inventoryGrant = false) {
     savedState.currentCardSaved = true;
   }
   savedState.teamCards = Object.fromEntries(
-    Object.entries(savedState.teamCards || {}).flatMap(([slot, card]) => {
+    Object.entries(savedState.teamCards && typeof savedState.teamCards === "object" && !Array.isArray(savedState.teamCards) ? savedState.teamCards : {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
       if (!isDeveloperInventory && isExcludedFullInventoryGrant(enrichedCard)) return [];
       if (!hasFullInventory && isDevGrantedCard(enrichedCard)) return [];
-      return enrichedCard ? [[slotIdFromSave(slot, enrichedCard), enrichedCard]] : [];
+      const targetSlot = slotIdFromSave(slot, enrichedCard);
+      return enrichedCard && formation.some((spot) => spot.id === targetSlot) ? [[targetSlot, enrichedCard]] : [];
     })
   );
   savedState.inventory = uniqueCards([
@@ -651,9 +688,12 @@ function isExcludedFullInventoryGrant(card) {
 }
 
 function enrichCard(card) {
-  if (!card?.name) return null;
-  const fullCard = [...cardPool, ...codeOnlyCards].find((item) => item.name === card.name);
-  return fullCard ? { ...card, ...fullCard, id: card.id } : card;
+  const name = cleanText(card?.name, 48);
+  if (!name) return null;
+  const fullCard = [...cardPool, ...codeOnlyCards].find((item) => item.name === name);
+  if (fullCard) return { ...card, ...fullCard, id: cleanText(card.id, 96) || card.id };
+  return { ...card, name, team: cleanText(card.team, 48) || "Friend XI", position: cleanText(card.position, 8) || "ST",
+    rarity: cleanText(card.rarity, 24) || "Friend", id: cleanText(card.id, 96) || `card-${name.toLowerCase().replaceAll(" ", "-")}` };
 }
 
 function allInventoryCards(inventoryGrant = "special") {
@@ -815,8 +855,10 @@ function renderAccounts() {
     accountButton.className = "account-card secondary";
     accountButton.type = "button";
     accountButton.innerHTML = `
-      <strong>${account.username}</strong>
-      <span>${selectedName} · Level ${accountLevel}${accessLabel}</span>
+      <i class="login-account-avatar">${escapeHtml(avatarStyles[account.avatarStyle] || "FC")}</i>
+      <span class="login-account-copy"><strong>${escapeHtml(account.username)}</strong>
+      <small>${escapeHtml(selectedName)} · Level ${escapeHtml(accountLevel)}${escapeHtml(accessLabel)}</small></span>
+      <em aria-hidden="true">→</em>
     `;
     deleteButton.className = "account-delete-btn secondary danger-btn";
     deleteButton.type = "button";
@@ -837,6 +879,8 @@ function deleteAccount(id) {
 
   accounts = accounts.filter((item) => item.id !== id);
   if (activeAccountId === id) {
+    stopMatchPhysics();
+    stopMatchMovement();
     activeAccountId = null;
     state = freshState(false);
     storageRemove(activeAccountKey);
@@ -850,8 +894,8 @@ function deleteAccount(id) {
 
 function showQuickLogin() {
   renderLoginBackdrop();
-  quickLoginTitle.textContent = accounts.length ? "Quick Login" : "Create your username";
-  createAccountBtn.textContent = accounts.length ? "Create Account" : "Create Username";
+  quickLoginTitle.textContent = accounts.length ? "Choose Your Club" : "Create Your Club";
+  createAccountBtn.textContent = accounts.length ? "CREATE NEW CLUB  +" : "CREATE YOUR CLUB  →";
   clearQuickLoginMessage();
   renderAccounts();
   quickLoginOverlay.hidden = false;
@@ -865,6 +909,13 @@ function showQuickLoginAfterSplash() {
 function hideQuickLogin() {
   clearQuickLoginMessage();
   quickLoginOverlay.hidden = true;
+  quickLoginOverlay.classList.remove("match-login");
+  if (pendingMatchLogin) {
+    pendingMatchLogin = false;
+    const mode = pendingMatchMode;
+    pendingMatchMode = "Quick Match";
+    requestAnimationFrame(() => startMatch(mode));
+  }
 }
 
 function showQuickLoginMessage(message) {
@@ -923,7 +974,10 @@ function loginAccount(id) {
 
 function logoutAccount() {
   saveState();
+  stopMatchPhysics();
+  stopMatchMovement();
   activeAccountId = null;
+  state = freshState(false);
   storageRemove(activeAccountKey);
   saveToLocalDatabase(activeAccountDatabaseKey, null);
   settingsMenu.hidden = true;
@@ -943,10 +997,15 @@ function createAccount() {
 }
 
 function finishCreateAccount(username) {
-  const trimmedUsername = username?.trim();
-  if (!trimmedUsername) return;
-
-  const savedUsername = trimmedUsername.slice(0, 24);
+  const savedUsername = cleanText(username, 24);
+  if (!savedUsername) {
+    showGamePromptMessage("Username cannot be empty.");
+    return;
+  }
+  if (isUsernameTaken(savedUsername)) {
+    showGamePromptMessage("That username is already in use.");
+    return;
+  }
   if (savedUsername === developerUsername && isDeveloperNameTaken()) {
     showGamePromptMessage("That dev username is already taken.");
     return;
@@ -979,9 +1038,11 @@ function addFriend() {
 }
 
 function finishAddFriend(username) {
-  const trimmedUsername = username?.trim();
-  if (!trimmedUsername) return;
-  const savedUsername = trimmedUsername.slice(0, 24);
+  const savedUsername = cleanText(username, 24);
+  if (!savedUsername) {
+    showGamePromptMessage("Enter a username.");
+    return;
+  }
   const senderAccount = activeAccount();
   const receiverAccount = accounts.find((account) => account.username.toLowerCase() === savedUsername.toLowerCase());
   const duplicate = state.friends.some((friend) => friend.username.toLowerCase() === savedUsername.toLowerCase());
@@ -1146,18 +1207,21 @@ function showProfileEditorMessage(message) {
 function saveProfile() {
   const account = activeAccount();
   if (!account) return;
-  const trimmedUsername = profileUsernameInput.value?.trim();
-  if (!trimmedUsername) {
+  const savedUsername = cleanText(profileUsernameInput.value, 24);
+  if (!savedUsername) {
     showProfileEditorMessage("Username cannot be empty.");
     return;
   }
-  const savedUsername = trimmedUsername.slice(0, 24);
+  if (isUsernameTaken(savedUsername, account.id)) {
+    showProfileEditorMessage("That username is already in use.");
+    return;
+  }
   if (savedUsername === developerUsername && isDeveloperNameTaken(account.id)) {
     showProfileEditorMessage("That dev username is already taken.");
     return;
   }
   account.username = savedUsername;
-  account.motto = (profileMottoInput.value?.trim() || defaultProfileMotto).slice(0, 42);
+  account.motto = cleanText(profileMottoInput.value, 42) || defaultProfileMotto;
   account.avatarStyle = selectedAvatarStyle() === "goat" && !canUseGoatProfile() ? "gold" : selectedAvatarStyle();
   account.isDev = isDeveloperUsername(account.username);
   state = migrateState({ ...defaultState, ...state }, accountInventoryGrant(account));
@@ -1324,15 +1388,44 @@ function starterCardForName(name) {
   return cardPool.find((card) => card.name === (map[name] || name));
 }
 
-function startMatch() {
+function startMatch(mode = "Quick Match") {
   if (!activeAccount()) {
+    pendingMatchLogin = true;
+    pendingMatchMode = cleanText(mode, 32) || "Quick Match";
+    quickLoginOverlay.classList.add("match-login");
     showQuickLogin();
     return;
   }
 
   const featuredPlayer = state.selectedStar || buildTeam().find((player) => player.name && player.image) || cardPool[0];
   const opponent = opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
+  const matchTeam = buildTeam();
+  let controlledPlayerIndex = matchTeam.findIndex((player) => player.controlled);
+  if (controlledPlayerIndex < 0) controlledPlayerIndex = Math.min(5, matchTeam.length - 1);
+  matchTeam[controlledPlayerIndex].controlled = true;
+  const homeMatchPlayers = matchTeam.map((player, index) => ({
+    name: player.name,
+    role: player.slot,
+    x: formation[index].x,
+    y: formation[index].y,
+    baseX: formation[index].x,
+    baseY: formation[index].y,
+    vx: 0,
+    vy: 0
+  }));
+  const awayMatchPlayers = formation.map((spot, index) => ({
+    name: index === 0 ? `${opponent.name} Keeper` : `${opponent.name} ${index + 1}`,
+    role: spot.slot,
+    x: spot.x,
+    y: 100 - spot.y,
+    baseX: spot.x,
+    baseY: 100 - spot.y,
+    vx: 0,
+    vy: 0
+  }));
+  const controlledStart = homeMatchPlayers[controlledPlayerIndex];
   state.activeMatch = {
+    mode: cleanText(mode, 32) || "Quick Match",
     home: 0,
     away: 0,
     minute: 1,
@@ -1340,58 +1433,88 @@ function startMatch() {
     homeLeader: teamLeaderName(),
     awayLeader: opponent.name,
     opponentMultiplier: opponent.multiplier,
-    playerX: 24,
-    playerY: 50,
-    ballX: 29,
-    ballY: 50,
+    playerX: controlledStart.x,
+    playerY: controlledStart.y,
+    playerFacingX: 0,
+    playerFacingY: -1,
+    playerVX: 0,
+    playerVY: 0,
+    playerSpeed: 0,
+    stamina: 100,
+    ballX: controlledStart.x,
+    ballY: controlledStart.y - 3.2,
+    ballHeight: 0,
+    ballVX: 0,
+    ballVY: 0,
+    ballVZ: 0,
+    ballSpin: 0,
+    lastTouchTeam: "home",
+    lastTouchPlayer: featuredPlayer?.name || "FC Stars",
+    controlledPlayerIndex,
+    controlledPlayerName: controlledStart.name,
+    homePlayers: homeMatchPlayers,
+    awayPlayers: awayMatchPlayers,
+    simulationTime: 0,
+    displaySeconds: 0,
+    aiTouchCooldown: 0,
     lastShotAt: 0,
     lastShotPosition: null,
     sprinting: false,
     playerImage: featuredPlayer?.image || "",
-    homeTeam: buildTeam().map(({ id, name, position, team, rating, image, controlled }) => ({
+    homeTeam: matchTeam.map(({ id, name, position, team, rating, image, controlled }) => ({
       id, name, position, team, rating, image: image || "", controlled: Boolean(controlled)
     }))
   };
+  normalizeMatchState(state.activeMatch);
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
   reportText.textContent = `${state.activeMatch.homeLeader} leads FC Stars against ${state.activeMatch.awayLeader}.`;
   saveState();
   render();
-  matchPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-  sceneGoalText.textContent = "Kickoff";
+  if (!matchPanel.closest("#prototypeMatchOverlay")) matchPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  state.activeMatch.announcement = "KICKOFF";
+  state.activeMatch.announcementUntil = state.activeMatch.simulationTime + 1.1;
   updateMatchField();
-  scheduleNextMatchMoment();
+  startMatchPhysics();
 }
 
-function endMatch() {
+function endMatch({ abandoned = false } = {}) {
   if (!state.activeMatch) return;
   clearMatchTimer();
+  stopMatchPhysics();
   stopMatchMovement();
-  const score = `${state.activeMatch.home}-${state.activeMatch.away}`;
-  const won = state.activeMatch.home > state.activeMatch.away;
-  const drew = state.activeMatch.home === state.activeMatch.away;
-  const winXp = won ? matchWinXp(state.activeMatch.home, state.activeMatch.away) : 0;
-  const tablePoints = won ? 10 : 0;
-  const coinReward = Math.max(0, Number(state.activeMatch.home) || 0) * 25;
-  if (won) {
+  const finishedMatch = state.activeMatch;
+  const score = `${finishedMatch.home}-${finishedMatch.away}`;
+  const won = finishedMatch.home > finishedMatch.away;
+  const drew = finishedMatch.home === finishedMatch.away;
+  const ranked = finishedMatch.mode === "Ranked Rush";
+  const completedWin = won && !abandoned;
+  const winXp = completedWin ? matchWinXp(finishedMatch.home, finishedMatch.away) : 0;
+  const tablePoints = completedWin && ranked ? 10 : 0;
+  const coinReward = abandoned ? 0 : Math.max(0, Number(finishedMatch.home) || 0) * 25;
+  if (tablePoints) {
     state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
+    state.dailyRankedWinDate = localDateKey();
   }
   state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + coinReward;
-  const xpResult = won ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
+  const xpResult = completedWin ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
     : "";
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
-  reportTitle.textContent = "Full time";
-  reportText.textContent = won
-    ? `Victory! FC Stars won ${score}. +10 Ranked Points, +${coinReward} Coins, and +${winXp} XP.${levelMessage}`
+  reportTitle.textContent = abandoned ? "Match left" : "Full time";
+  const rankedReward = tablePoints ? ` +${tablePoints} Ranked Points,` : "";
+  reportText.textContent = abandoned
+    ? `Match abandoned at ${score}. No rewards were awarded.`
+    : won
+    ? `Victory! FC Stars won ${score}.${rankedReward} +${coinReward} Coins, and +${winXp} XP.${levelMessage}`
     : drew
       ? `Draw ${score}. +${coinReward} Coins for your goals. Win the next match to earn XP.`
       : `Defeat ${score}. +${coinReward} Coins for your goals. Win a match to earn XP.`;
   saveState();
   render();
-  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won, tablePoints, coinReward, score } }));
+  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won: completedWin, tablePoints, coinReward, score, mode: finishedMatch.mode, abandoned } }));
 }
 
 function matchWinXp(homeGoals, awayGoals) {
@@ -1400,29 +1523,9 @@ function matchWinXp(homeGoals, awayGoals) {
   return 150 + goals * 75 + margin * 125;
 }
 
-function scheduleNextMatchMoment() {
-  clearMatchTimer();
-  if (!state.activeMatch) return;
-  matchTimer = window.setTimeout(playAutoMatchMoment, 1000);
-}
-
 function clearMatchTimer() {
-  if (!matchTimer) return;
-  window.clearTimeout(matchTimer);
+  if (matchTimer) window.clearTimeout(matchTimer);
   matchTimer = null;
-}
-
-function playAutoMatchMoment() {
-  if (!state.activeMatch) return;
-  state.activeMatch.minute += 1;
-
-  if (state.activeMatch.minute >= 90) {
-    endMatch();
-    return;
-  }
-  saveState();
-  render();
-  scheduleNextMatchMoment();
 }
 
 function updateMatchField() {
@@ -1432,7 +1535,21 @@ function updateMatchField() {
   match.playerY = Number.isFinite(match.playerY) ? match.playerY : 50;
   match.ballX = Number.isFinite(match.ballX) ? match.ballX : match.playerX + 5;
   match.ballY = Number.isFinite(match.ballY) ? match.ballY : match.playerY;
-  matchAvatar.textContent = shortName(state.selectedStar?.name || activeAccount()?.username || "YOU");
+  match.ballHeight = Number.isFinite(match.ballHeight) ? match.ballHeight : 0;
+  match.ballVX = Number.isFinite(match.ballVX) ? match.ballVX : 0;
+  match.ballVY = Number.isFinite(match.ballVY) ? match.ballVY : 0;
+  match.ballVZ = Number.isFinite(match.ballVZ) ? match.ballVZ : 0;
+  match.ballSpin = Number.isFinite(match.ballSpin) ? match.ballSpin : 0;
+  matchAvatar.textContent = shortName(match.controlledPlayerName || state.selectedStar?.name || activeAccount()?.username || "YOU");
+  const clock = formatMatchClock(match);
+  if (matchHudClock && matchHudClock.textContent !== clock) matchHudClock.textContent = clock;
+  const announcement = match.simulationTime < match.announcementUntil ? match.announcement : "";
+  if (sceneGoalText.textContent !== announcement) sceneGoalText.textContent = announcement;
+  sceneGoalText.classList.toggle("is-visible", Boolean(announcement));
+  matchScoreLabel.textContent = `${match.home} - ${match.away}`;
+  if (matchControlledLabel) matchControlledLabel.textContent = match.controlledPlayerName || "FC Stars";
+  if (matchStaminaFill) matchStaminaFill.style.width = `${clamp(match.stamina ?? 100, 0, 100)}%`;
+  matchClockLabel.textContent = `Live · ${formatMatchClock(match)}`;
   matchAvatar.style.left = `${match.playerX}%`;
   matchAvatar.style.top = `${match.playerY}%`;
   matchBall.style.left = `${match.ballX}%`;
@@ -1445,103 +1562,708 @@ function updateMatchField() {
   window.match3D?.update(match);
 }
 
-function moveMatchPlayer(x, y) {
+function formatMatchClock(match) {
+  const totalSeconds = Math.max(0, Math.min(90 * 60, Math.floor(match.displaySeconds || 0)));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function matchAction(kind, power = 0.42) {
   const match = state.activeMatch;
-  if (!match) return;
-  const speed = match.sprinting ? 2.2 : 1.2;
-  match.playerX = Math.max(7, Math.min(93, match.playerX + x * speed));
-  match.playerY = Math.max(9, Math.min(91, match.playerY + y * speed));
-  if (Math.hypot(match.ballX - match.playerX, match.ballY - match.playerY) < 13) {
-    match.ballX = match.playerX;
-    match.ballY = match.playerY;
+  if (!match || match.phase !== "play") return;
+  const p = match.homePlayers[match.controlledPlayerIndex];
+  const input = matchMovementInput();
+  const hasAim = Math.hypot(input.x, input.y) > 0.2;
+  queuePlayerAction(match, p, kind, power, hasAim ? { x: input.x, z: input.y } : null);
+}
+
+function queuePlayerAction(match, p, kind, power = 0.42, aim = null) {
+  if (!p || match.phase !== "play" || p.action && match.simulationTime < p.action.until) return false;
+  const distance = FCMatchPhysics.distance(p.x, p.y, match.ballX, match.ballY);
+  if (kind !== "tackle" && (distance > 1.25 || match.ballHeight > 0.85 || match.keeperHold)) return false;
+  const contactDelay = kind === "tackle" ? 0.14 : kind === "cross" ? 0.19 : kind === "shoot" ? 0.16 : 0.11;
+  p.action = { kind, power: clamp(power, 0.24, 1), aim, start: match.simulationTime,
+    contactAt: match.simulationTime + contactDelay, until: match.simulationTime + (kind === "tackle" ? 0.65 : 0.48), fired: false };
+  return true;
+}
+
+function emitMatchEvent(match, type, player = null, details = {}) {
+  const event = { id: ++match.eventSequence, type, playerId: player?.id, team: player?.team, time: match.simulationTime, ...details };
+  match.events.push(event);
+  if (match.events.length > 32) match.events.shift();
+  const captions = { goal: "GOAL", save: "SAVED", catch: "CAUGHT", post: "OFF THE POST", bar: "OFF THE BAR" };
+  if (captions[type]) {
+    match.announcement = captions[type];
+    match.announcementUntil = match.simulationTime + (type === "goal" ? 1.8 : 0.85);
   }
+  if (type === "kick") playMatchSound("kick", details.power || 0.4);
+  if (type === "save") playMatchSound("save");
+  if (type === "goal") playMatchSound("goal");
+  if (type === "tackle") playMatchSound("tackle", 0.5);
+  return event;
+}
+
+function passTarget(match, p, aim, through = false) {
+  const P = FCMatchPhysics, dir = p.team === "home" ? -1 : 1;
+  const teammates = match[p.team + "Players"].filter(q => q.id !== p.id && q.role !== "GK");
+  const facingX = aim?.x ?? Math.sin(p.facing), facingZ = aim?.z ?? Math.cos(p.facing);
+  let best = null, bestScore = -Infinity;
+  for (const q of teammates) {
+    const dx = P.x(q.x) - P.x(p.x), dz = P.z(q.y) - P.z(p.y), distance = Math.hypot(dx, dz);
+    if (distance < 1 || distance > 15) continue;
+    const alignment = (dx * facingX + dz * facingZ) / distance;
+    if (alignment < (aim ? 0.25 : -0.35)) continue;
+    const lane = passingLaneClearance(match, p, q);
+    const score = alignment * 4 + Math.min(lane, 2) * 1.3 - distance * 0.12 + (through ? dz * dir * 0.2 : 0);
+    if (score > bestScore) { bestScore = score; best = q; }
+  }
+  if (!best) return { x: clamp(P.x(p.x) + facingX * 5, -8, 8), z: clamp(P.z(p.y) + facingZ * 5, -13, 13) };
+  const lead = through ? 0.8 : 0.3;
+  return { x: clamp(P.x(best.x) + best.vx * 0.18 * lead, -8.2, 8.2),
+    z: clamp(P.z(best.y) + best.vy * 0.28 * lead + (through ? dir * 2 : 0), -12.8, 12.8), receiverId: best.id };
+}
+
+function passingLaneClearance(match, p, q) {
+  const P = FCMatchPhysics, ax = P.x(p.x), az = P.z(p.y);
+  const dx = P.x(q.x) - ax, dz = P.z(q.y) - az, length2 = dx * dx + dz * dz || 1;
+  let clearance = 10;
+  for (const opponent of match[p.team === "home" ? "awayPlayers" : "homePlayers"]) {
+    const t = clamp(((P.x(opponent.x) - ax) * dx + (P.z(opponent.y) - az) * dz) / length2, 0, 1);
+    clearance = Math.min(clearance, Math.hypot(P.x(opponent.x) - ax - dx * t, P.z(opponent.y) - az - dz * t));
+  }
+  return clearance;
+}
+
+function resolvePlayerActions(match) {
+  const P = FCMatchPhysics;
+  for (const p of [...match.homePlayers, ...match.awayPlayers]) {
+    const action = p.action;
+    if (!action || action.fired || match.simulationTime < action.contactAt) continue;
+    action.fired = true;
+    const b = P.readBall(match), distance = Math.hypot(b.x - P.x(p.x), b.z - P.z(p.y));
+    if (match.keeperHold || b.y > 1 || distance > (action.kind === "tackle" ? 1.05 : 1.3)) continue;
+    const dir = p.team === "home" ? -1 : 1;
+    let target, speed, lift = 0, spin = 0;
+    if (action.kind === "tackle") {
+      const fx = Math.sin(p.facing), fz = Math.cos(p.facing);
+      if ((b.x - P.x(p.x)) * fx + (b.z - P.z(p.y)) * fz < -0.15) continue;
+      P.release(match, p.id, p.team, p.name, fx * 4.3, fz * 4.3, 0.35);
+      emitMatchEvent(match, "tackle", p); continue;
+    }
+    if (action.kind === "dribble") {
+      P.release(match, p.id, p.team, p.name, Math.sin(p.facing) * 3.8, Math.cos(p.facing) * 3.8);
+      emitMatchEvent(match, "kick", p, { power: 0.2 }); continue;
+    }
+    if (action.kind === "shoot") {
+      const keeper = match[p.team === "home" ? "awayPlayers" : "homePlayers"][0];
+      const aimX = action.aim ? action.aim.x * 2.55 : (P.x(keeper.x) >= b.x ? -1.9 : 1.9);
+      target = { x: clamp(aimX, -2.6, 2.6), z: dir * 14.6 };
+      speed = 11.5 + action.power * 7;
+      lift = 1.1 + action.power * 2.5;
+      spin = clamp((target.x - b.x) * 0.035, -0.32, 0.32) * (1 - action.power * 0.65);
+    } else if (action.kind === "cross") {
+      const receiver = match[p.team + "Players"].filter(q => q.role === "ST" || q.role === "LW" || q.role === "RW")
+        .sort((a, b) => Math.abs(P.x(a.x)) - Math.abs(P.x(b.x)))[0];
+      target = { x: receiver ? clamp(P.x(receiver.x), -2.5, 2.5) : 0, z: dir * 10.1 };
+      lift = 5.4; speed = clamp(Math.hypot(target.x - b.x, target.z - b.z) / 1.05, 4, 13);
+      spin = b.x < 0 ? -0.2 : 0.2;
+    } else {
+      target = passTarget(match, p, action.aim, action.kind === "through");
+      const distance = Math.hypot(target.x - b.x, target.z - b.z);
+      speed = clamp(Math.sqrt(2 * P.pitch.rollingDeceleration * distance + (action.kind === "through" ? 9 : 2.25)), 3, 12);
+      lift = 0.15;
+      match.intendedReceiverId = target.receiverId;
+    }
+    const dx = target.x - b.x, dz = target.z - b.z, length = Math.hypot(dx, dz) || 1;
+    P.release(match, p.id, p.team, p.name, dx / length * speed, dz / length * speed, lift, spin);
+    if (action.kind === "shoot") match.pendingShooter = p.name;
+    emitMatchEvent(match, "kick", p, { power: action.power, action: action.kind });
+  }
+}
+
+let matchAudioContext = null;
+
+function playMatchSound(kind, power = 0.5) {
+  try {
+    matchAudioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    const context = matchAudioContext;
+    if (context.state === "suspended") context.resume();
+    const now = context.currentTime;
+    if (kind === "goal") {
+      playCrowdBurst(context, now, 1.6);
+      [392, 523, 659].forEach((frequency, index) => playTone(context, frequency, now + index * 0.09, 0.32, 0.055, "triangle"));
+      return;
+    }
+    if (kind === "save") {
+      playCrowdBurst(context, now, 0.38);
+      playTone(context, 145, now, 0.12, 0.035, "square");
+      return;
+    }
+    const frequency = kind === "tackle" ? 82 : 96 + power * 54;
+    playTone(context, frequency, now, 0.055 + power * 0.045, 0.035 + power * 0.028, "sine");
+  } catch {
+    // Audio is optional when autoplay or Web Audio is unavailable.
+  }
+}
+
+function playTone(context, frequency, start, duration, volume, type) {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(45, frequency * 0.54), start + duration);
+  gain.gain.setValueAtTime(volume, start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain).connect(context.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration);
+}
+
+function playCrowdBurst(context, start, duration) {
+  const length = Math.floor(context.sampleRate * duration);
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const channel = buffer.getChannelData(0);
+  for (let i = 0; i < length; i += 1) channel[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / length);
+  const source = context.createBufferSource();
+  const filter = context.createBiquadFilter();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  filter.type = "bandpass";
+  filter.frequency.value = 720;
+  filter.Q.value = 0.55;
+  gain.gain.value = 0.045;
+  source.connect(filter).connect(gain).connect(context.destination);
+  source.start(start);
+}
+
+function switchControlledPlayer() {
+  const match = state.activeMatch;
+  if (!match || match.phase !== "play") return;
+  cancelShotCharge();
+  const players = match.homePlayers || [];
+  if (!players.length) return;
+  const oldIndex = match.controlledPlayerIndex || 0;
+  const oldPlayer = players[oldIndex];
+  if (oldPlayer) {
+    oldPlayer.x = match.playerX;
+    oldPlayer.y = match.playerY;
+    oldPlayer.vx = match.playerVX || 0;
+    oldPlayer.vy = match.playerVY || 0;
+  }
+  const candidates = players
+    .map((player, index) => ({ player, index, distance: FCMatchPhysics.distance(player.x, player.y, match.ballX, match.ballY) }))
+    .filter(({ player, index }) => player.role !== "GK" && index !== oldIndex)
+    .sort((a, b) => a.distance - b.distance);
+  if (!candidates.length) return;
+  const next = candidates[0];
+  match.controlledPlayerIndex = next.index;
+  match.controlledPlayerName = next.player.name || "FC Stars";
+  match.playerX = next.player.x;
+  match.playerY = next.player.y;
+  match.playerVX = next.player.vx || 0;
+  match.playerVY = next.player.vy || 0;
+  match.playerFacingX = Math.sin(next.player.facing);
+  match.playerFacingY = Math.cos(next.player.facing);
+  match.stamina = next.player.stamina;
+  match.possessionId = match.possessionId || null;
+  reportTitle.textContent = `${match.controlledPlayerName} selected`;
+  reportText.textContent = "Control switched to the next outfield teammate.";
   updateMatchField();
 }
 
-function matchAction(action) {
-  const match = state.activeMatch;
-  if (!match) return;
-  const attackDirection = match.playerY >= 50 ? 1 : -1;
-  if (action === "pass") {
-    match.ballX = match.playerX;
-    match.ballY = Math.max(8, Math.min(92, match.playerY + attackDirection * 16));
-    sceneGoalText.textContent = "Pass";
-    reportText.textContent = "Pass played into space.";
+function beginShotCharge() {
+  if (!state.activeMatch || state.activeMatch.phase !== "play" || matchShootCharging) return;
+  matchShootCharging = true;
+  matchShootChargeStarted = performance.now();
+  matchShootBtn.classList.add("is-charging");
+  updateShotChargeMeter();
+}
+
+function updateShotChargeMeter() {
+  if (!matchShootCharging) return;
+  const power = currentShotPower();
+  if (matchShotPowerFill) matchShotPowerFill.style.width = `${Math.round(power * 100)}%`;
+  matchShootBtn.classList.toggle("is-overpowered", power > 0.9);
+  matchShootChargeFrame = requestAnimationFrame(updateShotChargeMeter);
+}
+
+function currentShotPower() {
+  return clamp(0.28 + (performance.now() - matchShootChargeStarted) / 1250, 0.28, 1);
+}
+
+function releaseShotCharge() {
+  if (!matchShootCharging) return;
+  const power = currentShotPower();
+  matchShootCharging = false;
+  if (matchShootChargeFrame) cancelAnimationFrame(matchShootChargeFrame);
+  matchShootChargeFrame = null;
+  matchShootBtn.classList.remove("is-charging", "is-overpowered");
+  matchAction("shoot", power);
+  window.setTimeout(() => {
+    if (matchShotPowerFill && !matchShootCharging) matchShotPowerFill.style.width = "0%";
+  }, 260);
+}
+
+function normalizeMatchState(match) {
+  if (match.physicsVersion === 2) return;
+  const cards = match.homeTeam?.length ? match.homeTeam : buildTeam();
+  for (const team of ["home", "away"]) {
+    const key = team + "Players";
+    match[key] = formation.map((spot, index) => {
+      const p = match[key]?.[index] || {};
+      const y = team === "home" ? spot.y : 100 - spot.y;
+      return { ...p, name: p.name || (team === "home" ? cards[index]?.name || "FC Stars " + (index + 1) : "Rival " + (index + 1)),
+        x: Number.isFinite(p.x) ? p.x : spot.x, y: Number.isFinite(p.y) ? p.y : y,
+        baseX: Number.isFinite(p.baseX) ? p.baseX : spot.x, baseY: Number.isFinite(p.baseY) ? p.baseY : y };
+    });
+    match[key].forEach((p, index) => {
+      p.id = team + "-" + index; p.team = team; p.role = formation[index]?.slot || p.role;
+      p.vx = Number.isFinite(p.vx) ? p.vx : 0; p.vy = Number.isFinite(p.vy) ? p.vy : 0;
+      p.facing = team === "home" ? Math.PI : 0; p.stamina ??= 100; p.stride ??= 0;
+    });
   }
-  if (action === "shoot") {
-    const now = Date.now();
-    const distanceToBall = Math.hypot(match.ballX - match.playerX, match.ballY - match.playerY);
-    const distanceFromPreviousShot = match.lastShotPosition
-      ? Math.hypot(match.playerX - match.lastShotPosition.x, match.playerY - match.lastShotPosition.y)
-      : Infinity;
-    const scorer = state.selectedStar || buildTeam().find((player) => player.slot !== "GK") || cardPool[0];
-    const closeEnoughToGoal = attackDirection > 0 ? match.playerY > 78 : match.playerY < 22;
-    const inShootingLane = Math.abs(match.playerX - 50) < 19;
-    const shotOnCooldown = now - (match.lastShotAt || 0) < 1400;
+  match.homeTeam = cards;
+  match.controlledPlayerIndex = clamp(Number.isInteger(match.controlledPlayerIndex) ? match.controlledPlayerIndex : Math.max(1, cards.findIndex(p => p.controlled)), 1, 10);
+  const controlled = match.homePlayers[match.controlledPlayerIndex];
+  match.playerX = Number.isFinite(match.playerX) ? match.playerX : controlled.x;
+  match.playerY = Number.isFinite(match.playerY) ? match.playerY : controlled.y;
+  match.ballX = Number.isFinite(match.ballX) ? match.ballX : match.playerX;
+  match.ballY = Number.isFinite(match.ballY) ? match.ballY : match.playerY - 2;
+  match.controlledPlayerName = match.homePlayers[match.controlledPlayerIndex]?.name || "FC Stars";
+  match.simulationTime ??= 0;
+  match.displaySeconds ??= Math.max(0, ((match.minute || 1) - 1) * 60);
+  match.playerFacingX = Number.isFinite(match.playerFacingX) ? match.playerFacingX : 0;
+  match.playerFacingY = Number.isFinite(match.playerFacingY) ? match.playerFacingY : -1;
+  match.goals ||= []; match.phase = "play"; match.physicsVersion = 2; match.events = []; match.eventSequence = 0;
+  match.ballVX ||= 0; match.ballVY ||= 0; match.ballVZ ||= 0; match.ballHeight ||= 0;
+}
 
-    if (distanceToBall > 10) {
-      sceneGoalText.textContent = "NO POSSESSION";
-      reportTitle.textContent = "Get to the ball";
-      reportText.textContent = "Move onto the ball before shooting again.";
-      updateMatchField();
-      return;
-    }
-    if (shotOnCooldown || distanceFromPreviousShot < 12) {
-      sceneGoalText.textContent = "BUILD THE PLAY";
-      reportTitle.textContent = "Shot blocked";
-      reportText.textContent = "Create space before your next attempt — holding Space will not score.";
-      updateMatchField();
-      return;
-    }
+function startMatchPhysics() {
+  if (matchPhysicsFrame || !state.activeMatch || document.hidden) return;
+  normalizeMatchState(state.activeMatch);
+  matchPhysicsPreviousTime = performance.now();
+  matchAccumulator = 0;
+  matchPhysicsFrame = requestAnimationFrame(stepMatchPhysics);
+}
 
-    match.lastShotAt = now;
-    match.lastShotPosition = { x: match.playerX, y: match.playerY };
-    match.ballX = match.playerX;
-    match.ballY = attackDirection > 0 ? 94 : 6;
-    const scored = closeEnoughToGoal && inShootingLane && Math.random() < 0.18;
-    sceneGoalText.textContent = scored ? "GOAL!" : "SAVED";
-    if (scored) {
-      match.home += 1;
-      const goalNumber = addGoalForPlayer(scorer.name);
-      match.goals = [{ scorer: scorer.name, minute: match.minute, goalNumber, celebration: "Goal" }, ...match.goals].slice(0, 12);
-      reportTitle.textContent = `${scorer.name} scores`;
-      reportText.textContent = `A controlled finish. FC Stars lead ${match.home}-${match.away}.`;
-      match.ballX = 50;
-      match.ballY = 50;
+function stopMatchPhysics() {
+  if (matchPhysicsFrame) cancelAnimationFrame(matchPhysicsFrame);
+  matchPhysicsFrame = null; matchPhysicsPreviousTime = 0; matchAccumulator = 0;
+}
+
+function advanceMatch(match, elapsed) {
+  matchAccumulator += Math.min(0.25, Math.max(0, elapsed));
+  const dt = FCMatchPhysics.pitch.step;
+  while (matchAccumulator + 1e-9 >= dt) {
+    match.previousBall = { x: match.ballX, y: match.ballY, h: match.ballHeight };
+    for (const p of [...match.homePlayers, ...match.awayPlayers]) {
+      p.previousX = p.x; p.previousY = p.y;
+    }
+    match.simulationTime += dt;
+    if (match.phase === "restart") {
+      if (match.simulationTime >= match.restart.until) takeQuickRestart(match);
+    } else if (match.phase === "goal") {
+      if (match.simulationTime >= match.matchPausedUntil) setupKickoff(match);
     } else {
-      reportTitle.textContent = "Shot saved";
-      reportText.textContent = closeEnoughToGoal && inShootingLane
-        ? "The rival goalkeeper kept it out. Reposition for another chance."
-        : "The angle was wrong. Get central and closer to goal.";
-      match.ballX = Math.max(8, Math.min(92, match.playerX + (match.playerX < 50 ? 11 : -11)));
-      match.ballY = Math.max(8, Math.min(92, match.playerY - attackDirection * 10));
+      match.displaySeconds = Math.min(5400, match.displaySeconds + dt * 60);
+      simulateControlledPlayer(match, dt);
+      simulateMatchAI(match, dt);
+      resolvePlayerActions(match);
+      simulateMatchBall(match, dt);
+    }
+    matchAccumulator -= dt;
+  }
+  match.renderAlpha = clamp(matchAccumulator / dt, 0, 1);
+}
+
+function stepMatchPhysics(time) {
+  matchPhysicsFrame = null;
+  const match = state.activeMatch;
+  if (!match || document.hidden) return;
+  advanceMatch(match, (time - matchPhysicsPreviousTime) / 1000);
+  matchPhysicsPreviousTime = time;
+  match.minute = Math.floor(match.displaySeconds / 60);
+  if (match.displaySeconds >= 5400 && match.phase === "play") { endMatch(); return; }
+  updateMatchField();
+  if (match.simulationTime - (match.lastSaveTime || 0) >= 5) {
+    match.lastSaveTime = match.simulationTime; saveState();
+  }
+  matchPhysicsFrame = requestAnimationFrame(stepMatchPhysics);
+}
+
+function beginQuickRestart(match, event) {
+  if (match.phase !== "play") return;
+  match.phase = "restart";
+  match.restart = { ...event, until: match.simulationTime + 1 };
+  match.possessionId = null;
+  match.ballVX = match.ballVY = match.ballVZ = 0;
+  match.announcement = event.type.toUpperCase().replace("-", " ");
+  match.announcementUntil = match.restart.until;
+}
+
+function takeQuickRestart(match) {
+  const restart = match.restart, players = match[restart.team + "Players"];
+  const P = FCMatchPhysics;
+  let bx = restart.x, bz = restart.z;
+  if (restart.type === "goal-kick") { bx = 0; bz = restart.endSign * 12; }
+  if (restart.type === "corner") { bx = Math.sign(bx || 1) * 8.7; bz = restart.endSign * 13.7; }
+  const taker = restart.type === "goal-kick" ? players[0] : players.filter(p => p.role !== "GK")
+    .sort((a, b) => Math.hypot(P.x(a.x) - bx, P.z(a.y) - bz) - Math.hypot(P.x(b.x) - bx, P.z(b.y) - bz))[0];
+  taker.x = P.percentX(bx); taker.y = P.percentZ(bz);
+  taker.previousX = taker.x; taker.previousY = taker.y; taker.vx = taker.vy = 0;
+  if (taker.id === match.homePlayers[match.controlledPlayerIndex].id) {
+    match.playerX = taker.x; match.playerY = taker.y; match.playerVX = match.playerVY = 0;
+  }
+  const target = players.filter(p => p.id !== taker.id && p.role !== "GK")
+    .sort((a, b) => Math.hypot(P.x(a.x) - bx, P.z(a.y) - bz) - Math.hypot(P.x(b.x) - bx, P.z(b.y) - bz))[0];
+  let dx = P.x(target.x) - bx, dz = P.z(target.y) - bz;
+  if (restart.type === "corner") { dx = -bx; dz = restart.endSign * 10 - bz; }
+  const length = Math.hypot(dx, dz) || 1;
+  P.writeBall(match, { x: bx, z: bz, y: P.pitch.ballRadius, vx: 0, vz: 0, vy: 0, spin: 0 });
+  const speed = restart.type === "corner" ? 8 : Math.sqrt(2 * P.pitch.rollingDeceleration * length) + 1.2;
+  P.release(match, taker.id, taker.team, taker.name, dx / length * speed, dz / length * speed,
+    restart.type === "corner" ? 4.5 : restart.type === "throw-in" ? 2.5 : 0.25);
+  match.phase = "play"; match.restart = null;
+  match.announcementUntil = 0;
+}
+
+function setupKickoff(match) {
+  for (const p of [...match.homePlayers, ...match.awayPlayers]) {
+    p.x = p.baseX; p.y = p.baseY; p.previousX = p.x; p.previousY = p.y; p.vx = p.vy = 0;
+  }
+  const team = match.celebratingTeam === "home" ? "away" : "home";
+  const taker = match[team + "Players"][9];
+  taker.x = 50; taker.y = team === "home" ? 52 : 48;
+  const controlled = match.homePlayers[match.controlledPlayerIndex];
+  match.playerX = controlled.x; match.playerY = controlled.y; match.playerVX = match.playerVY = 0;
+  match.ballX = 50; match.ballY = 50; match.ballHeight = 0; match.ballVX = match.ballVY = match.ballVZ = 0;
+  match.possessionId = taker.id; match.lastTouchTeam = team;
+  match.phase = "play"; match.matchPausedUntil = null;
+  match.announcement = "KICKOFF";
+  match.announcementUntil = match.simulationTime + 1;
+}
+
+function steerMatchPlayer(player, dx, dz, speed, dt) {
+  const P = FCMatchPhysics;
+  const len = Math.hypot(dx, dz), amount = Math.min(1, len);
+  dx = len > 0 ? dx / len : 0; dz = len > 0 ? dz / len : 0;
+  let vx = (player.vx || 0) * 0.18, vz = (player.vy || 0) * 0.28;
+  const currentSpeed = Math.hypot(vx, vz);
+  const reversing = currentSpeed > 0.1 && (vx * dx + vz * dz) / currentSpeed < -0.3;
+  const response = 1 - Math.exp(-(len === 0 ? 8 : reversing ? 5 : 6.5) * dt);
+  vx += (dx * speed * amount - vx) * response; vz += (dz * speed * amount - vz) * response;
+  if (Math.hypot(vx, vz) < 0.025 && len === 0) vx = vz = 0;
+  const oldX = P.x(player.x), oldZ = P.z(player.y);
+  const nextX = clamp(oldX + vx * dt, -8.5, 8.5), nextZ = clamp(oldZ + vz * dt, -13.35, 13.35);
+  if (nextX === -8.5 || nextX === 8.5) vx = 0;
+  if (nextZ === -13.35 || nextZ === 13.35) vz = 0;
+  player.x = P.percentX(nextX); player.y = P.percentZ(nextZ); player.vx = vx / 0.18; player.vy = vz / 0.28;
+  player.speed = Math.hypot(vx, vz);
+  player.facing ??= player.team === "home" ? Math.PI : 0;
+  if (player.speed > 0.15) {
+    const target = Math.atan2(vx, vz);
+    const delta = Math.atan2(Math.sin(target - player.facing), Math.cos(target - player.facing));
+    player.facing += delta * (1 - Math.exp(-(speed > 4 ? 8 : 12) * dt));
+  }
+  const travelled = Math.hypot(nextX - oldX, nextZ - oldZ);
+  player.travelled = (player.travelled || 0) + travelled;
+  player.stride = (player.stride || 0) + travelled * Math.PI * 2 / 1.05;
+}
+
+function simulateControlledPlayer(match, dt) {
+  const p = match.homePlayers[match.controlledPlayerIndex];
+  if (!p) return;
+  p.x = match.playerX; p.y = match.playerY; p.vx = match.playerVX || 0; p.vy = match.playerVY || 0;
+  const input = matchMovementInput();
+  p.stamina = Number.isFinite(p.stamina) ? p.stamina : match.stamina ?? 100;
+  if (p.stamina <= 1) p.exhausted = true;
+  if (p.stamina > 20) p.exhausted = false;
+  p.sprinting = Boolean(match.sprinting && Math.hypot(input.x, input.y) > 0.2 && !p.exhausted);
+  let speed = p.sprinting ? 5.3 : 3.2;
+  if (p.action && match.simulationTime < p.action.until) speed *= p.action.kind === "tackle" ? 0.45 : 0.72;
+  steerMatchPlayer(p, input.x, input.y, speed, dt);
+  p.stamina = clamp(p.stamina + (p.sprinting ? -10 : 6) * dt, 0, 100);
+  match.playerX = p.x; match.playerY = p.y; match.playerVX = p.vx; match.playerVY = p.vy;
+  match.playerFacingX = Math.sin(p.facing); match.playerFacingY = Math.cos(p.facing);
+  match.playerSpeed = p.speed; match.stamina = p.stamina;
+  applyControlledDribbleTouch(match, dt, p.sprinting);
+}
+
+function simulateMatchAI(match, dt) {
+  const P = FCMatchPhysics, all = [...match.homePlayers, ...match.awayPlayers], b = P.readBall(match);
+  let owner = all.find(p => p.id === match.possessionId);
+  if (owner && (P.distance(owner.x, owner.y, match.ballX, match.ballY) > 1.35 || b.y > 1)) owner = null;
+  match.possessionId = owner?.id || null;
+  if (match.simulationTime >= (match.nextTacticalUpdate || 0)) {
+    match.nextTacticalUpdate = match.simulationTime + 0.15;
+    for (const team of ["home", "away"]) assignTacticalTargets(match, team, owner);
+  }
+  for (const p of all) {
+    if (p.id === match.homePlayers[match.controlledPlayerIndex].id) continue;
+    if (p.role === "GK") { moveGoalkeeper(match, p, p.team, dt); continue; }
+    const target = p.target || { x: P.x(p.baseX), z: P.z(p.baseY) };
+    const dx = target.x - P.x(p.x), dz = target.z - P.z(p.y), distance = Math.hypot(dx, dz);
+    const speed = Math.min(p.task === "press" || p.task === "receive" ? 3.45 : 2.65, distance * 2.5);
+    steerMatchPlayer(p, distance > 0.03 ? dx / distance : 0, distance > 0.03 ? dz / distance : 0, speed, dt);
+    dribbleMatchPlayer(match, p, dt);
+    if (match.possessionId === p.id && match.simulationTime >= (p.nextDecision || 0)) {
+      p.nextDecision = match.simulationTime + 0.45;
+      const dir = p.team === "home" ? -1 : 1;
+      const opponents = match[p.team === "home" ? "awayPlayers" : "homePlayers"];
+      const pressure = Math.min(...opponents.map(q => P.distance(q.x, q.y, p.x, p.y)));
+      if (P.z(p.y) * dir > 5.5 && Math.abs(P.x(p.x)) < 5) queuePlayerAction(match, p, "shoot", 0.55);
+      else if (pressure < 1.8 || match.simulationTime - (p.carrySince || 0) > 1.8) {
+        queuePlayerAction(match, p, "pass", 0.42, { x: Math.sin(p.facing) * 0.4, z: dir });
+        p.carrySince = match.simulationTime;
+      }
     }
   }
-  if (action === "dribble") {
-    match.ballX = match.playerX;
-    match.ballY = Math.max(8, Math.min(92, match.playerY + attackDirection * 8));
-    match.ballY = match.playerY;
-    sceneGoalText.textContent = "DRIBBLE";
-    reportTitle.textContent = "Dribbling";
-    reportText.textContent = "Close control keeps the ball at your feet.";
+  // Light separation without teleporting players or collapsing the team's shape.
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+    const a = all[i], c = all[j], dx = P.x(a.x) - P.x(c.x), dz = P.z(a.y) - P.z(c.y), distance = Math.hypot(dx, dz);
+    if (distance >= 0.58 || distance < 0.001) continue;
+    const push = Math.min(0.035, (0.58 - distance) * 0.25);
+    a.x += dx / distance * push / 0.18; a.y += dz / distance * push / 0.28;
+    c.x -= dx / distance * push / 0.18; c.y -= dz / distance * push / 0.28;
   }
-  if (action === "tackle") {
-    match.ballX = Math.max(8, match.playerX - 5);
-    match.ballY = match.playerY;
-    sceneGoalText.textContent = "TACKLE";
-    reportTitle.textContent = "Challenge won";
-    reportText.textContent = "You won the tackle and recovered possession.";
+  const controlled = match.homePlayers[match.controlledPlayerIndex];
+  match.playerX = controlled.x; match.playerY = controlled.y;
+}
+
+function assignTacticalTargets(match, team, owner) {
+  const P = FCMatchPhysics, players = match[team + "Players"], opponents = match[team === "home" ? "awayPlayers" : "homePlayers"];
+  const b = P.readBall(match), dir = team === "home" ? -1 : 1;
+  const candidates = players.filter(p => p.role !== "GK" && p.id !== match.homePlayers[match.controlledPlayerIndex].id);
+  candidates.sort((a, c) => P.distance(a.x,a.y,match.ballX,match.ballY) - P.distance(c.x,c.y,match.ballX,match.ballY));
+  const key = team + "PressId", current = players.find(p => p.id === match[key]);
+  if (!current || !candidates.includes(current) || candidates[0] && P.distance(current.x,current.y,match.ballX,match.ballY) > P.distance(candidates[0].x,candidates[0].y,match.ballX,match.ballY) + 1.1) match[key] = candidates[0]?.id;
+  const marked = new Set();
+  const possession = owner?.team === team;
+  for (const p of players) {
+    if (p.role === "GK") continue;
+    let tx = P.x(p.baseX), tz = P.z(p.baseY) + b.z * 0.22;
+    p.markId = null; p.task = "shape";
+    if (owner?.id === p.id) {
+      tx = clamp(P.x(p.x) * 0.8, -7, 7); tz = P.z(p.y) + dir * 3; p.task = "carry";
+    } else if (p.id === match[key] && (!owner || !possession)) {
+      tx = b.x + clamp(b.vx * 0.28, -1.8, 1.8); tz = b.z + clamp(b.vz * 0.28, -2.2, 2.2); p.task = "press";
+    } else if (p.id === match.intendedReceiverId && !owner) {
+      tx = b.x + b.vx * 0.45; tz = b.z + b.vz * 0.45; p.task = "receive";
+    } else if (possession) {
+      if (["ST","LW","RW"].includes(p.role)) {
+        tz = clamp(Math.min(dir * P.z(p.baseY) + 3, dir * b.z + 4) * dir, -12.2, 12.2);
+        tx += Math.sign(tx) * 0.5; p.task = "run";
+      } else if (["CM","LM","RM"].includes(p.role)) {
+        tx = tx * 0.65 + b.x * 0.35; tz = b.z - dir * (p.id.endsWith("5") ? 2 : 3.5); p.task = "support";
+      }
+    } else if (owner && ["CB","CM"].includes(p.role)) {
+      const mark = opponents.filter(q => q.role !== "GK" && q.id !== owner.id && !marked.has(q.id))
+        .sort((a,c) => P.distance(a.x,a.y,p.baseX,p.baseY)-P.distance(c.x,c.y,p.baseX,p.baseY))[0];
+      if (mark) {
+        marked.add(mark.id); p.markId = mark.id; p.task = "mark";
+        tx = P.x(mark.x) * 0.6 + tx * 0.4; tz = P.z(mark.y) - dir * 0.85;
+      }
+    }
+    p.target = { x: clamp(tx,-8,8), z: clamp(tz,-12.8,12.8) };
   }
-  updateMatchField();
-  saveState();
-  render();
+}
+
+function moveGoalkeeper(match, keeper, team, dt) {
+  const P = FCMatchPhysics, b = P.readBall(match), dir = team === "home" ? 1 : -1;
+  const goalZ = dir * 13.2, approaching = b.vz * dir > 2 && b.z * dir > 4;
+  const flight = approaching ? (goalZ - b.z) / b.vz : Infinity;
+  const predictedX = b.x + b.vx * clamp(flight, 0, 1.4);
+  if (approaching && !keeper.threatAt) keeper.threatAt = match.simulationTime;
+  if (!approaching) keeper.threatAt = null;
+  const reaction = 0.18 - clamp((match.opponentMultiplier || 1) - 1, 0, 1.2) * 0.035;
+  const ready = keeper.threatAt != null && match.simulationTime - keeper.threatAt >= reaction;
+  const loose = !match.possessionId && Math.hypot(b.vx,b.vz) < 3 && b.y < 0.65;
+  const rush = loose && b.z * dir > 9 && Math.abs(b.x) < 4;
+  let tx = clamp(b.x * 0.38, -2.2, 2.2), tz = dir * (12.7 - clamp((14 - b.z * dir) * 0.04, 0, 0.7));
+  if (rush) { tx = b.x; tz = b.z; }
+  if (ready && flight > 0 && flight < 0.65 && Math.abs(predictedX) < 4 && match.simulationTime >= (keeper.recoverUntil || 0)) {
+    const dx = predictedX - P.x(keeper.x);
+    keeper.dive = { start: match.simulationTime, until: match.simulationTime + 0.65,
+      direction: Math.sign(dx) || 1, height: clamp(b.y + b.vy * flight - 4.905 * flight * flight, 0.35, 2.3) };
+    keeper.recoverUntil = match.simulationTime + 1.0;
+  }
+  const diving = keeper.dive && match.simulationTime < keeper.dive.until;
+  if (diving) tx = P.x(keeper.x) + keeper.dive.direction * 1.5;
+  const dx = tx - P.x(keeper.x), dz = tz - P.z(keeper.y), len = Math.hypot(dx,dz);
+  steerMatchPlayer(keeper, len > 0.01 ? dx/len : 0, len > 0.01 ? dz/len : 0, Math.min(diving ? 4 : rush ? 3.6 : 2.5, len * 4), dt);
+  keeper.facing = team === "home" ? Math.PI : 0;
+  keeper.ready = ready;
+}
+
+function matchMovementInput() {
+  const keyboardX = (matchMovementKeys.has("arrowright") || matchMovementKeys.has("d") ? 1 : 0)
+    - (matchMovementKeys.has("arrowleft") || matchMovementKeys.has("a") ? 1 : 0);
+  const keyboardY = (matchMovementKeys.has("arrowdown") || matchMovementKeys.has("s") ? 1 : 0)
+    - (matchMovementKeys.has("arrowup") || matchMovementKeys.has("w") ? 1 : 0);
+  const x = keyboardX || joystickVector.x;
+  const y = keyboardY || joystickVector.y;
+  const magnitude = Math.hypot(x, y);
+  return magnitude > 1 ? { x: x / magnitude, y: y / magnitude } : { x, y };
+}
+
+function dribbleMatchPlayer(match, p, dt, sprinting = false) {
+  const P = FCMatchPhysics, b = P.readBall(match);
+  if (P.protectedRelease(match, p.id) || b.y > 0.7 || p.action && match.simulationTime < p.action.until) return;
+  const dx = b.x - P.x(p.x), dz = b.z - P.z(p.y), distance = Math.hypot(dx, dz);
+  const ballSpeed = Math.hypot(b.vx, b.vz);
+  if (distance > 0.85 || ballSpeed > 6.3) {
+    if (match.possessionId === p.id && distance > 1.3) match.possessionId = null;
+    return;
+  }
+  const fx = Math.sin(p.facing), fz = Math.cos(p.facing);
+  if (distance > 0.5 && dx * fx + dz * fz < -0.12) return;
+  if ((p.speed || 0) < 0.2) {
+    if (ballSpeed < 1.6) match.possessionId = p.id;
+    return;
+  }
+  if ((p.travelled || 0) < (p.nextTouchTravel || 0)) return;
+  const alignment = distance > 0.001 ? clamp((dx * fx + dz * fz) / distance, 0, 1) : 1;
+  const touchSpeed = (p.speed || 0) + (sprinting ? 1.1 : 0.8);
+  b.vx = fx * touchSpeed * (0.7 + 0.3 * alignment); b.vz = fz * touchSpeed * (0.7 + 0.3 * alignment);
+  b.vy = 0; b.spin = 0;
+  P.writeBall(match, b);
+  p.nextTouchTravel = (p.travelled || 0) + (sprinting ? 1.15 : 0.55); p.touchAt = match.simulationTime;
+  match.lastTouchTeam = p.team; match.lastTouchPlayer = p.name; match.lastTouchPlayerId = p.id; match.possessionId = p.id;
+  match.releasePlayerId = p.id; match.releaseUntil = match.simulationTime + 0.1;
+}
+
+function applyControlledDribbleTouch(match, dt, sprinting) {
+  const p = match.homePlayers?.[match.controlledPlayerIndex];
+  if (p) dribbleMatchPlayer(match, p, dt, sprinting);
+}
+
+function simulateMatchBall(match, dt) {
+  if (updateKeeperPossession(match, dt)) return;
+  const result = FCMatchPhysics.step(match, dt, [...(match.homePlayers || []), ...(match.awayPlayers || [])]);
+  if (result.boundary) {
+    if (result.boundary.type === "goal") scorePhysicalGoal(match, result.boundary.team);
+    else beginQuickRestart(match, result.boundary);
+    return;
+  }
+  if (result.contact?.type === "post" || result.contact?.type === "bar") emitMatchEvent(match, result.contact.type);
+  resolveGoalkeeperSave(match, "away");
+  resolveGoalkeeperSave(match, "home");
+  if (match.keeperHold) return;
+
+}
+
+function updateKeeperPossession(match, dt) {
+  if (!match.keeperHold) return false;
+  const keeper = match[match.keeperHold.team + "Players"][0];
+  const P = FCMatchPhysics, team = keeper.team;
+  match.keeperHold.time -= dt;
+  P.writeBall(match, { x: P.x(keeper.x), z: P.z(keeper.y) + (team === "home" ? -0.3 : 0.3),
+    y: 0.85, vx: 0, vz: 0, vy: 0, spin: 0 });
+  if (match.keeperHold.time > 0) return true;
+  const target = passTarget(match, keeper, { x: 0, z: team === "home" ? -1 : 1 });
+  const b = P.readBall(match), dx = target.x-b.x, dz = target.z-b.z, distance = Math.hypot(dx,dz)||1;
+  const speed = Math.sqrt(2 * P.pitch.rollingDeceleration * distance + 4);
+  P.release(match, keeper.id, team, keeper.name, dx / distance * speed, dz / distance * speed, 0.4);
+  match.releaseUntil = match.simulationTime + 0.65;
+  match.keeperHold = null;
+  emitMatchEvent(match, "kick", keeper, { power: 0.4 });
+  return false;
+}
+
+function resolveGoalkeeperSave(match, team) {
+  const P = FCMatchPhysics, keeper = match[team + "Players"]?.[0], b = P.readBall(match);
+  if (!keeper || match.keeperHold || P.protectedRelease(match, keeper.id)) return;
+  const speed = Math.hypot(b.vx,b.vz), dir = team === "home" ? 1 : -1;
+  const coming = b.vz * dir > 1;
+  if (speed > 4 && (!keeper.ready || !coming)) return;
+  const diving = keeper.dive && match.simulationTime < keeper.dive.until;
+  const progress = diving ? clamp((match.simulationTime - keeper.dive.start) / 0.28,0,1) : 0;
+  const handX = P.x(keeper.x) + (diving ? keeper.dive.direction * 0.45 * progress : 0);
+  const handZ = P.z(keeper.y) - dir * 0.23;
+  const handY = diving ? 0.65 + (keeper.dive.height - 0.65) * progress : clamp(b.y,0.25,1.1);
+  const previous = match.previousBall;
+  const oldX = previous ? P.x(previous.x) : b.x, oldZ = previous ? P.z(previous.y) : b.z;
+  const t = P.sweep(oldX,oldZ,b.x,b.z,handX,handZ,diving ? 0.58 : 0.55);
+  if (t === null || Math.abs(b.y-handY) > (diving ? 0.5 : 0.55)) return;
+  if (speed < 7 && b.y < 1.35 && !diving) {
+    match.keeperHold = { team, time: 0.8 }; match.possessionId = keeper.id;
+    match.lastTouchPlayerId = keeper.id; match.lastTouchPlayer = keeper.name; match.lastTouchTeam = team;
+    match.pendingShooter = null;
+    emitMatchEvent(match,"catch",keeper);
+  } else {
+    const side = Math.sign(b.x-P.x(keeper.x)) || (keeper.dive?.direction || 1);
+    P.release(match,keeper.id,team,keeper.name,side*Math.max(3,Math.abs(b.vx)*0.6),-dir*Math.max(3,Math.abs(b.vz)*0.45),1.7);
+    match.releaseUntil = match.simulationTime + 0.65;
+    emitMatchEvent(match,"save",keeper);
+  }
+}
+
+function scorePhysicalGoal(match, scoringTeam) {
+  if (match.phase !== "play") return;
+  match.phase = "goal";
+  const scorer = [...match.homePlayers,...match.awayPlayers].find(p => p.id === match.lastTouchPlayerId);
+  const ownGoal = scorer && scorer.team !== scoringTeam;
+  const scorerName = match.pendingShooter || scorer?.name || match.lastTouchPlayer || (scoringTeam === "home" ? "FC Stars" : match.awayLeader);
+  match[scoringTeam] += 1;
+  const goalNumber = scoringTeam === "home" && !ownGoal ? addGoalForPlayer(scorerName) : 1;
+  match.goals = [{scorer:scorerName,minute:Math.floor(match.displaySeconds/60),goalNumber,celebration:ownGoal?"Own goal":"Goal",team:scoringTeam},...match.goals].slice(0,12);
+  match.celebratingTeam = scoringTeam; match.goalEventId = (match.goalEventId || 0) + 1;
+  match.matchPausedUntil = match.simulationTime + 1.8;
+  for (const p of [...match.homePlayers,...match.awayPlayers]) {
+    p.vx = p.vy = p.speed = 0;
+    if (p.team === scoringTeam && (p.id === scorer?.id || FCMatchPhysics.distance(p.x,p.y,match.ballX,match.ballY)<7))
+      p.action = {kind:"celebrate",start:match.simulationTime,until:match.matchPausedUntil};
+    else p.action = null;
+  }
+  match.playerVX = match.playerVY = 0; match.ballVX = match.ballVY = match.ballVZ = 0; match.possessionId = null;
+  match.pendingShooter = null; cancelShotCharge();
+  emitMatchEvent(match,"goal",scorer,{team:scoringTeam,ballX:match.ballX,ballY:match.ballY});
+  matchScoreLabel.textContent = match.home + " - " + match.away;
+  reportTitle.textContent = scorerName + (ownGoal ? " · own goal" : " scores");
+  reportText.textContent = "FC Stars " + match.home + " – " + match.away + " " + match.awayLeader;
+  saveState(); renderGoalFeed();
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+function cleanText(value, maximum = 120) {
+  return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, maximum);
+}
+
+function escapeHtml(value) {
+  return cleanText(value, 240).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+}
+
+function isUsernameTaken(username, ignoredAccountId = null) {
+  const key = cleanText(username, 24).toLocaleLowerCase();
+  return accounts.some((account) => account.id !== ignoredAccountId && cleanText(account.username, 24).toLocaleLowerCase() === key);
+}
+
+function cancelShotCharge() {
+  matchShootCharging = false;
+  if (matchShootChargeFrame) cancelAnimationFrame(matchShootChargeFrame);
+  matchShootChargeFrame = null;
+  matchShootBtn.classList.remove("is-charging", "is-overpowered");
+  if (matchShotPowerFill) matchShotPowerFill.style.width = "0%";
 }
 
 function stopMatchMovement() {
-  if (matchMoveTimer) window.clearInterval(matchMoveTimer);
-  matchMoveTimer = null;
+  cancelShotCharge();
+  if (state.activeMatch) state.activeMatch.sprinting = false;
   activeJoystickPointer = null;
+  matchMovementKeys.clear();
   joystickVector = { x: 0, y: 0 };
+  if (matchShootCharging) {
+    matchShootCharging = false;
+    if (matchShootChargeFrame) cancelAnimationFrame(matchShootChargeFrame);
+    matchShootChargeFrame = null;
+  }
+  if (matchShotPowerFill) matchShotPowerFill.style.width = "0%";
   if (matchJoystickKnob) matchJoystickKnob.style.transform = "translate(-50%, -50%)";
 }
 
@@ -1680,12 +2402,12 @@ function playerNode(player) {
   node.style.top = `${player.y}%`;
   node.innerHTML = `
     <span class="pitch-player-head">
-      <span>${shortName(player.name)}</span>
-      <strong>${jerseyNumber(player)}</strong>
+      <span>${escapeHtml(shortName(player.name))}</span>
+      <strong>${escapeHtml(jerseyNumber(player))}</strong>
     </span>
     <span class="pitch-card-rating">
       <strong>${ratingLabel(player)}</strong>
-      <span>${player.slot}</span>
+      <span>${escapeHtml(player.slot)}</span>
     </span>
     <span class="tag">${player.controlled ? `YOU${isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
   `;
@@ -1732,6 +2454,7 @@ function selectReplaceSlot(player) {
 }
 
 function shortName(name) {
+  name = cleanText(name, 48) || "Player";
   if (name === "Cristiano Ronaldo") return "Cristiano...";
   if (name.length <= 13) return name;
   const parts = name.split(" ");
@@ -2175,19 +2898,19 @@ function renderInventory() {
     item.innerHTML = `
       <div class="card-rating">
         <strong>${ratingLabel(card)}</strong>
-        <span>${card.position}</span>
+        <span>${escapeHtml(card.position)}</span>
       </div>
       <div class="card-image-wrap">
-        <img class="card-photo" src="${playerPhoto(card)}" alt="${card.name}" loading="lazy">
+        <img class="card-photo" alt="${escapeHtml(card.name)}" loading="lazy">
       </div>
       <div class="card-details">
-        <strong>${card.name}</strong>
-        <span>${card.team}</span>
-        <small>${card.rarity}</small>
+        <strong>${escapeHtml(card.name)}</strong>
+        <span>${escapeHtml(card.team)}</span>
+        <small>${escapeHtml(card.rarity)}</small>
       </div>
       <div class="inventory-actions">
-        <button data-become="${card.id}">Become</button>
-        <button class="${canPlaceAtSelectedSpot ? "secondary" : "danger-btn"}" data-card="${card.id}" data-action="${canPlaceAtSelectedSpot ? "place" : "delete"}">${canPlaceAtSelectedSpot ? `Put at ${selectedSpot.slot}` : "Delete"}</button>
+        <button data-become>Become</button>
+        <button class="${canPlaceAtSelectedSpot ? "secondary" : "danger-btn"}" data-card data-action="${canPlaceAtSelectedSpot ? "place" : "delete"}">${canPlaceAtSelectedSpot ? `Put at ${escapeHtml(selectedSpot.slot)}` : "Delete"}</button>
       </div>
     `;
     item.querySelector("[data-card]").addEventListener("click", (event) => {
@@ -2199,7 +2922,9 @@ function renderInventory() {
     });
     item.querySelector("[data-become]").addEventListener("click", () => becomeInventoryCard(card.id));
     inventory.appendChild(item);
-    loadPlayerPhoto(item.querySelector("img"), card);
+    const cardImage = item.querySelector("img");
+    cardImage.src = playerPhoto(card);
+    loadPlayerPhoto(cardImage, card);
   });
 }
 
@@ -2345,9 +3070,8 @@ function firstBotSpot() {
 }
 
 function placeCardOnTeam(card, forcedSlot) {
-  const targetSpot = forcedSlot
-    ? formation.find((spot) => spot.id === forcedSlot)
-    : availableSpotFor(card.position);
+  const targetSpot = (forcedSlot ? formation.find((spot) => spot.id === forcedSlot) : null)
+    || availableSpotFor(card.position);
   const oldCard = state.teamCards[targetSpot.id];
   Object.entries(state.teamCards).forEach(([slot, teamCard]) => {
     if (slot !== targetSpot.id && teamCard.name === card.name) {
@@ -2584,12 +3308,12 @@ function renderFriends() {
     if (isPending) {
       row.innerHTML = `
         <div>
-          <strong>${friend.username}</strong>
+          <strong>${escapeHtml(friend.username)}</strong>
           <span>Friend request pending</span>
         </div>
         <div class="friend-actions">
-          <button type="button" data-accept-friend="${friend.id}">Accept</button>
-          <button class="secondary danger-btn" type="button" data-decline-friend="${friend.id}">Decline</button>
+          <button type="button" data-accept-friend>Accept</button>
+          <button class="secondary danger-btn" type="button" data-decline-friend>Decline</button>
         </div>
       `;
       row.querySelector("[data-accept-friend]").addEventListener("click", () => acceptFriendRequest(friend.id));
@@ -2597,15 +3321,16 @@ function renderFriends() {
     } else {
       row.innerHTML = `
         <div>
-          <strong>${friend.username}</strong>
+          <strong>${escapeHtml(friend.username)}</strong>
           <span>${activeInvite ? "Team request active" : "Friended"}</span>
         </div>
         <div class="friend-actions">
-          <button class="secondary" type="button" data-invite="${friend.id}">${activeInvite ? "Invited" : "Invite to your XI"}</button>
-          <button class="secondary danger-btn" type="button" data-remove="${friend.id}" aria-label="Remove ${friend.username}">Remove</button>
+          <button class="secondary" type="button" data-invite>${activeInvite ? "Invited" : "Invite to your XI"}</button>
+          <button class="secondary danger-btn" type="button" data-remove>Remove</button>
         </div>
       `;
       row.querySelector("[data-invite]").disabled = activeInvite;
+      row.querySelector("[data-remove]").setAttribute("aria-label", `Remove ${friend.username}`);
       row.querySelector("[data-invite]").addEventListener("click", () => inviteFriend(friend.id));
       row.querySelector("[data-remove]").addEventListener("click", () => removeFriend(friend.id));
     }
@@ -2633,15 +3358,17 @@ function renderMatch() {
   pitch.hidden = Boolean(match);
   endMatchBtn.disabled = !match;
 
-  if (!match) return;
+  if (!match) { window.match3D?.update(null); return; }
+  normalizeMatchState(match);
 
   homeLeaderLabel.textContent = match.homeLeader || teamLeaderName();
   awayLeaderLabel.textContent = match.awayLeader || "Rival XI";
   matchScoreLabel.textContent = `${match.home} - ${match.away}`;
-  matchClockLabel.textContent = `${match.minute}' · Play now`;
+  matchClockLabel.textContent = `Live · ${formatMatchClock(match)}`;
   updateMatchField();
   renderGoalFeed();
-  if (!matchTimer) scheduleNextMatchMoment();
+  if (!matchPhysicsFrame) startMatchPhysics();
+
 }
 
 function renderGoalFeed() {
@@ -2658,8 +3385,8 @@ function renderGoalFeed() {
     const item = document.createElement("div");
     item.className = "goal-feed-item";
     item.innerHTML = `
-      <strong>${goal.minute}' ${goal.scorer}</strong>
-      <span>${goal.celebration} · goal no. ${goal.goalNumber}</span>
+      <strong>${escapeHtml(goal.minute)}' ${escapeHtml(goal.scorer)}</strong>
+      <span>${escapeHtml(goal.celebration)} · goal no. ${escapeHtml(goal.goalNumber)}</span>
     `;
     goalFeed.appendChild(item);
   });
@@ -2697,6 +3424,7 @@ function render() {
   renderFriends();
   renderMatch();
   renderJoinRequest();
+  window.syncPrototypeShell?.();
 }
 
 topSpinBtn.addEventListener("click", spinCard);
@@ -2705,10 +3433,24 @@ pitchPlayBtn.addEventListener("click", (event) => {
   startMatch();
 });
 matchPassBtn.addEventListener("click", () => matchAction("pass"));
-matchShootBtn.addEventListener("click", () => matchAction("shoot"));
+matchThroughBtn.addEventListener("click", () => matchAction("through"));
+matchCrossBtn.addEventListener("click", () => matchAction("cross"));
+matchShootBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  matchShootBtn.setPointerCapture?.(event.pointerId);
+  beginShotCharge();
+});
+matchShootBtn.addEventListener("pointerup", releaseShotCharge);
+matchShootBtn.addEventListener("pointercancel", cancelShotCharge);
+matchShootBtn.addEventListener("lostpointercapture", cancelShotCharge);
+matchShootBtn.addEventListener("click", (event) => { if (event.detail === 0) matchAction("shoot", 0.42); });
 matchTackleBtn.addEventListener("click", () => matchAction("tackle"));
 matchDribbleBtn.addEventListener("click", () => matchAction("dribble"));
-matchSprintBtn.addEventListener("pointerdown", () => {
+matchSwitchBtn.addEventListener("click", switchControlledPlayer);
+matchSprintBtn.addEventListener("pointercancel", () => { if (state.activeMatch) state.activeMatch.sprinting = false; });
+matchSprintBtn.addEventListener("lostpointercapture", () => { if (state.activeMatch) state.activeMatch.sprinting = false; });
+matchSprintBtn.addEventListener("pointerdown", (event) => {
+  matchSprintBtn.setPointerCapture(event.pointerId);
   if (!state.activeMatch) return;
   state.activeMatch.sprinting = true;
   updateMatchField();
@@ -2732,13 +3474,13 @@ matchJoystick.addEventListener("pointerdown", (event) => {
 matchJoystick.addEventListener("pointermove", (event) => {
   if (event.pointerId !== activeJoystickPointer) return;
   updateJoystick(event);
-  moveMatchPlayer(joystickVector.x, joystickVector.y);
 });
 matchJoystick.addEventListener("pointerup", (event) => {
   if (event.pointerId !== activeJoystickPointer) return;
   stopMatchMovement();
 });
 matchJoystick.addEventListener("pointercancel", stopMatchMovement);
+matchJoystick.addEventListener("lostpointercapture", stopMatchMovement);
 window.addEventListener("keydown", (event) => {
   if (!state.activeMatch) return;
   if (event.key === "Shift") {
@@ -2748,25 +3490,40 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.code === "Space") {
     event.preventDefault();
-    matchAction("shoot");
+    if (!event.repeat) beginShotCharge();
     return;
   }
-  const actionKeys = { p: "pass", P: "pass", t: "tackle", T: "tackle", e: "dribble", E: "dribble" };
+  if (event.key === "Tab") {
+    event.preventDefault();
+    if (!event.repeat) switchControlledPlayer();
+    return;
+  }
+  const actionKeys = { p: "pass", P: "pass", q: "through", Q: "through", c: "cross", C: "cross", t: "tackle", T: "tackle", e: "dribble", E: "dribble" };
   if (actionKeys[event.key]) {
     event.preventDefault();
-    matchAction(actionKeys[event.key]);
+    if (!event.repeat) matchAction(actionKeys[event.key]);
     return;
   }
   if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"].includes(event.key)) return;
   event.preventDefault();
-  const x = event.key === "ArrowRight" || event.key.toLowerCase() === "d" ? 1 : event.key === "ArrowLeft" || event.key.toLowerCase() === "a" ? -1 : 0;
-  const y = event.key === "ArrowDown" || event.key.toLowerCase() === "s" ? 1 : event.key === "ArrowUp" || event.key.toLowerCase() === "w" ? -1 : 0;
-  moveMatchPlayer(x, y);
+  matchMovementKeys.add(event.key.toLowerCase());
 });
 window.addEventListener("keyup", (event) => {
-  if (event.key !== "Shift" || !state.activeMatch) return;
-  state.activeMatch.sprinting = false;
-  updateMatchField();
+  matchMovementKeys.delete(event.key.toLowerCase());
+  if (event.code === "Space") {
+    event.preventDefault();
+    releaseShotCharge();
+  }
+  if (event.key === "Shift" && state.activeMatch) {
+    state.activeMatch.sprinting = false;
+    updateMatchField();
+  }
+});
+window.addEventListener("blur", stopMatchMovement);
+document.addEventListener("visibilitychange", () => {
+  stopMatchMovement();
+  if (document.hidden) stopMatchPhysics();
+  else if (state.activeMatch) startMatchPhysics();
 });
 pitchFullscreenBtn.addEventListener("click", (event) => {
   event.stopPropagation();
@@ -2774,7 +3531,7 @@ pitchFullscreenBtn.addEventListener("click", (event) => {
 });
 document.addEventListener("fullscreenchange", updatePitchFullscreenButton);
 redeemCodeBtn.addEventListener("click", redeemCode);
-endMatchBtn.addEventListener("click", endMatch);
+endMatchBtn.addEventListener("click", () => endMatch({ abandoned: true }));
 acceptJoinBtn.addEventListener("click", acceptJoinRequest);
 rejectJoinBtn.addEventListener("click", rejectJoinRequest);
 inventorySearch.addEventListener("input", renderInventory);
@@ -2851,6 +3608,8 @@ settingsBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", () => {
   const account = activeAccount();
+  stopMatchPhysics();
+  stopMatchMovement();
   state = freshState(accountInventoryGrant(account));
   if (account) {
     account.isDev = isDeveloperUsername(account.username);
