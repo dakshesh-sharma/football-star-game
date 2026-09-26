@@ -159,6 +159,10 @@ window.runFCGameTests = function () {
       assert(profileBackgroundOptions.every((background) => studioMarkup.includes(`data-profile-background="${background}"`)), 'All 10 background presets did not render');
       prototypeBackgroundMode = 'ai';
       assert(profileWorkspaceMarkup().includes('data-generate-profile-background'), 'AI background maker did not render');
+      const generatedUrl = profileAiImageUrl('neon trophy night', 42);
+      assert(generatedUrl.startsWith('https://image.pollinations.ai/prompt/') && generatedUrl.includes('model=flux'), 'AI background does not use a real image generation endpoint');
+      state.profileAiBackground = { prompt:'neon trophy night', hue:42, imageUrl:generatedUrl }; state.profileBackground = 'ai';
+      assert(profileWorkspaceMarkup().includes('background-ai-image') && profileWorkspaceMarkup().includes('image.pollinations.ai'), 'Generated AI image did not render as the profile background');
       prototypeBackgroundMode = 'upload';
       assert(profileWorkspaceMarkup().includes('prototypeProfileBackgroundInput'), 'Device background upload did not render');
       prototypeBackgroundStudioOpen = false; prototypeBackgroundMode = 'library';

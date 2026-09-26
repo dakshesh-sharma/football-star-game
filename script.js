@@ -267,7 +267,7 @@ const defaultState = {
   activeMatch: null,
   profileTitle: "Club Founder",
   profileBackground: "stadium",
-  profileAiBackground: { prompt: "", hue: 268 },
+  profileAiBackground: { prompt: "", hue: 268, imageUrl: "" },
   profileUploadedBackground: "",
   showcasePlayerNames: [],
   taskProgress: { ronaldoWinStreak: 0, totalWins: 0 }
@@ -644,8 +644,14 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.profileTitle = cleanText(savedState.profileTitle, 32) || "Club Founder";
   savedState.profileBackground = ["stadium", "royal", "midnight", "crimson", "aurora", "ocean", "sunset", "galaxy", "trophy", "electric", "ai", "upload"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
   savedState.profileAiBackground = savedState.profileAiBackground && typeof savedState.profileAiBackground === "object"
-    ? { prompt: cleanText(savedState.profileAiBackground.prompt, 80), hue: Math.max(0, Math.min(359, Number(savedState.profileAiBackground.hue) || 268)) }
-    : { prompt: "", hue: 268 };
+    ? {
+        prompt: cleanText(savedState.profileAiBackground.prompt, 80),
+        hue: Math.max(0, Math.min(359, Number(savedState.profileAiBackground.hue) || 268)),
+        imageUrl: /^https:\/\/(?:image\.pollinations\.ai\/prompt\/|gen\.pollinations\.ai\/image\/)/.test(savedState.profileAiBackground.imageUrl || "")
+          ? savedState.profileAiBackground.imageUrl
+          : ""
+      }
+    : { prompt: "", hue: 268, imageUrl: "" };
   savedState.profileUploadedBackground = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(savedState.profileUploadedBackground || "")
     ? savedState.profileUploadedBackground
     : "";

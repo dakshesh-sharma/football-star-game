@@ -25,6 +25,7 @@ let prototypeProfileQuery = '';
 let prototypeViewedProfileId = null;
 let prototypeBackgroundStudioOpen = false;
 let prototypeBackgroundMode = 'library';
+let profileAiGenerating = false;
 const profileBackgroundOptions = ['stadium', 'royal', 'midnight', 'crimson', 'aurora', 'ocean', 'sunset', 'galaxy', 'trophy', 'electric'];
 
 function newsEscape(value) {
@@ -37,10 +38,29 @@ function profilePromptHue(prompt) {
   return Math.abs(hash) % 360;
 }
 
+function profileAiImageUrl(prompt, seed = Math.floor(Math.random() * 1000000)) {
+  const artPrompt = `${String(prompt).trim()}, cinematic wide football stadium profile background, premium sports game art, dramatic floodlights, detailed atmosphere, no words, no lettering, no logos, landscape composition`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(artPrompt)}?width=1200&height=675&model=flux&nologo=true&seed=${seed}`;
+}
+
+function loadProfileAiImage(url) {
+  return new Promise((resolve, reject) => {
+    const preview = new Image();
+    const timer = window.setTimeout(() => reject(new Error('Image generation took too long. Try again.')), 75000);
+    preview.onload = () => { window.clearTimeout(timer); resolve(url); };
+    preview.onerror = () => { window.clearTimeout(timer); reject(new Error('The AI image service could not finish that scene. Try again.')); };
+    preview.src = url;
+  });
+}
+
 function profileBackgroundHeroAttributes(accountState, baseClass = 'profile-showcase-card') {
   const background = accountState?.profileBackground || 'stadium';
   if (background === 'ai') {
     const hue = Math.max(0, Math.min(359, Number(accountState?.profileAiBackground?.hue) || 268));
+    const imageUrl = accountState?.profileAiBackground?.imageUrl || '';
+    if (/^https:\/\/(?:image\.pollinations\.ai\/prompt\/|gen\.pollinations\.ai\/image\/)/.test(imageUrl)) {
+      return `class="${baseClass} background-ai background-ai-image" style="--ai-hue:${hue};background-image:linear-gradient(90deg,#090a14d9,#090a1428),url(${newsEscape(imageUrl)})"`;
+    }
     return `class="${baseClass} background-ai" style="--ai-hue:${hue}"`;
   }
   if (background === 'upload' && /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(accountState?.profileUploadedBackground || '')) {
@@ -256,11 +276,16 @@ document.querySelector('#labBackgroundStudio')?.addEventListener('click', (event
     showLabToast(`${backgroundButton.textContent.trim()} profile background equipped.`);
   }
 });
-document.querySelector('#labGenerateBackground')?.addEventListener('click', () => {
+document.querySelector('#labGenerateBackground')?.addEventListener('click', async (event) => {
   const prompt = document.querySelector('#labAiBackgroundPrompt').value.trim();
   if (!prompt) return showLabToast('Describe your background first.');
-  const hero = document.querySelector('#labProfileHero'); hero.className = 'lab-profile-hero background-ai'; hero.style.setProperty('--ai-hue', profilePromptHue(prompt));
-  showLabToast(`AI scene “${prompt.slice(0, 28)}” generated and equipped.`);
+  const button = event.currentTarget; button.disabled = true; button.textContent = 'GENERATING…';
+  try {
+    const imageUrl = await loadProfileAiImage(profileAiImageUrl(prompt));
+    const hero = document.querySelector('#labProfileHero'); hero.className = 'lab-profile-hero background-ai background-ai-image'; hero.style.cssText = `--ai-hue:${profilePromptHue(prompt)};background-image:linear-gradient(90deg,#090a14d9,#090a1428),url(${imageUrl})`;
+    showLabToast(`New AI image generated from “${prompt.slice(0, 28)}”.`);
+  } catch (error) { showLabToast(error.message); }
+  button.disabled = false; button.textContent = '✦ GENERATE';
 });
 document.querySelector('#labUploadBackgroundButton')?.addEventListener('click', () => document.querySelector('#labUploadBackgroundInput')?.click());
 document.querySelector('#labUploadBackgroundInput')?.addEventListener('change', async (event) => {
@@ -486,7 +511,7 @@ function profileWorkspaceMarkup() {
   const studioPane = prototypeBackgroundMode === 'library'
     ? `<div class="background-library">${backgroundLibraryMarkup(viewedState)}</div>`
     : prototypeBackgroundMode === 'ai'
-      ? `<label class="ai-background-maker"><span>Describe the background you want</span><input id="prototypeAiBackgroundPrompt" maxlength="80" value="${newsEscape(viewedState.profileAiBackground?.prompt || '')}" placeholder="e.g. neon Champions League night"><button type="button" data-generate-profile-background>✦ GENERATE BACKGROUND</button><small>Creates a unique colour scene from your words.</small></label>`
+      ? `<label class="ai-background-maker"><span>Describe the background you want</span><input id="prototypeAiBackgroundPrompt" maxlength="80" value="${newsEscape(viewedState.profileAiBackground?.prompt || '')}" placeholder="e.g. neon Champions League night"><button type="button" data-generate-profile-background ${profileAiGenerating ? 'disabled' : ''}>${profileAiGenerating ? 'GENERATING…' : '✦ GENERATE AI IMAGE'}</button><small>A real AI image is generated from your prompt. It can take up to a minute.</small>${viewedState.profileAiBackground?.imageUrl ? `<i class="ai-background-preview" style="background-image:url(${newsEscape(viewedState.profileAiBackground.imageUrl)})"></i>` : ''}</label>`
       : `<button type="button" class="upload-background-button" data-upload-profile-background><b>↑</b><span>CHOOSE FROM FINDER OR PHOTOS</span><small>Works on laptop and phone · JPG, PNG or WebP</small></button><input id="prototypeProfileBackgroundInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>`;
   return `<section class="workspace-card profile-workspace">
     <div class="profile-search-panel"><div><p>FIND A MANAGER</p><h3>Search profiles</h3></div><label><span>⌕</span><input id="prototypeProfileSearch" value="${newsEscape(prototypeProfileQuery)}" placeholder="Search any username" autocomplete="off"></label><div id="prototypeProfileResults" class="profile-search-results">${query ? (matches.length ? matches.map((account) => `<button data-profile-account="${account.id}"><i>${newsEscape(avatarStyles[account.avatarStyle] || 'FC')}</i><span><b>${newsEscape(account.username)}</b><small>${newsEscape(account.state?.profileTitle || 'Club Founder')} · Level ${newsEscape(levelDisplay(account.state?.level || 1, account.state?.infiniteLevel))}</small></span><em>VIEW →</em></button>`).join('') : '<p>No local profile found.</p>') : '<p>Search profiles created on this game.</p>'}</div></div>
@@ -611,7 +636,7 @@ document.querySelector('#prototypePackTapTarget')?.addEventListener('click', () 
 });
 document.querySelector('#prototypeModalClose')?.addEventListener('click', () => closePrototypePack(true));
 document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPrototypePack);
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
   const profileAccount = event.target.closest('[data-profile-account]');
@@ -622,8 +647,18 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-generate-profile-background]') && activeAccount()) {
     const prompt = document.querySelector('#prototypeAiBackgroundPrompt')?.value.trim() || '';
     if (!prompt) { showPrototypeToast('Describe your dream background first.'); return; }
-    state.profileAiBackground = { prompt, hue:profilePromptHue(prompt) }; state.profileBackground = 'ai'; saveState();
-    prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Your AI-style background is ready.');
+    if (profileAiGenerating) return;
+    const button = event.target.closest('[data-generate-profile-background]');
+    profileAiGenerating = true; button.disabled = true; button.textContent = 'GENERATING AI IMAGE…';
+    showPrototypeToast('AI is building your football scene…');
+    try {
+      const imageUrl = await loadProfileAiImage(profileAiImageUrl(prompt));
+      state.profileAiBackground = { prompt, hue:profilePromptHue(prompt), imageUrl }; state.profileBackground = 'ai'; saveState();
+      profileAiGenerating = false;
+      prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('New AI image generated and equipped.');
+    } catch (error) {
+      button.disabled = false; button.textContent = '✦ GENERATE AI IMAGE'; showPrototypeToast(error.message);
+    } finally { profileAiGenerating = false; }
   }
   if (event.target.closest('[data-upload-profile-background]')) document.querySelector('#prototypeProfileBackgroundInput')?.click();
   const profileBackground = event.target.closest('[data-profile-background]');

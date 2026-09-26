@@ -406,7 +406,7 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
 .background-trophy { background:radial-gradient(circle at 78% 22%,#fff4a16b,transparent 20%),linear-gradient(135deg,#241804,#805a0e 50%,#d3a62e); }
 .background-electric { background:linear-gradient(115deg,transparent 45%,#a8fffa 46% 47%,transparent 48%),radial-gradient(circle at 25% 20%,#25fff770,transparent 28%),linear-gradient(145deg,#081326,#163fb0 60%,#5c18b8); }
 .background-ai { background:radial-gradient(circle at 78% 18%,hsl(var(--ai-hue) 95% 78% / .55),transparent 26%),radial-gradient(circle at 20% 90%,hsl(calc(var(--ai-hue) + 80) 90% 56% / .5),transparent 38%),linear-gradient(135deg,hsl(var(--ai-hue) 72% 16%),hsl(calc(var(--ai-hue) + 42) 70% 42%)); }
-.background-upload { background-position:center; background-size:cover; }
+.background-ai-image,.background-upload { background-position:center; background-size:cover; }
 .profile-section-heading .profile-see-all,.profile-see-all { background:#c7ff3717; border:1px solid #c7ff3747; border-radius:99px; color:var(--lime); font-size:.5rem; font-weight:900; letter-spacing:.08em; padding:7px 10px; }
 .profile-backgrounds { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .profile-backgrounds button,.background-library button { min-height:64px; position:relative; }
@@ -432,7 +432,9 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
 .ai-background-maker>span { color:#a7acbd; font-size:.5rem; font-weight:900; grid-column:1/-1; }
 .ai-background-maker input { background:#070913; border:1px solid #ffffff1d; border-radius:8px; color:#fff; outline:0; padding:11px; }
 .ai-background-maker button,.upload-background-button { background:linear-gradient(135deg,var(--lime),#76d9ff); border-radius:8px; color:#101307; font-size:.53rem; font-weight:900; padding:12px; }
+.ai-background-maker button:disabled { cursor:wait; filter:saturate(.4); opacity:.7; }
 .ai-background-maker small { color:#777d91; font-size:.42rem; grid-column:1/-1; }
+.ai-background-preview { background-position:center; background-size:cover; border:1px solid #ffffff25; border-radius:10px; display:block; grid-column:1/-1; height:110px; }
 .upload-background-button { align-items:center; display:grid; gap:2px; grid-template-columns:42px 1fr; text-align:left; width:100%; }
 .upload-background-button b { align-items:center; background:#11182722; border:1px solid #11182742; border-radius:8px; display:flex; font-size:1.15rem; grid-row:1/3; height:36px; justify-content:center; width:36px; }
 .upload-background-button span { font-size:.58rem; }
