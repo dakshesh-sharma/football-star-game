@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars — Prototype Lab</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="prototype.css?v=20260926-laptop4" />
+    <link rel="stylesheet" href="prototype.css?v=20260926-news5" />
   </head>
   <body class="prototype-lab">
     <main class="prototype-shell">
@@ -24,6 +24,7 @@
         <button class="tab" data-screen="squad">Squad Builder</button>
         <button class="tab" data-screen="match">Matchday</button>
         <button class="tab" data-screen="club">My Club</button>
+        <button class="tab" data-screen="news">Newsroom</button>
       </nav>
 
       <section class="phone" aria-label="FC Stars responsive laptop prototype">
@@ -36,7 +37,7 @@
               <div class="hero-copy"><p>SEASON 01 · RISING ICONS</p><h2>Your club is<br><em>on fire.</em></h2><span class="streak">⚡ 4 match win streak</span></div>
               <div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
             </div>
-            <div id="labMenu" class="lab-menu" hidden><button data-go="packs">Open a pack</button><button data-go="squad">Manage XI</button><button data-go="club">Club profile</button></div>
+            <div id="labMenu" class="lab-menu" hidden><button data-go="packs">Open a pack</button><button data-go="squad">Manage XI</button><button data-go="club">Club profile</button><button data-go="news">Latest news</button></div>
             <div class="balance-row"><div><span>🪙</span><strong id="labCoins">2,450</strong></div><div><span>◆</span><strong id="labGems">118</strong></div><button id="labAddBalance">+</button></div>
             <section class="mission-card"><div><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div class="progress"><i id="labMissionProgress"></i></div><small id="labMissionLabel">0 / 1 completed</small></div><button class="claim-btn" data-go="match">PLAY</button></section>
             <div class="section-heading"><h3>Quick play</h3><button data-go="match">See all</button></div>
@@ -47,7 +48,7 @@
             <div class="section-heading"><h3>Club news</h3><button data-lab-toast="Inbox cleared — you're matchday ready.">Inbox</button></div>
             <button class="news-card" data-go="packs"><div class="news-art">99</div><div><p>NEW EVENT</p><h3>Icons are live</h3><small>Build your dream XI before Sunday.</small></div><b>→</b></button>
           </div>
-          <nav class="bottom-nav"><button data-go="home" class="selected">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button></nav>
+          <nav class="bottom-nav"><button data-go="home" class="selected">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="news">◫<span>News</span></button></nav>
         </section>
 
         <section class="screen" data-screen-panel="packs">
@@ -59,7 +60,7 @@
             <p id="packHint" class="pack-hint">Guaranteed: 1 player rated 82+</p>
             <div class="odds"><div><span>82–87</span><b>72%</b></div><div><span>88–90</span><b>23%</b></div><div><span>91+</span><b>5%</b></div></div>
           </div>
-          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs" class="selected">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button></nav>
+          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs" class="selected">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="news">◫<span>News</span></button></nav>
         </section>
 
         <section class="screen" data-screen-panel="squad">
@@ -74,7 +75,7 @@
             </div>
             <div id="playerInspector" class="player-inspector"><span>Tap a player card to inspect</span><button id="labSwapPlayer">Swap player</button></div>
           </div>
-          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad" class="selected">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button></nav>
+          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad" class="selected">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="news">◫<span>News</span></button></nav>
         </section>
 
         <section class="screen" data-screen-panel="match">
@@ -94,7 +95,17 @@
             <div class="club-stats"><span><b>88</b><small>XI RATING</small></span><span><b>31</b><small>CHEMISTRY</small></span><span><b>4</b><small>WIN STREAK</small></span></div>
             <article class="achievement-card"><i>🏆</i><div><p>NEW MILESTONE</p><h3>Four in a row</h3><small>Win one more match to unlock a neon badge.</small></div></article>
           </div>
-          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club" class="selected">◉<span>Club</span></button></nav>
+          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club" class="selected">◉<span>Club</span></button><button data-go="news">◫<span>News</span></button></nav>
+        </section>
+
+        <section class="screen" data-screen-panel="news">
+          <div class="screen-scroll lab-news-screen">
+            <div class="top-line"><button class="round-btn" data-go="home">‹</button><div><p>FC STARS NEWSROOM</p><h2>The football feed</h2></div><span class="news-live-badge"><i></i> DEMO FEED</span></div>
+            <label class="lab-news-search"><span>⌕</span><input id="labNewsSearch" type="search" placeholder="Search Messi, Ronaldo, clubs…" autocomplete="off"><kbd>⌘ K</kbd></label>
+            <div id="labNewsFilters" class="news-filter-row"><button class="selected" data-news-filter="All">All</button><button data-news-filter="Ronaldo">Ronaldo</button><button data-news-filter="Messi">Messi</button><button data-news-filter="Match report">Matches</button></div>
+            <div id="labNewsFeed" class="lab-news-feed"></div>
+          </div>
+          <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="news" class="selected">◫<span>News</span></button></nav>
         </section>
       </section>
       <section class="desktop-prototype" aria-label="FC Stars laptop prototype">
@@ -105,6 +116,6 @@
       <p class="lab-note">Interactive prototype: open packs, edit your XI, play match actions, and customise your club.</p>
       <div id="labToast" class="prototype-toast" role="status" aria-live="polite"></div>
     </main>
-    <script src="prototype.js?v=20260926-laptop4"></script>
+    <script src="prototype.js?v=20260926-news5"></script>
   </body>
 </html>

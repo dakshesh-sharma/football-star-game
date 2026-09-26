@@ -2871,8 +2871,8 @@ function renderInventory() {
   const searchTerm = inventorySearch.value.trim().toLowerCase();
   clearReplaceFilterBtn.hidden = !selectedSpot;
   replaceHint.textContent = selectedSpot
-    ? `Replacing ${selectedSpot.slot}. Matching cards are shown first, but all saved cards stay visible.`
-    : "Roll a card, then become it, save it, or click a pitch player to replace.";
+    ? `Replacing ${selectedSpot.slot}. Position freedom is on — any saved player can play here.`
+    : "Roll a card, save it, then click any pitch position to place any player there.";
 
   if (!state.inventory.length) {
     inventory.textContent = "No saved cards yet. Roll a player, then press Save.";
@@ -2909,7 +2909,7 @@ function renderInventory() {
         <span>${escapeHtml(card.position)}</span>
       </div>
       <div class="card-image-wrap">
-        <img class="card-photo" alt="${escapeHtml(card.name)}" loading="lazy">
+        <img class="card-photo" alt="${escapeHtml(card.name)}" loading="eager" decoding="async">
       </div>
       <div class="card-details">
         <strong>${escapeHtml(card.name)}</strong>
@@ -2991,16 +2991,6 @@ function useCard(id) {
   const card = state.inventory[cardIndex];
   if (!card) return;
 
-  const selectedSpot = formation.find((spot) => spot.id === state.replaceSlot);
-  if (selectedSpot && !canPlaySlot(card, selectedSpot.slot)) {
-    state.replaceSlot = null;
-    reportTitle.textContent = `Choose a ${card.position} spot`;
-    reportText.textContent = `${card.name} cannot play ${selectedSpot.slot}. Pick a matching pitch player, then place the card.`;
-    saveState();
-    render();
-    return;
-  }
-
   if (state.selectedStar?.name === card.name && !isControlledSlot(state.replaceSlot)) {
     state.replaceSlot = null;
     reportTitle.textContent = `${card.name} already in your XI`;
@@ -3034,7 +3024,7 @@ function useCard(id) {
   state.replaceSlot = null;
 
   reportTitle.textContent = `${card.name} joined your XI`;
-  reportText.textContent = `${card.name} replaced the named card player at ${placed.targetSlot}. Real players can replace these cards later.`;
+  reportText.textContent = `${card.name} is now playing at ${placed.targetSlot}, with no position restriction.`;
   saveState();
   render();
 }
@@ -3106,7 +3096,7 @@ function isControlledSlot(slotId) {
 }
 
 function canPlaySlot(card, slot) {
-  return playableSlots(card.position).includes(slot);
+  return Boolean(card && slot);
 }
 
 function playableSlots(position) {
@@ -3222,6 +3212,7 @@ function playerPhoto(card) {
 
 
 function loadPlayerPhoto(image, card) {
+  image.addEventListener("error", () => { image.src = playerFallbackPhoto(card); }, { once: true });
   if (card.image) return;
   const page = encodeURIComponent(wikiPageName(card.name));
   fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${page}`)
@@ -3230,6 +3221,12 @@ function loadPlayerPhoto(image, card) {
       if (data?.thumbnail?.source) image.src = data.thumbnail.source;
     })
     .catch(() => {});
+}
+
+function playerFallbackPhoto(card) {
+  const initials = String(card?.name || "FC").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#6f4bff"/><stop offset="1" stop-color="#d53a83"/></linearGradient></defs><rect width="320" height="320" rx="28" fill="#111816"/><circle cx="160" cy="126" r="72" fill="url(#g)"/><path d="M55 302c8-72 49-111 105-111s97 39 105 111" fill="url(#g)"/><text x="160" y="147" text-anchor="middle" font-family="Arial,sans-serif" font-size="54" font-weight="900" fill="white">${initials}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function wikiPageName(name) {

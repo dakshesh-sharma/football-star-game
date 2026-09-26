@@ -107,6 +107,15 @@ window.runFCGameTests = function () {
       assert(markup.includes('NEYMAR') && !markup.includes('RONALDO'), 'Squad summary is still hard-coded');
     });
 
+    check('Any player can be placed in any position', () => {
+      state = account.state = freshState(false);
+      const goalkeeper = { ...cardPool.find((card) => card.name === 'Alisson'), id: 'free-position-alisson' };
+      state.inventory = [goalkeeper]; state.replaceSlot = 'st';
+      assert(canPlaySlot(goalkeeper, 'ST'), 'Goalkeeper was blocked from striker');
+      useCard(goalkeeper.id);
+      assert(state.teamCards.st?.name === 'Alisson', 'Player was not placed in the chosen unrestricted slot');
+    });
+
     check('Logout clears live state and stops simulation', () => {
       activeAccountId = account.id; state = account.state = freshState(false);
       state.activeMatch = { home: 0, away: 0 };
@@ -114,14 +123,21 @@ window.runFCGameTests = function () {
       assert(activeAccountId === null && state.activeMatch === null && !matchPhysicsFrame, 'Previous account remained active');
     });
 
-    check('All five primary views remain reachable', () => {
-      const views = ['Home', 'Packs', 'Squad', 'Play', 'Club'];
+    check('All six primary views remain reachable', () => {
+      const views = ['Home', 'Packs', 'Squad', 'Play', 'Club', 'News'];
       activeAccountId = account.id; state = account.state = freshState(false);
       for (const view of views) {
         selectPrototypeView(view);
         assert(document.querySelector(`[data-prototype-view="${view}"]`).classList.contains('rail-active'), `${view} navigation failed`);
         assert(prototypeWorkspace.textContent.trim().length > 20, `${view} content is empty`);
       }
+    });
+
+    check('News search finds every Ronaldo story newest first', () => {
+      selectPrototypeView('News');
+      const results = filteredNewsStories('Ronaldo');
+      assert(results.length >= 4 && results.every((story) => `${story.title} ${story.player} ${story.tags.join(' ')}`.toLowerCase().includes('ronaldo')), 'Ronaldo search missed or included the wrong stories');
+      assert(results.every((story, index) => index === 0 || new Date(results[index - 1].published) >= new Date(story.published)), 'News was not newest first');
     });
   } finally {
     closePrototypePack(false);

@@ -7,6 +7,48 @@ const labColourPresets = {
   violet: ['#7838ef', '#c7ff37'], cyan: ['#087f9a', '#35f5ff'],
   coral: ['#d72f59', '#ffb23f'], gold: ['#a96b0b', '#ffe066']
 };
+const prototypeNewsStories = [
+  { id:'messi-clasico-hat-trick', published:'2026-09-26T16:45:00+05:30', time:'12 min ago', category:'Classic rewind', player:'Lionel Messi', title:'Messi scored a hat-trick against Real Madrid — relive the 4–3 classic', dek:'Three goals, two penalties and one unforgettable Clásico performance from March 2014.', image:'assets/messi.png', tone:'gold', tags:['Messi','Barcelona','Real Madrid','Match report'] },
+  { id:'ronaldo-finishing', published:'2026-09-26T15:30:00+05:30', time:'1 hr ago', category:'Player focus', player:'Cristiano Ronaldo', title:'Ronaldo finishing masterclass: five movements every striker studies', dek:'Breaking down the timing, body shape and explosive first step behind the iconic number 7.', image:'assets/ronaldo.png', tone:'violet', tags:['Ronaldo','Portugal','Training'] },
+  { id:'neymar-icons', published:'2026-09-26T13:10:00+05:30', time:'3 hrs ago', category:'FC Stars', player:'Neymar Jr', title:'Rising Icons spotlight: Neymar brings flair to the new event', dek:'Skill moves, creative passing and a G.O.A.T card headline this week’s prototype event.', image:'assets/neymar-jr.png', tone:'cyan', tags:['Neymar','Brazil','FC Stars'] },
+  { id:'ronaldo-juventus', published:'2026-09-25T20:00:00+05:30', time:'Yesterday', category:'Classic rewind', player:'Cristiano Ronaldo', title:'The Ronaldo bicycle kick that brought an entire stadium to its feet', dek:'A frame-by-frame look back at the spectacular 2018 Champions League strike in Turin.', image:'assets/ronaldo.png', tone:'coral', tags:['Ronaldo','Real Madrid','Juventus','Champions League'] },
+  { id:'messi-vision', published:'2026-09-25T17:20:00+05:30', time:'Yesterday', category:'Tactics', player:'Lionel Messi', title:'How Messi finds the pass before the defence sees the danger', dek:'The scanning habits and half-space positioning that make the Argentine impossible to predict.', image:'assets/messi.png', tone:'violet', tags:['Messi','Argentina','Tactics'] },
+  { id:'ronaldo-hat-tricks', published:'2026-09-24T18:00:00+05:30', time:'2 days ago', category:'Numbers', player:'Cristiano Ronaldo', title:'Ronaldo hat-trick archive: the nights when one player owned the scoreboard', dek:'From Madrid to Portugal, revisit a collection of ruthless three-goal performances.', image:'assets/ronaldo.png', tone:'gold', tags:['Ronaldo','Portugal','Hat-trick'] },
+  { id:'ronaldo-nazario', published:'2026-09-23T12:00:00+05:30', time:'3 days ago', category:'Icons', player:'Ronaldo Nazário', title:'Ronaldo Nazário: the explosive number 9 who changed centre-forward play', dek:'Why O Fenômeno’s acceleration, balance and finishing still inspire modern attackers.', image:'assets/generated/fc-stars-stadium-v2.png', tone:'cyan', tags:['Ronaldo','Brazil','Icons'] },
+  { id:'clasico-tactics', published:'2026-09-22T10:30:00+05:30', time:'4 days ago', category:'Match report', player:'', title:'Clásico tactical board: where Barcelona and Real Madrid create overloads', dek:'A clean visual guide to the wide rotations, midfield traps and transition lanes.', image:'assets/generated/fc-stars-stadium-v2.png', tone:'coral', tags:['Barcelona','Real Madrid','Match report'] }
+].sort((a,b) => new Date(b.published) - new Date(a.published));
+let labNewsFilter = 'All';
+let prototypeNewsQuery = '';
+let prototypeNewsFilter = 'All';
+const prototypeSavedNews = new Set();
+
+function newsEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[character]);
+}
+
+function filteredNewsStories(query = '', filter = 'All') {
+  const term = String(query).trim().toLocaleLowerCase();
+  return prototypeNewsStories.filter((story) => {
+    const haystack = [story.title, story.dek, story.player, story.category, ...story.tags].join(' ').toLocaleLowerCase();
+    const filterMatches = filter === 'All' || haystack.includes(filter.toLocaleLowerCase());
+    return filterMatches && (!term || haystack.includes(term));
+  });
+}
+
+function newsCardsMarkup(stories, context = 'lab') {
+  if (!stories.length) return `<section class="news-empty"><b>NO STORIES FOUND</b><span>Try a player surname, club, or “match”.</span><button data-news-clear>Clear search</button></section>`;
+  return stories.map((story, index) => `<article class="news-story-card tone-${story.tone} ${index === 0 ? 'news-featured' : ''}" data-news-id="${story.id}">
+    <div class="news-story-art"><img src="${newsEscape(story.image)}" alt="${newsEscape(story.player || 'Football stadium')}"><span>${newsEscape(story.category)}</span></div>
+    <div class="news-story-copy"><div class="news-story-meta"><time datetime="${story.published}">${newsEscape(story.time)}</time><span>${index === 0 ? 'LATEST' : newsEscape(story.tags[0])}</span></div><h3>${newsEscape(story.title)}</h3><p>${newsEscape(story.dek)}</p><div class="news-story-footer"><span>${story.tags.slice(0,3).map((tag) => `#${newsEscape(tag.replaceAll(' ', ''))}`).join(' ')}</span><button data-news-save="${story.id}" aria-label="Save ${newsEscape(story.title)}">${prototypeSavedNews.has(story.id) ? '★ SAVED' : '☆ SAVE'}</button></div></div>
+  </article>`).join('');
+}
+
+function renderLabNews() {
+  const feed = document.querySelector('#labNewsFeed');
+  if (!feed) return;
+  const stories = filteredNewsStories(document.querySelector('#labNewsSearch')?.value, labNewsFilter);
+  feed.innerHTML = `<div class="news-result-line"><span>${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span><b>NEWEST FIRST ↓</b></div>${newsCardsMarkup(stories)}`;
+}
 
 function showLabToast(message) {
   if (!labToast) return;
@@ -161,6 +203,34 @@ document.querySelector('#labApplyCustomColour')?.addEventListener('click', () =>
   applyLabColour('custom', colour, accent);
   showLabToast(`${colour.toUpperCase()} added and applied to the whole club.`);
 });
+document.querySelector('#labNewsSearch')?.addEventListener('input', renderLabNews);
+document.querySelector('#labNewsFilters')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-news-filter]');
+  if (!button) return;
+  labNewsFilter = button.dataset.newsFilter;
+  document.querySelectorAll('#labNewsFilters [data-news-filter]').forEach((item) => item.classList.toggle('selected', item === button));
+  renderLabNews();
+});
+document.querySelector('#labNewsFeed')?.addEventListener('click', (event) => {
+  if (event.target.closest('[data-news-clear]')) {
+    document.querySelector('#labNewsSearch').value = ''; labNewsFilter = 'All';
+    document.querySelectorAll('#labNewsFilters [data-news-filter]').forEach((item) => item.classList.toggle('selected', item.dataset.newsFilter === 'All'));
+    renderLabNews(); return;
+  }
+  const saveButton = event.target.closest('[data-news-save]');
+  if (saveButton) {
+    const id = saveButton.dataset.newsSave;
+    prototypeSavedNews.has(id) ? prototypeSavedNews.delete(id) : prototypeSavedNews.add(id);
+    renderLabNews(); showLabToast(prototypeSavedNews.has(id) ? 'Story saved to your reading list.' : 'Story removed from saved.'); return;
+  }
+  const story = event.target.closest('[data-news-id]');
+  if (story) { story.classList.add('is-read'); showLabToast('Story opened · marked as read.'); }
+});
+document.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'k' && labRoot) {
+    event.preventDefault(); selectLabScreen('news'); document.querySelector('#labNewsSearch')?.focus();
+  }
+});
 if (labRoot) {
   try {
     const savedColour = JSON.parse(localStorage.getItem('fc-stars-lab-colour'));
@@ -170,6 +240,7 @@ if (labRoot) {
       applyLabColour(savedColour.name, savedColour.primary, savedColour.accent, false);
     } else applyLabColour('violet', ...labColourPresets.violet, false);
   } catch { applyLabColour('violet', ...labColourPresets.violet, false); }
+  renderLabNews();
 }
 
 const prototypeToast = document.querySelector('#prototypeToast');
@@ -238,7 +309,7 @@ window.syncPrototypeShell = () => {
   syncPrototypeBalances();
   syncPrototypeProfile();
   const activeView = document.querySelector('.desktop-rail .rail-active')?.dataset.prototypeView;
-  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
+  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'News') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
   if (activeView === 'Club') restorePrototypeClubPhoto();
 };
 
@@ -268,7 +339,26 @@ function homeWorkspaceMarkup() {
   </section>`;
 }
 
+function newsWorkspaceMarkup() {
+  const stories = filteredNewsStories(prototypeNewsQuery, prototypeNewsFilter);
+  return `<section class="workspace-card news-workspace">
+    <header class="news-workspace-head"><div><span class="news-live-badge"><i></i> DEMO NEWSROOM</span><p>THE DAILY TOUCHLINE</p><h3>Football never stops.</h3><small>Curated prototype stories · newest publication time first</small></div><div class="news-pulse"><b>${stories.length}</b><span>STORIES FOUND</span><i>UPDATED NOW</i></div></header>
+    <div class="news-tools"><label><span>⌕</span><input id="prototypeNewsSearch" type="search" value="${newsEscape(prototypeNewsQuery)}" placeholder="Search Ronaldo, Messi, clubs…" autocomplete="off"><kbd>⌘ K</kbd></label><div id="prototypeNewsFilters" class="news-filter-row">${['All','Ronaldo','Messi','Match report'].map((filter) => `<button class="${filter === prototypeNewsFilter ? 'selected' : ''}" data-news-filter="${filter}">${filter === 'Match report' ? 'Matches' : filter}</button>`).join('')}</div></div>
+    <div id="prototypeNewsFeed" class="prototype-news-feed"><div class="news-result-line"><span>${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span><b>NEWEST FIRST ↓</b></div>${newsCardsMarkup(stories, 'desktop')}</div>
+  </section>`;
+}
+
+function updatePrototypeNewsResults() {
+  const feed = document.querySelector('#prototypeNewsFeed');
+  if (!feed) return;
+  const stories = filteredNewsStories(prototypeNewsQuery, prototypeNewsFilter);
+  feed.innerHTML = `<div class="news-result-line"><span>${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span><b>NEWEST FIRST ↓</b></div>${newsCardsMarkup(stories, 'desktop')}`;
+  const pulse = document.querySelector('.news-pulse b');
+  if (pulse) pulse.textContent = stories.length;
+}
+
 function prototypeViewMarkup(view) {
+  if (view === 'News') return newsWorkspaceMarkup();
   if (view === 'Packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Three taps. One walkout. A new superstar for your collection.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> ICONS</span><span><b>0</b> DUPLICATES</span></div><button data-prototype-open-pack>OPEN PACK <b>50 COINS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal · Alisson</small></div><button class="workspace-pack-art" data-prototype-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
   if (view === 'Squad') {
     const team = buildTeam().slice().sort((a,b) => ratingSortValue(b) - ratingSortValue(a));
@@ -290,7 +380,8 @@ function selectPrototypeView(view) {
     Packs: ['PACK STORE · RISING ICONS', 'Open the next<br><em>superstar.</em>'],
     Squad: ['SQUAD · STARTING XI', 'Build your<br><em>best XI.</em>'],
     Play: ['PLAY · MATCHDAY', 'Own the<br><em>matchday.</em>'],
-    Club: ['CLUB · IDENTITY', 'Wear your<br><em>identity.</em>']
+    Club: ['CLUB · IDENTITY', 'Wear your<br><em>identity.</em>'],
+    News: ['NEWS · THE DAILY TOUCHLINE', 'Know the<br><em>whole game.</em>']
   };
   document.querySelector('.desktop-prototype')?.classList.toggle('prototype-non-home', !isHome);
   document.querySelectorAll('.prototype-home-only').forEach((card) => { card.hidden = !isHome; });
@@ -383,11 +474,38 @@ document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPro
 document.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
+  const newsFilter = event.target.closest('#prototypeNewsFilters [data-news-filter]');
+  if (newsFilter) {
+    prototypeNewsFilter = newsFilter.dataset.newsFilter;
+    document.querySelectorAll('#prototypeNewsFilters [data-news-filter]').forEach((item) => item.classList.toggle('selected', item === newsFilter));
+    updatePrototypeNewsResults();
+  }
+  const newsSave = event.target.closest('#prototypeNewsFeed [data-news-save]');
+  if (newsSave) {
+    const id = newsSave.dataset.newsSave;
+    prototypeSavedNews.has(id) ? prototypeSavedNews.delete(id) : prototypeSavedNews.add(id);
+    updatePrototypeNewsResults(); showPrototypeToast(prototypeSavedNews.has(id) ? 'Story saved to your reading list.' : 'Story removed from saved.');
+  }
+  if (event.target.closest('#prototypeNewsFeed [data-news-clear]')) {
+    prototypeNewsQuery = ''; prototypeNewsFilter = 'All'; selectPrototypeView('News');
+  }
+  const newsStory = event.target.closest('#prototypeNewsFeed [data-news-id]');
+  if (newsStory && !newsSave) { newsStory.classList.add('is-read'); showPrototypeToast('Story opened · marked as read.'); }
   const actionButton = event.target.closest('[data-prototype-action]');
   if (actionButton?.dataset.prototypeAction === 'Club settings') document.querySelector('#prototypeSettingsButton')?.click();
   if (event.target.closest('[data-prototype-open-pack]')) openPrototypePack();
   if (event.target.closest('#prototypeAddPhoto')) document.querySelector('#prototypeClubPhotoInput')?.click();
   if (event.target.closest('[data-prototype-open-pitch]')) openPrototypePitch();
+});
+document.addEventListener('input', (event) => {
+  if (event.target.id !== 'prototypeNewsSearch') return;
+  prototypeNewsQuery = event.target.value;
+  updatePrototypeNewsResults();
+});
+document.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'k' && prototypeWorkspace) {
+    event.preventDefault(); selectPrototypeView('News'); document.querySelector('#prototypeNewsSearch')?.focus();
+  }
 });
 document.addEventListener('change', (event) => {
   if (event.target.id !== 'prototypeClubPhotoInput' || !event.target.files?.[0]) return;
