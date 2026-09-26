@@ -173,6 +173,7 @@ window.runFCGameTests = function () {
       const profileHero = document.querySelector('.profile-showcase-card');
       assert(profileMain.scrollWidth <= profileMain.clientWidth + 1, 'A full collection pushed the profile underneath the sidebar');
       assert([...profileHero.querySelectorAll('.profile-player-showcase article')].every((card) => card.getBoundingClientRect().right <= profileHero.getBoundingClientRect().right + 1), 'Showcase cards escaped the profile frame');
+      assert([...profileHero.querySelectorAll('.profile-player-showcase article')].every((card) => card.getBoundingClientRect().width <= 80), 'Showcase cards still hide too much of the profile background');
       prototypeProfileQuery = 'renamed';
       assert(profileWorkspaceMarkup().includes('Renamed Club'), 'Username search did not find a local account');
       prototypeProfileQuery = '';

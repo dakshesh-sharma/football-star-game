@@ -387,6 +387,7 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
 @media (max-width:520px) { .prototype-lab .prototype-shell { padding:14px 8px 26px; }.prototype-lab .lab-header { border-radius:14px; gap:10px; padding:10px; }.prototype-lab .lab-header h1 { font-size:1rem; }.lab-live-link { font-size:.55rem; padding:9px; }.prototype-lab .prototype-tabs { border-radius:16px; justify-content:flex-start; overflow:auto; width:100%; }.prototype-lab .tab { flex:0 0 auto; padding:8px 11px; }.prototype-lab .phone { border-width:5px; border-radius:29px; } }
 
 /* Profile studio v2: top search, large identity card and custom backgrounds. */
+.lab-showcase article { height:92px; width:60px; }
 .profile-workspace { grid-template-columns:1fr; }
 .desktop-prototype>*,#prototypeWorkspace,.profile-workspace,.profile-search-panel,.profile-showcase-card,.profile-customize,.profile-backgrounds,.profile-player-picker,.profile-title-grid { min-width:0; }
 #prototypeWorkspace,.profile-workspace { max-width:100%; overflow:hidden; }
@@ -397,8 +398,9 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
 .profile-showcase-card { min-height:350px; padding:26px; }
 .profile-showcase-card header h3 { font-size:2.35rem; }
 .profile-showcase-card .profile-big-avatar { font-size:1.25rem; height:68px; width:68px; }
-.profile-player-showcase { margin-left:auto; margin-top:42px; max-width:100%; min-height:170px; overflow:hidden; }
-.profile-player-showcase article { height:170px; width:120px; }
+.profile-player-showcase { bottom:18px; margin:0; max-width:calc(100% - 36px); min-height:0; overflow:visible; position:absolute; right:18px; }
+.profile-player-showcase article { height:104px; transition:transform .2s ease; width:72px; }
+.profile-player-showcase article:hover { transform:translateY(-5px) scale(1.06); }
 .background-aurora { background:radial-gradient(circle at 76% 22%,#c6ff6b66,transparent 24%),linear-gradient(135deg,#07374c,#135d66 45%,#7b2d90); }
 .background-ocean { background:radial-gradient(circle at 68% 18%,#5cf5ff5c,transparent 26%),linear-gradient(145deg,#05253f,#075f83 58%,#19a9a2); }
 .background-sunset { background:radial-gradient(circle at 78% 28%,#ffe8828c,transparent 22%),linear-gradient(135deg,#5d1649,#dc3f54 55%,#f1914c); }
@@ -488,7 +490,8 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
   .profile-search-panel { grid-template-columns:1fr; }
   .profile-search-results { grid-template-columns:1fr; }
   .profile-showcase-card { min-height:310px; }
-  .profile-player-showcase article { height:130px; width:88px; }
+  .profile-player-showcase { bottom:12px; right:12px; }
+  .profile-player-showcase article { height:88px; width:60px; }
   .background-studio-options,.background-library { grid-template-columns:1fr 1fr; }
   .background-studio-options>button:first-child { grid-column:1/-1; }
 }

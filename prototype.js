@@ -39,7 +39,7 @@ function profilePromptHue(prompt) {
 }
 
 function profileAiImageUrl(prompt, seed = Math.floor(Math.random() * 1000000)) {
-  const artPrompt = `${String(prompt).trim()}, cinematic wide football stadium profile background, premium sports game art, dramatic floodlights, detailed atmosphere, no words, no lettering, no logos, landscape composition`;
+  const artPrompt = `${String(prompt).trim()}, completely original fictional football arena environment, premium digital sports game concept art, cinematic wide landscape, dramatic floodlights, detailed atmosphere, background scenery only, no people, no football players, no real clubs, no brands, no logos, no words, no lettering, not a photograph, do not imitate an existing image`;
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(artPrompt)}?width=1200&height=675&model=flux&nologo=true&seed=${seed}`;
 }
 
