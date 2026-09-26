@@ -116,6 +116,16 @@ window.runFCGameTests = function () {
       assert(state.teamCards.st?.name === 'Alisson', 'Player was not placed in the chosen unrestricted slot');
     });
 
+    check('Requested legends exist once with distinct local portraits', () => {
+      const requested = ['Zlatan Ibrahimović','Lionel Messi','Cristiano Ronaldo','Diego Maradona','Pele','Ronaldinho','Zinedine Zidane','Roy Keane','Gennaro Gattuso','Pepe','Sergio Ramos','Jaap Stam','Manuel Neuer'];
+      for (const name of requested) {
+        const matches = cardPool.filter((card) => card.name === name);
+        assert(matches.length === 1, `${name} is missing or duplicated`);
+        assert(matches[0].image?.startsWith('assets/players/'), `${name} does not use a curated local portrait`);
+      }
+      assert(new Set(requested.map((name) => cardPool.find((card) => card.name === name).image)).size === requested.length, 'Two legends share the same portrait');
+    });
+
     check('Logout clears live state and stops simulation', () => {
       activeAccountId = account.id; state = account.state = freshState(false);
       state.activeMatch = { home: 0, away: 0 };
