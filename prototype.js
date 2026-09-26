@@ -3,6 +3,10 @@ const tabs = labRoot?.querySelectorAll('.tab') || [];
 const panels = labRoot?.querySelectorAll('[data-screen-panel]') || [];
 const labToast = document.querySelector('#labToast');
 let labMatchSeconds = 0;
+const labColourPresets = {
+  violet: ['#7838ef', '#c7ff37'], cyan: ['#087f9a', '#35f5ff'],
+  coral: ['#d72f59', '#ffb23f'], gold: ['#a96b0b', '#ffe066']
+};
 
 function showLabToast(message) {
   if (!labToast) return;
@@ -19,13 +23,33 @@ function selectLabScreen(screen, mode = '') {
   document.querySelector('#labMenu')?.setAttribute('hidden', '');
 }
 
+function readableAccent(hex) {
+  const value = hex.replace('#', '');
+  const red = parseInt(value.slice(0, 2), 16), green = parseInt(value.slice(2, 4), 16), blue = parseInt(value.slice(4, 6), 16);
+  const brightest = Math.max(red, green, blue);
+  return brightest < 145 ? '#ffffff' : hex;
+}
+
+function applyLabColour(name, primary, accent, persist = true) {
+  if (!labRoot) return;
+  labRoot.style.setProperty('--club-primary', primary);
+  labRoot.style.setProperty('--club-accent', accent);
+  labRoot.style.setProperty('--lime', accent);
+  labRoot.style.setProperty('--purple', primary);
+  labRoot.dataset.clubColour = name;
+  document.querySelectorAll('[data-club-colour]').forEach((item) => item.classList.toggle('selected', item.dataset.clubColour === name));
+  if (persist) localStorage.setItem('fc-stars-lab-colour', JSON.stringify({ name, primary, accent }));
+}
+
 tabs.forEach((tab) => tab.addEventListener('click', () => selectLabScreen(tab.dataset.screen)));
 labRoot?.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => selectLabScreen(button.dataset.go, button.dataset.mode)));
 labRoot?.querySelectorAll('[data-lab-toast]').forEach((button) => button.addEventListener('click', () => showLabToast(button.dataset.labToast)));
 document.querySelector('#labMenuButton')?.addEventListener('click', () => document.querySelector('#labMenu')?.toggleAttribute('hidden'));
 document.querySelector('#labThemeButton')?.addEventListener('click', () => {
-  labRoot.classList.toggle('is-cyan');
-  showLabToast(labRoot.classList.contains('is-cyan') ? 'Electric cyan club glow equipped.' : 'Ultra violet club glow equipped.');
+  const names = Object.keys(labColourPresets);
+  const nextName = names[(names.indexOf(labRoot.dataset.clubColour || 'violet') + 1) % names.length];
+  applyLabColour(nextName, ...labColourPresets[nextName]);
+  showLabToast(`${nextName} club colours equipped across the prototype.`);
 });
 document.querySelector('#labAddBalance')?.addEventListener('click', () => {
   const coins = document.querySelector('#labCoins');
@@ -115,10 +139,38 @@ document.querySelector('#labSaveClub')?.addEventListener('click', () => {
   const name = document.querySelector('#labClubName').value.trim().slice(0, 18) || 'FC STARS';
   document.querySelector('#labClubHeroName').textContent = name; showLabToast(`${name} club identity saved.`);
 });
-document.querySelectorAll('[data-club-colour]').forEach((button) => button.addEventListener('click', () => {
-  document.querySelectorAll('[data-club-colour]').forEach((item) => item.classList.toggle('selected', item === button));
-  document.querySelector('.club-hero-mobile').dataset.colour = button.dataset.clubColour; showLabToast(`${button.dataset.clubColour} colours equipped.`);
-}));
+document.querySelector('.club-colours')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-club-colour]');
+  if (!button) return;
+  applyLabColour(button.dataset.clubColour, button.dataset.primary, button.dataset.accent);
+  showLabToast(`${button.dataset.clubColour} colours equipped across every screen.`);
+});
+document.querySelector('#labSeeAllColours')?.addEventListener('click', (event) => {
+  const panel = document.querySelector('#labCustomColourPanel');
+  panel.toggleAttribute('hidden');
+  event.currentTarget.textContent = panel.hidden ? 'SEE ALL +' : 'CLOSE ×';
+});
+document.querySelector('#labCustomColour')?.addEventListener('input', (event) => {
+  document.querySelector('#labCustomColourValue').textContent = event.target.value.toUpperCase();
+});
+document.querySelector('#labApplyCustomColour')?.addEventListener('click', () => {
+  const colour = document.querySelector('#labCustomColour').value;
+  const accent = readableAccent(colour);
+  const swatch = document.querySelector('#labCustomSwatch');
+  swatch.hidden = false; swatch.dataset.primary = colour; swatch.dataset.accent = accent; swatch.style.background = colour;
+  applyLabColour('custom', colour, accent);
+  showLabToast(`${colour.toUpperCase()} added and applied to the whole club.`);
+});
+if (labRoot) {
+  try {
+    const savedColour = JSON.parse(localStorage.getItem('fc-stars-lab-colour'));
+    if (savedColour?.primary && savedColour?.accent) {
+      const swatch = document.querySelector('#labCustomSwatch');
+      if (savedColour.name === 'custom') { swatch.hidden = false; swatch.dataset.primary = savedColour.primary; swatch.dataset.accent = savedColour.accent; swatch.style.background = savedColour.primary; }
+      applyLabColour(savedColour.name, savedColour.primary, savedColour.accent, false);
+    } else applyLabColour('violet', ...labColourPresets.violet, false);
+  } catch { applyLabColour('violet', ...labColourPresets.violet, false); }
+}
 
 const prototypeToast = document.querySelector('#prototypeToast');
 const prototypeModal = document.querySelector('#prototypePackModal');

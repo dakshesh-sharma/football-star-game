@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars — Prototype Lab</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="prototype.css?v=20260926-protolab3" />
+    <link rel="stylesheet" href="prototype.css?v=20260926-laptop4" />
   </head>
   <body class="prototype-lab">
     <main class="prototype-shell">
@@ -13,7 +13,7 @@
         <a class="lab-brand" href="index.html"><span>FC</span> STARS</a>
         <div class="lab-title">
           <p>Prototype lab</p>
-          <h1>Mobile-first game concepts</h1>
+          <h1>Interactive laptop game concepts</h1>
         </div>
         <a class="lab-live-link" href="index.html">OPEN LIVE GAME →</a>
       </header>
@@ -26,7 +26,7 @@
         <button class="tab" data-screen="club">My Club</button>
       </nav>
 
-      <section class="phone" aria-label="FC Stars mobile prototype">
+      <section class="phone" aria-label="FC Stars responsive laptop prototype">
         <div class="phone-status"><span>9:41</span><span>● ● ● ᴡɪꜰɪ ▰</span></div>
 
         <section class="screen is-active" data-screen-panel="home">
@@ -88,7 +88,9 @@
             <div class="top-line"><button class="round-btn" data-go="home">‹</button><div><p>CLUB HQ</p><h2>Your identity</h2></div><button class="round-btn" data-lab-toast="Club details are stored in this prototype.">ⓘ</button></div>
             <section class="club-hero-mobile"><span>EST. 2026</span><b id="labClubHeroName">ARJUN FC</b><small>Build. Play. Become.</small></section>
             <label class="club-name-editor"><span>CLUB NAME</span><input id="labClubName" maxlength="18" value="ARJUN FC"><button id="labSaveClub">SAVE</button></label>
-            <p class="club-label">CLUB COLOURS</p><div class="club-colours"><button data-club-colour="violet" class="selected" aria-label="Violet"></button><button data-club-colour="cyan" aria-label="Cyan"></button><button data-club-colour="coral" aria-label="Coral"></button><button data-club-colour="gold" aria-label="Gold"></button></div>
+            <div class="club-colour-heading"><p class="club-label">CLUB COLOURS</p><button id="labSeeAllColours">SEE ALL +</button></div>
+            <div class="club-colours"><button data-club-colour="violet" data-primary="#7838ef" data-accent="#c7ff37" class="selected" aria-label="Violet and lime"></button><button data-club-colour="cyan" data-primary="#087f9a" data-accent="#35f5ff" aria-label="Cyan and blue"></button><button data-club-colour="coral" data-primary="#d72f59" data-accent="#ffb23f" aria-label="Coral and orange"></button><button data-club-colour="gold" data-primary="#a96b0b" data-accent="#ffe066" aria-label="Gold and yellow"></button><button id="labCustomSwatch" data-club-colour="custom" data-primary="#7c3cff" data-accent="#ffffff" aria-label="Custom colour" hidden></button></div>
+            <div id="labCustomColourPanel" class="custom-colour-panel" hidden><label for="labCustomColour">Choose any colour</label><input id="labCustomColour" type="color" value="#7c3cff"><output id="labCustomColourValue">#7C3CFF</output><button id="labApplyCustomColour">ADD COLOUR</button></div>
             <div class="club-stats"><span><b>88</b><small>XI RATING</small></span><span><b>31</b><small>CHEMISTRY</small></span><span><b>4</b><small>WIN STREAK</small></span></div>
             <article class="achievement-card"><i>🏆</i><div><p>NEW MILESTONE</p><h3>Four in a row</h3><small>Win one more match to unlock a neon badge.</small></div></article>
           </div>
@@ -103,6 +105,6 @@
       <p class="lab-note">Interactive prototype: open packs, edit your XI, play match actions, and customise your club.</p>
       <div id="labToast" class="prototype-toast" role="status" aria-live="polite"></div>
     </main>
-    <script src="prototype.js?v=20260926-protolab3"></script>
+    <script src="prototype.js?v=20260926-laptop4"></script>
   </body>
 </html>

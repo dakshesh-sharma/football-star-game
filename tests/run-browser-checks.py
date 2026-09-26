@@ -11,13 +11,15 @@ parser.add_argument("--height",type=int,default=1000)
 parser.add_argument("--dashboard",action="store_true",help="Hide blocking dialogs before capturing the dashboard")
 parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club"),help="Dashboard view to capture")
 parser.add_argument("--login",action="store_true",help="Show the login experience before capturing")
+parser.add_argument("--prototype-lab",action="store_true",help="Run the standalone laptop prototype interaction checks")
 args=parser.parse_args()
 pages=json.load(urllib.request.urlopen(f'http://127.0.0.1:{args.port}/json/list'))
+target_paths=('/prototypes.html',) if args.prototype_lab else ('/','/index.html')
 page=next((p for p in pages if p['type']=='page'
   and urllib.parse.urlparse(p.get('url','')).hostname in ('127.0.0.1','localhost')
-  and urllib.parse.urlparse(p.get('url','')).path in ('/','/index.html')),None)
+  and urllib.parse.urlparse(p.get('url','')).path in target_paths),None)
 if not page:
- raise SystemExit('Open the local FC Stars index.html in the dedicated Chrome debugging profile first.')
+ raise SystemExit('Open the requested local FC Stars page in the dedicated Chrome debugging profile first.')
 u=urllib.parse.urlparse(page['webSocketDebuggerUrl'])
 s=socket.create_connection((u.hostname,u.port),timeout=20)
 key=base64.b64encode(os.urandom(16)).decode()
@@ -56,7 +58,18 @@ def evaluate(js):
 call("Runtime.enable")
 call("Page.enable")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
-result=evaluate("""Promise.all(['tests/match-tests.js','tests/game-tests.js'].map(path=>fetch(path,{cache:'no-store'}).then(r=>r.text()))).then(sources=>{
+if args.prototype_lab:
+ result=evaluate("""(async()=>{const results=[];const check=(name,value)=>results.push({name,passed:Boolean(value)});
+  for(const screen of ['home','packs','squad','match','club']){document.querySelector(`[data-screen="${screen}"]`).click();check(`${screen} opens`,document.querySelector(`[data-screen-panel="${screen}"]`).classList.contains('is-active'));}
+  document.querySelector('[data-club-colour="cyan"]').click();check('preset colour changes whole theme',document.body.style.getPropertyValue('--club-primary')==='#087f9a');
+  document.querySelector('#labSeeAllColours').click();const picker=document.querySelector('#labCustomColour');picker.value='#12ab67';picker.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#labApplyCustomColour').click();check('custom colour is added and applied',document.body.style.getPropertyValue('--club-primary')==='#12ab67'&&document.querySelector('#labCustomSwatch').classList.contains('selected'));
+  document.querySelector('#labClubName').value='TEST UNITED';document.querySelector('#labSaveClub').click();check('club name saves',document.querySelector('#labClubHeroName').textContent==='TEST UNITED');
+  document.querySelector('[data-screen="packs"]').click();document.querySelector('#openPack').click();await new Promise(resolve=>setTimeout(resolve,750));check('pack opens',!document.querySelector('#revealCard').hidden);document.querySelector('#openPack').click();
+  document.querySelector('[data-screen="squad"]').click();document.querySelector('.player-card').click();document.querySelector('#labSwapPlayer').click();check('squad player swaps',document.querySelector('#labTeamRating').textContent==='89');
+  document.querySelector('[data-screen="match"]').click();document.querySelector('[data-match-action="pass"]').click();check('match action responds',document.querySelector('#labMoment').textContent.includes('PASS'));
+  return {passed:results.every(item=>item.passed),results};})()""")
+else:
+ result=evaluate("""Promise.all(['tests/match-tests.js','tests/game-tests.js'].map(path=>fetch(path,{cache:'no-store'}).then(r=>r.text()))).then(sources=>{
   const running=Boolean(matchPhysicsFrame);stopMatchPhysics();
   try{sources.forEach(source=>(0,eval)(source));return {match:runFCMatchTests(),game:runFCGameTests()};}
   finally{if(running)startMatchPhysics();}
@@ -71,4 +84,5 @@ if args.screenshot:
 errors=[e for e in events if e.get("method")=="Runtime.exceptionThrown"]
 print(json.dumps({"checks":result,"runtimeErrors":errors},indent=2))
 s.close()
-raise SystemExit(0 if result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed") and not errors else 1)
+passed=result.get("passed") if args.prototype_lab and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
+raise SystemExit(0 if passed and not errors else 1)
