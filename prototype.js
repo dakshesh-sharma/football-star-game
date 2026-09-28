@@ -449,6 +449,14 @@ function homeWorkspaceMarkup() {
   const divisionProgress = Math.min(100, points % 100);
   const collectionCount = new Set((state?.inventory || []).map(card => card.name)).size;
   const latest = state?.currentCard;
+  const daily = ensureDailyChallenge(state);
+  const dailyQuests = [
+    { icon:'⚔', label:'Finish a match', value:Math.min(1, Number(daily.matches) || 0), target:1 },
+    { icon:'⚽', label:'Score 2 goals', value:Math.min(2, Number(daily.goals) || 0), target:2 },
+    { icon:'▣', label:'Open a pack', value:Math.min(1, Number(daily.packs) || 0), target:1 }
+  ];
+  const dailyDone = dailyQuests.filter((quest) => quest.value >= quest.target).length;
+  const loginStreak = Math.max(0, Number(state?.loginStreak?.current) || 0);
   return `<section class="desktop-hero">
     <div class="desktop-hero-copy"><span class="hero-live"><i></i> RISING ICONS</span><p>FEATURED PACK · 50 COINS</p><h3>Make football<br>history.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div>
     <div class="hero-player" aria-hidden="true"><img src="assets/neymar-jr.png" alt=""><span><b>91</b><small>LW</small></span><strong>NEYMAR JR<small>RISING ICON</small></strong></div>
@@ -457,7 +465,8 @@ function homeWorkspaceMarkup() {
     <button class="home-arena-card" data-prototype-play="Ranked Rush"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>25 COINS PER GOAL · +10 RP FOR A WIN</small><em>PLAY NOW →</em></button>
     <article class="home-progress-card"><span class="home-card-kicker">${division > 1 ? `ROAD TO DIVISION ${division - 1}` : 'DIVISION 1 MASTERY'}</span><div><b>${divisionProgress}</b><small>/ 100 RP</small></div><i><b style="width:${divisionProgress}%"></b></i><small>${Math.max(0, 100 - divisionProgress)} RP TO ${division > 1 ? 'PROMOTION' : 'THE NEXT MILESTONE'}</small></article>
     <article class="home-club-card"><span class="home-card-kicker">CLUB SNAPSHOT</span><div><span><b>${prototypeTeamRating()}</b><small>XI RATING</small></span><span><b>${collectionCount}</b><small>CARDS</small></span></div><p>${latest ? `LATEST PULL · ${escapeHtml(latest.name).toUpperCase()}` : 'YOUR NEXT STAR IS WAITING'}</p><button data-prototype-view="Squad">VIEW SQUAD →</button></article>
-  </section>`;
+  </section>
+  <section class="daily-hub"><header><div><span>DAILY TREBLE</span><h3>Three moves. One reward.</h3></div><b>🔥 ${loginStreak} DAY STREAK</b></header><div class="daily-quest-grid">${dailyQuests.map((quest) => `<article class="${quest.value >= quest.target ? 'complete' : ''}"><i>${quest.value >= quest.target ? '✓' : quest.icon}</i><span><b>${quest.label}</b><small>${quest.value} / ${quest.target}</small></span><em><u style="width:${Math.min(100, quest.value / quest.target * 100)}%"></u></em></article>`).join('')}</div><button class="${daily.claimed ? 'claimed' : dailyDone === 3 ? 'ready' : 'locked'}" data-claim-daily-chest>${daily.claimed ? 'REWARD CLAIMED ✓' : dailyDone === 3 ? 'CLAIM 150 COINS' : `${dailyDone} / 3 COMPLETE`}</button></section>`;
 }
 
 function newsWorkspaceMarkup() {
@@ -482,12 +491,14 @@ function profileTitles(accountState) {
   const iconCount = (accountState.inventory || []).filter((card) => card.rarity === 'Icon' || card.rarity === 'G.O.A.T').length;
   const ronaldoStreak = Number(accountState.taskProgress?.ronaldoWinStreak) || 0;
   const totalWins = Number(accountState.taskProgress?.totalWins) || 0;
+  const bestLoginStreak = Number(accountState.loginStreak?.best) || 0;
   return [
     { name:'Club Founder', unlocked:true, progress:1, target:1, task:'Create your club' },
     { name:'Siuuu Streak', unlocked:ronaldoStreak >= 10, progress:ronaldoStreak, target:10, task:'Win 10 matches in a row controlling Ronaldo' },
     { name:'Icon Collector', unlocked:iconCount >= 5, progress:iconCount, target:5, task:'Own 5 Icon or G.O.A.T players' },
     { name:'Division Climber', unlocked:(Number(accountState.rankedPoints) || 0) >= 100, progress:Number(accountState.rankedPoints) || 0, target:100, task:'Earn 100 Ranked Points' },
-    { name:'Serial Winner', unlocked:totalWins >= 25, progress:totalWins, target:25, task:'Win 25 matches' }
+    { name:'Serial Winner', unlocked:totalWins >= 25, progress:totalWins, target:25, task:'Win 25 matches' },
+    { name:'On Fire', unlocked:bestLoginStreak >= 7, progress:bestLoginStreak, target:7, task:'Build a 7-day login streak' }
   ];
 }
 
@@ -610,6 +621,7 @@ function claimPrototypePack() {
   state.inventory = addCardToInventory(state.inventory, prototypePendingPack);
   state.currentCard = prototypePendingPack;
   state.currentCardSaved = true;
+  addDailyChallengeProgress('packs', 1);
   prototypePackClaimed = true;
   const name = prototypePendingPack.name;
   saveState();
@@ -639,6 +651,13 @@ document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPro
 document.addEventListener('click', async (event) => {
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
+  if (event.target.closest('[data-claim-daily-chest]')) {
+    const challenge = ensureDailyChallenge(state);
+    if (challenge.claimed) { showPrototypeToast('Today’s Daily Treble reward is already claimed.'); return; }
+    if (!dailyChallengeCompleted(state)) { showPrototypeToast('Complete all three Daily Treble objectives first.'); return; }
+    claimDailyChallengeReward(); syncPrototypeBalances(); selectPrototypeView('Home');
+    showPrototypeToast('Daily Treble complete · +150 Coins!'); return;
+  }
   const profileAccount = event.target.closest('[data-profile-account]');
   if (profileAccount) { prototypeViewedProfileId = profileAccount.dataset.profileAccount; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }
   if (event.target.closest('[data-profile-see-all]')) { prototypeBackgroundStudioOpen = !prototypeBackgroundStudioOpen; prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); }

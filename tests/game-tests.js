@@ -68,6 +68,7 @@ window.runFCGameTests = function () {
       claimPrototypePack();
       assert(state.matchPoints === 50 && state.inventory.length === 1, 'Pack charge/claim mismatch');
       assert(state.inventory[0].name === name && state.currentCard.name === name, 'Wrong card claimed');
+      assert(ensureDailyChallenge(state).packs === 1, 'Pack did not advance the daily objective');
     });
 
     check('Closing an unclaimed pack refunds its cost', () => {
@@ -88,6 +89,28 @@ window.runFCGameTests = function () {
       assert(ranked.rp === 10 && ranked.coins === 50 && ranked.xp > 0, 'Ranked rewards incorrect');
       assert(friendly.rp === 0 && friendly.coins === 50 && friendly.xp > 0, 'Friendly rewards incorrect');
       assert(abandoned.rp === 0 && abandoned.coins === 0 && abandoned.xp === 0, 'Abandon exploit remains');
+    });
+
+    check('Daily streak rewards once and continues on consecutive days', () => {
+      const streakState = freshState(false);
+      const first = new Date(2026, 8, 28, 12), next = new Date(2026, 8, 29, 12), skipped = new Date(2026, 9, 1, 12);
+      const firstReward = recordDailyVisit(streakState, first);
+      assert(firstReward === 20 && streakState.loginStreak.current === 1, 'First daily visit reward is wrong');
+      assert(recordDailyVisit(streakState, first) === 0 && streakState.loginStreak.current === 1, 'Reloading granted the daily reward twice');
+      assert(recordDailyVisit(streakState, next) === 25 && streakState.loginStreak.current === 2, 'Consecutive visit did not grow the streak');
+      assert(recordDailyVisit(streakState, skipped) === 20 && streakState.loginStreak.current === 1, 'Missed day did not reset the streak');
+      streakState.loginStreak.best = 7;
+      assert(profileTitles(streakState).find((title) => title.name === 'On Fire').unlocked, 'Seven-day streak title stayed locked');
+    });
+
+    check('Daily Treble tracks play and pays its chest only once', () => {
+      state = account.state = freshState(false); activeAccountId = account.id;
+      addDailyChallengeProgress('matches', 1); addDailyChallengeProgress('goals', 2); addDailyChallengeProgress('packs', 1);
+      const before = state.matchPoints;
+      assert(dailyChallengeCompleted(state), 'Completed daily objectives stayed incomplete');
+      assert(claimDailyChallengeReward() && state.matchPoints === before + 150, 'Daily chest did not pay 150 Coins');
+      assert(!claimDailyChallengeReward() && state.matchPoints === before + 150, 'Daily chest could be claimed twice');
+      assert(homeWorkspaceMarkup().includes('REWARD CLAIMED'), 'Claimed state did not render on Home');
     });
 
     check('Club settings belong to the active account only', () => {

@@ -270,7 +270,9 @@ const defaultState = {
   profileAiBackground: { prompt: "", hue: 268, imageUrl: "" },
   profileUploadedBackground: "",
   showcasePlayerNames: [],
-  taskProgress: { ronaldoWinStreak: 0, totalWins: 0 }
+  taskProgress: { ronaldoWinStreak: 0, totalWins: 0 },
+  dailyChallenge: { date: "", matches: 0, goals: 0, packs: 0, claimed: false },
+  loginStreak: { lastDate: "", current: 0, best: 0 }
 };
 
 let accounts = loadAccounts();
@@ -444,6 +446,8 @@ function freshState(inventoryGrant = false) {
     playerStats: {},
     showcasePlayerNames: [],
     taskProgress: { ronaldoWinStreak: 0, totalWins: 0 },
+    dailyChallenge: { date: "", matches: 0, goals: 0, packs: 0, claimed: false },
+    loginStreak: { lastDate: "", current: 0, best: 0 },
     joinRequest: null,
     activeMatch: null
   };
@@ -659,6 +663,23 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.taskProgress = savedState.taskProgress && typeof savedState.taskProgress === "object" ? savedState.taskProgress : {};
   savedState.taskProgress.ronaldoWinStreak = Math.max(0, Number(savedState.taskProgress.ronaldoWinStreak) || 0);
   savedState.taskProgress.totalWins = Math.max(0, Number(savedState.taskProgress.totalWins) || 0);
+  const today = localDateKey();
+  const dailyChallenge = savedState.dailyChallenge && typeof savedState.dailyChallenge === "object" ? savedState.dailyChallenge : {};
+  savedState.dailyChallenge = dailyChallenge.date === today
+    ? {
+        date: today,
+        matches: Math.max(0, Number(dailyChallenge.matches) || 0),
+        goals: Math.max(0, Number(dailyChallenge.goals) || 0),
+        packs: Math.max(0, Number(dailyChallenge.packs) || 0),
+        claimed: Boolean(dailyChallenge.claimed)
+      }
+    : { date: today, matches: 0, goals: 0, packs: 0, claimed: false };
+  const loginStreak = savedState.loginStreak && typeof savedState.loginStreak === "object" ? savedState.loginStreak : {};
+  savedState.loginStreak = {
+    lastDate: /^\d{4}-\d{2}-\d{2}$/.test(loginStreak.lastDate || "") ? loginStreak.lastDate : "",
+    current: Math.max(0, Number(loginStreak.current) || 0),
+    best: Math.max(0, Number(loginStreak.best) || 0)
+  };
   savedState.replaceSlot = formation.some((spot) => spot.id === savedState.replaceSlot) ? savedState.replaceSlot : null;
   savedState.dailyRankedWinDate = /^\d{4}-\d{2}-\d{2}$/.test(savedState.dailyRankedWinDate || "")
     ? savedState.dailyRankedWinDate : "";
@@ -847,7 +868,12 @@ function hydrateFromLocalDatabase() {
       }
       storageSet(saveKey, JSON.stringify(state));
       saveAccounts();
+    })
+    .then(() => {
+      const dailyReward = activeAccount() ? recordDailyVisit(state) : 0;
+      if (dailyReward) saveState();
       render();
+      if (dailyReward) window.setTimeout(() => window.showPrototypeToast?.(`🔥 Day ${state.loginStreak.current} streak · +${dailyReward} Coins`), 0);
       showQuickLoginAfterSplash();
     })
     .catch(() => {});
@@ -1015,11 +1041,13 @@ function loginAccount(id) {
   storageSet(activeAccountKey, activeAccountId);
   state = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
   account.state = state;
+  const dailyReward = recordDailyVisit(state);
   saveAccounts();
   hideQuickLogin();
   settingsMenu.hidden = true;
   settingsBtn.setAttribute("aria-expanded", "false");
   render();
+  if (dailyReward) window.setTimeout(() => window.showPrototypeToast?.(`🔥 Day ${state.loginStreak.current} streak · +${dailyReward} Coins`), 0);
 }
 
 function logoutAccount() {
@@ -1546,6 +1574,10 @@ function endMatch({ abandoned = false } = {}) {
   const winXp = completedWin ? matchWinXp(finishedMatch.home, finishedMatch.away) : 0;
   const tablePoints = completedWin && ranked ? 10 : 0;
   const coinReward = abandoned ? 0 : Math.max(0, Number(finishedMatch.home) || 0) * 25;
+  if (!abandoned) {
+    addDailyChallengeProgress("matches", 1);
+    addDailyChallengeProgress("goals", Math.max(0, Number(finishedMatch.home) || 0));
+  }
   if (tablePoints) {
     state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
     state.dailyRankedWinDate = localDateKey();
@@ -2805,6 +2837,53 @@ function localDateKey(date = new Date()) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function ensureDailyChallenge(accountState = state, date = new Date()) {
+  const dateKey = localDateKey(date);
+  const challenge = accountState.dailyChallenge && typeof accountState.dailyChallenge === "object" ? accountState.dailyChallenge : {};
+  if (challenge.date !== dateKey) accountState.dailyChallenge = { date: dateKey, matches: 0, goals: 0, packs: 0, claimed: false };
+  return accountState.dailyChallenge;
+}
+
+function addDailyChallengeProgress(type, amount = 1) {
+  const challenge = ensureDailyChallenge(state);
+  if (!['matches', 'goals', 'packs'].includes(type)) return challenge;
+  challenge[type] = Math.max(0, Number(challenge[type]) || 0) + Math.max(0, Number(amount) || 0);
+  return challenge;
+}
+
+function dailyChallengeCompleted(accountState = state) {
+  const challenge = ensureDailyChallenge(accountState);
+  return Number(challenge.matches) >= 1 && Number(challenge.goals) >= 2 && Number(challenge.packs) >= 1;
+}
+
+function claimDailyChallengeReward() {
+  const challenge = ensureDailyChallenge(state);
+  if (challenge.claimed || !dailyChallengeCompleted(state)) return false;
+  challenge.claimed = true;
+  if (!state.infiniteCoins) state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + 150;
+  saveState();
+  render();
+  return true;
+}
+
+function recordDailyVisit(accountState = state, date = new Date()) {
+  const today = localDateKey(date);
+  const yesterday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  yesterday.setDate(yesterday.getDate() - 1);
+  const streak = accountState.loginStreak && typeof accountState.loginStreak === "object"
+    ? accountState.loginStreak
+    : { lastDate: "", current: 0, best: 0 };
+  if (streak.lastDate === today) { accountState.loginStreak = streak; return 0; }
+  streak.current = streak.lastDate === localDateKey(yesterday) ? Math.max(0, Number(streak.current) || 0) + 1 : 1;
+  streak.best = Math.max(Number(streak.best) || 0, streak.current);
+  streak.lastDate = today;
+  accountState.loginStreak = streak;
+  const reward = accountState.infiniteCoins ? 0 : Math.min(60, 15 + streak.current * 5);
+  accountState.matchPoints = Math.max(0, Number(accountState.matchPoints) || 0) + reward;
+  ensureDailyChallenge(accountState, date);
+  return reward;
 }
 
 function showCodeResult(type, title, text) {
