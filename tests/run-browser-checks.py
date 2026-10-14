@@ -12,6 +12,7 @@ parser.add_argument("--dashboard",action="store_true",help="Hide blocking dialog
 parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club","Profile"),help="Dashboard view to capture")
 parser.add_argument("--login",action="store_true",help="Show the login experience before capturing")
 parser.add_argument("--prototype-lab",action="store_true",help="Run the standalone laptop prototype interaction checks")
+parser.add_argument("--prime-demo",action="store_true",help="Click the login Prime Ronaldo showcase and verify the real squad card")
 args=parser.parse_args()
 pages=json.load(urllib.request.urlopen(f'http://127.0.0.1:{args.port}/json/list'))
 target_paths=('/prototypes.html',) if args.prototype_lab else ('/','/index.html')
@@ -60,10 +61,11 @@ call("Page.enable")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
 if args.prototype_lab:
  result=evaluate("""(async()=>{const results=[];const check=(name,value)=>results.push({name,passed:Boolean(value)});
+	  if(innerWidth>=800){check('desktop prototype is visible',getComputedStyle(document.querySelector('#labDesktopPrototype')).display==='grid'&&getComputedStyle(document.querySelector('.phone')).display==='none');document.querySelector('[data-lab-desktop-view="packs"]').click();check('desktop packs view opens',Boolean(document.querySelector('#labDesktopWorkspace .pack-workspace')));document.querySelector('#labDesktopWorkspace [data-lab-desktop-open-pack]').click();check('desktop pack walkout renders',Boolean(document.querySelector('#labDesktopWorkspace .lab-desktop-walkout')));document.querySelector('[data-lab-desktop-view="squad"]').click();check('desktop squad view opens',Boolean(document.querySelector('#labDesktopWorkspace .squad-workspace')));}else{check('phone prototype is visible',getComputedStyle(document.querySelector('.phone')).display!=='none'&&getComputedStyle(document.querySelector('#labDesktopPrototype')).display==='none');}
   for(const screen of ['home','packs','squad','match','club','profile']){document.querySelector(`[data-screen="${screen}"]`).click();check(`${screen} opens`,document.querySelector(`[data-screen-panel="${screen}"]`).classList.contains('is-active'));}
   document.querySelector('[data-lab-profile-bg="royal"]').click();check('profile background changes',document.querySelector('#labProfileHero').classList.contains('background-royal'));document.querySelector('[data-lab-title]').click();check('profile title equips',document.querySelector('#labProfileTitle').textContent==='SIUUU STREAK');
   if(document.querySelector('#labBackgroundStudio').hidden)document.querySelector('#labSeeAllBackgrounds').click();check('background studio opens with three choices',!document.querySelector('#labBackgroundStudio').hidden&&document.querySelectorAll('[data-lab-bg-mode]').length===3&&document.querySelectorAll('#labBackgroundStudio [data-lab-profile-bg]').length===10);document.querySelector('[data-lab-bg-mode="ai"]').click();check('AI background uses real image generation',profileAiImageUrl('neon trophy night',42).startsWith('https://image.pollinations.ai/prompt/')&&profileAiImageUrl('neon trophy night',42).includes('model=flux'));
-  check('home profile shortcut replaces 99 tile',Boolean(document.querySelector('[data-screen-panel="home"] [data-go="profile"].profile-home-card'))&&!document.querySelector('[data-screen-panel="home"] .profile-home-card').textContent.includes('99'));
+	  check('home shows Prime Ronaldo showcase',Boolean(document.querySelector('[data-screen-panel="home"] [data-go="squad"].prime-home-card'))&&document.querySelector('[data-screen-panel="home"] .prime-home-card').textContent.includes('PRIME RONALDO'));
   document.querySelector('[data-club-colour="cyan"]').click();check('preset colour changes whole theme',document.body.style.getPropertyValue('--club-primary')==='#087f9a');
   document.querySelector('#labSeeAllColours').click();const picker=document.querySelector('#labCustomColour');picker.value='#12ab67';picker.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#labApplyCustomColour').click();check('custom colour is added and applied',document.body.style.getPropertyValue('--club-primary')==='#12ab67'&&document.querySelector('#labCustomSwatch').classList.contains('selected'));
   document.querySelector('#labClubName').value='TEST UNITED';document.querySelector('#labSaveClub').click();check('club name saves',document.querySelector('#labClubHeroName').textContent==='TEST UNITED');
@@ -77,6 +79,9 @@ else:
   try{sources.forEach(source=>(0,eval)(source));return {match:runFCMatchTests(),game:runFCGameTests()};}
   finally{if(running)startMatchPhysics();}
 })""")
+prime_demo=None
+if args.prime_demo and not args.prototype_lab:
+ prime_demo=evaluate("""(async()=>{showQuickLogin();document.querySelector('#primeRonaldoDemoBtn').click();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const card=state.inventory.find(item=>item.name==='Prime Ronaldo');return {passed:Boolean(card&&card.rating==='∞ × ∞'&&card.rarity==='NIGHTMARE'&&state.infiniteCoins&&state.infiniteRankedPoints&&state.elDemonUnlocked&&state.profileTitle==='El Demon'&&state.profileBackground==='el-demon'&&prototypeCoins.textContent==='∞'&&prototypeGems.textContent==='∞'&&state.selectedStar?.name==='Prime Ronaldo'&&state.selectedStarSlot==='st'&&!document.querySelector('#prototypePitchOverlay').hidden&&inventorySearch.value==='Prime Ronaldo'),card:card&&{name:card.name,rating:card.rating,rarity:card.rarity,image:card.image},balances:{rankedPoints:prototypeCoins.textContent,coins:prototypeGems.textContent},elDemon:{unlocked:state.elDemonUnlocked,title:state.profileTitle,background:state.profileBackground},squad:state.selectedStar?.name,inventoryOpen:!document.querySelector('#prototypePitchOverlay').hidden};})()""")
 if args.screenshot:
  if args.dashboard:
   evaluate("quickLoginOverlay.hidden=true;prototypeToast.classList.remove('is-visible');document.querySelectorAll('.prototype-modal,.prototype-pitch-overlay').forEach(node=>node.hidden=true)")
@@ -85,7 +90,8 @@ if args.screenshot:
  shot=call("Page.captureScreenshot",{"format":"png","captureBeyondViewport":False})
  with open(args.screenshot,"wb") as output: output.write(base64.b64decode(shot["result"]["data"]))
 errors=[e for e in events if e.get("method")=="Runtime.exceptionThrown"]
-print(json.dumps({"checks":result,"runtimeErrors":errors},indent=2))
+print(json.dumps({"checks":result,"primeDemo":prime_demo,"runtimeErrors":errors},indent=2))
 s.close()
 passed=result.get("passed") if args.prototype_lab and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
+if args.prime_demo: passed=passed and prime_demo and prime_demo.get("passed")
 raise SystemExit(0 if passed and not errors else 1)

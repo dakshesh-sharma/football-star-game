@@ -47,6 +47,12 @@ python3 tests/run-browser-checks.py --port 9226
 
 The runner uses Python's standard library, selects a loopback game page, reports each assertion and runtime errors, and returns a nonzero exit code on failure.
 
+## Prototype visibility follow-up
+
+Verified again in Chrome on 12 October 2026 after synchronising `prototypes.html` with the live dashboard. The laptop breakpoint now shows the stadium dashboard instead of hiding it behind the phone mockup. Desktop navigation, pack walkout and squad switching pass alongside all existing phone interactions at 1440×1000 and 390×844, with zero runtime exceptions. The live regression suite also passes all 24 match checks and all 24 full-game checks.
+
+The login screen now exposes both previously hidden entry points: **Open Interactive Prototype** and **Try Prime Ronaldo**. The Prime flow was clicked in an isolated browser profile and verified to create/open the showcase club, select the real local `∞ × ∞` card at striker, filter the inventory to Prime Ronaldo, and open the squad editor. The updated suite passes 24 match checks and 25 game checks with zero runtime exceptions.
+
 ## Remaining validation limits
 
 This environment required Chrome's SwiftShader software renderer. The live audit's median rendering interval was approximately **117 ms**; this is not evidence of 60 FPS hardware performance. Hardware-accelerated desktop performance, physical touch devices, and other browsers still need manual checks. The gameplay uses procedural animation and lightweight football rules, not a full professional football simulation.

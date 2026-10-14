@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars — Prototype Lab</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="prototype.css?v=20260928-daily14" />
+    <link rel="stylesheet" href="prototype.css?v=20261013-shrine1" />
+    <link rel="stylesheet" href="stadium.css?v=20261013-demonbanner1" />
   </head>
   <body class="prototype-lab">
     <main class="prototype-shell">
       <header class="lab-header">
         <a class="lab-brand" href="index.html"><span>FC</span> STARS</a>
         <div class="lab-title">
-          <p>Prototype lab</p>
-          <h1>Interactive laptop game concepts</h1>
+          <p>Stadium after dark</p>
+          <h1>Your club. Your colours. Your stage.</h1>
         </div>
         <a class="lab-live-link" href="index.html">OPEN LIVE GAME →</a>
       </header>
+      <div class="stadium-toolbar"><span><i></i> SIX SCREENS. ONE ELECTRIC CLUB.</span><div class="stadium-themes" role="group" aria-label="Stadium colour theme"><span>SET THE VIBE</span><button data-stadium-theme="violet" aria-label="Aurora theme" aria-pressed="true" title="Aurora"><i></i></button><button data-stadium-theme="cyan" aria-label="Ice theme" aria-pressed="false" title="Ice"><i></i></button><button data-stadium-theme="coral" aria-label="Sunset theme" aria-pressed="false" title="Sunset"><i></i></button><button data-stadium-theme="gold" aria-label="Gold theme" aria-pressed="false" title="Gold"><i></i></button></div></div>
 
       <nav class="prototype-tabs" aria-label="Prototype screens">
         <button class="tab is-active" data-screen="home">Club Home</button>
@@ -45,8 +47,8 @@
               <button class="mode-card ranked" data-go="match" data-mode="Ranked Rush"><span>⚔</span><strong>Ranked<br>Rush</strong><small>+ XP & rewards</small></button>
               <button class="mode-card draft" data-go="match" data-mode="Draft Challenge"><span>✦</span><strong>Draft<br>Challenge</strong><small>Build & battle</small></button>
             </div>
-            <div class="section-heading"><h3>Our profile</h3><button data-go="profile">Open</button></div>
-            <button class="news-card profile-home-card" data-go="profile"><div class="news-art profile-home-avatar">YOU</div><div><p>MANAGER ID</p><h3>ARJUN FC</h3><small>Showcase your players, title and custom background.</small></div><b>→</b></button>
+            <div class="section-heading"><h3>Prime showcase</h3><button data-go="squad">View</button></div>
+            <button class="news-card profile-home-card prime-home-card" data-go="squad"><div class="news-art prime-home-art"><img src="assets/players/prime-ronaldo.png" alt=""></div><div><p>ADMIN EXCLUSIVE · ST</p><h3>PRIME RONALDO · ∞ × ∞</h3><small>See the card in the squad prototype.</small></div><b>→</b></button>
           </div>
           <nav class="bottom-nav"><button data-go="home" class="selected">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="profile">◎<span>Profile</span></button></nav>
         </section>
@@ -71,7 +73,7 @@
               <button class="player-card card-gk" data-player="Alisson"><b>89</b><span>GK</span><small>ALISSON</small></button>
               <button class="player-card card-cb left" data-player="Saliba"><b>87</b><span>CB</span><small>SALIBA</small></button><button class="player-card card-cb right" data-player="Van Dijk"><b>89</b><span>CB</span><small>VAN DIJK</small></button>
               <button class="player-card card-gold wide-left" data-player="Vinícius Jr"><b>90</b><span>LW</span><small>VINI JR</small></button><button class="player-card card-goat central" data-player="Neymar Jr"><b>91</b><span>CAM</span><small>NEYMAR</small></button><button class="player-card card-gold wide-right" data-player="Yamal"><b>88</b><span>RW</span><small>YAMAL</small></button>
-              <button class="player-card card-icon striker" data-player="Ronaldo"><b>95</b><span>ST</span><small>RONALDO</small></button>
+              <button class="player-card card-nightmare striker" data-player="Prime Ronaldo"><b>∞ × ∞</b><span>ST · NIGHTMARE</span><small>PRIME RONALDO</small></button>
             </div>
             <div id="playerInspector" class="player-inspector"><span>Tap a player card to inspect</span><button id="labSwapPlayer">Swap player</button></div>
           </div>
@@ -103,14 +105,33 @@
           <nav class="bottom-nav"><button data-go="home">⌂<span>Home</span></button><button data-go="packs">▣<span>Packs</span></button><button data-go="squad">♟<span>Squad</span></button><button data-go="club">◉<span>Club</span></button><button data-go="profile" class="selected">◎<span>Profile</span></button></nav>
         </section>
       </section>
-      <section class="desktop-prototype" aria-label="FC Stars laptop prototype">
-        <aside class="desktop-rail"><a class="desktop-logo" href="index.html"><span>FC</span>STARS</a><p>SEASON 01</p><button class="rail-active">⌂ <span>Home</span></button><button>▣ <span>Packs</span></button><button>♟ <span>Squad</span></button><button>⚔ <span>Play</span></button><button>◉ <span>Club</span></button><div class="rail-profile"><i>AR</i><span><b>ARJUN FC</b><small>Division 4</small></span><em>⌄</em></div></aside>
-        <main class="desktop-main"><div class="desktop-top"><div><p>GOOD EVENING, ARJUN</p><h2>Ready to build<br>your <em>legacy?</em></h2></div><div class="desktop-balance"><span>🪙 <b>2,450</b></span><span>◆ <b>118</b></span><button>+</button></div></div><section class="desktop-hero"><div><p>RISING ICONS · 4 DAYS LEFT</p><h3>Legends are<br>walking out.</h3><button>OPEN PACK <span>◆ 75</span></button></div><strong>91<small>NEYMAR JR</small></strong></section><div class="desktop-section-title"><h3>Play now</h3><button>View all modes →</button></div><div class="desktop-modes"><button class="desktop-mode ranked"><span>RANKED RUSH</span><b>Fight for<br>your division</b><small>WIN +28 XP</small></button><button class="desktop-mode draft"><span>DRAFT CHALLENGE</span><b>Pick 5.<br>Play 3.</b><small>ENDS IN 05:12:40</small></button><button class="desktop-mode friendly"><span>FRIENDLY</span><b>Play your<br>friends</b><small>NO ENTRY COST</small></button></div></main>
-        <aside class="desktop-side"><div class="side-heading"><h3>Club status</h3><button>•••</button></div><section class="desktop-rank"><p>DIVISION 4</p><div><b>1,240</b><span>RANK POINTS</span></div><i>↑ 3 wins this week</i></section><section class="desktop-mission"><p>DAILY MISSION</p><h3>Win one Ranked match</h3><div><i></i></div><small>0 / 1 completed</small><button>PLAY NOW</button></section><div class="side-heading"><h3>Starting XI</h3><button>Manage →</button></div><section class="desktop-xi"><div><b>95</b><span>RONALDO</span></div><div><b>91</b><span>NEYMAR</span></div><div><b>90</b><span>VINI JR</span></div><div><b>88</b><span>YAMAL</span></div><strong>88<small>TEAM RATING</small></strong></section></aside>
+      <section id="labDesktopPrototype" class="desktop-prototype lab-desktop-prototype" aria-label="FC Stars laptop prototype">
+        <aside class="desktop-rail">
+          <a class="desktop-logo" href="index.html"><span>FC</span>STARS</a><p>SEASON 01</p>
+          <button class="rail-active" data-lab-desktop-view="home">⌂ <span>Home</span></button>
+          <button data-lab-desktop-view="packs">▣ <span>Packs</span></button>
+          <button data-lab-desktop-view="squad">♟ <span>Squad</span></button>
+          <button data-lab-desktop-view="play">⚔ <span>Play</span></button>
+          <button data-lab-desktop-view="club">◉ <span>Club</span></button>
+          <button data-lab-desktop-view="news">● <span>News</span><i class="rail-live-dot"></i></button>
+          <button data-lab-desktop-view="profile">◎ <span>Profile</span></button>
+          <div class="rail-profile"><i>AR</i><span><b id="labDesktopClubName">ARJUN FC</b><small>Division 4</small></span><em>⌄</em></div>
+        </aside>
+        <main class="desktop-main">
+          <div class="desktop-top"><div><p id="labDesktopKicker">GOOD EVENING, MANAGER</p><h2 id="labDesktopTitle">Own the pitch.<br><em>Write your story.</em></h2></div><div class="desktop-balance"><span>♛ <b id="labDesktopCoins">∞ RP</b></span><span>🪙 <b id="labDesktopGems">∞ COINS</b></span><button id="labDesktopAddBalance" aria-label="Unlimited test balance">∞</button></div></div>
+          <div id="labDesktopWorkspace" aria-live="polite"></div>
+        </main>
+        <aside id="labDesktopSide" class="desktop-side">
+          <section class="desktop-profile-card"><span class="desktop-profile-avatar">AR</span><div><p>YOUR PROFILE</p><h3>ARJUN FC</h3><small>Division 4 · 1,240 RP</small></div><button data-lab-desktop-view="profile">VIEW</button></section>
+          <section class="desktop-rank nightmare-rank"><p>NIGHTMARE DIVISION</p><div><b>∞</b><span>RANK POINTS</span></div><i>♛ LIMITS REMOVED</i></section>
+          <section class="desktop-mission"><p>DAILY TREBLE</p><h3>Complete all three matchday goals</h3><div><i style="width:66%"></i></div><small>2 / 3 completed</small><button data-lab-desktop-view="play">FINISH IN MATCH</button></section>
+          <div class="side-heading"><h3>Starting XI</h3><button data-lab-desktop-view="squad">Manage →</button></div><section class="desktop-xi"><div class="nightmare-mini"><b>∞ × ∞</b><span>PRIME CR7</span></div><div><b>91</b><span>NEYMAR</span></div><div><b>90</b><span>VINI JR</span></div><div><b>88</b><span>YAMAL</span></div><strong>∞<small>TEAM RATING</small></strong></section>
+        </aside>
       </section>
       <p class="lab-note">Interactive prototype: open packs, edit your XI, play match actions, and customise your club.</p>
       <div id="labToast" class="prototype-toast" role="status" aria-live="polite"></div>
     </main>
-    <script src="prototype.js?v=20260928-daily14"></script>
+    <script src="prototype.js?v=20261013-demonbanner1"></script>
+    <script src="stadium.js?v=20261012-nightmare1"></script>
   </body>
 </html>

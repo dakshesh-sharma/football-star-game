@@ -55,6 +55,7 @@ function loadProfileAiImage(url) {
 
 function profileBackgroundHeroAttributes(accountState, baseClass = 'profile-showcase-card') {
   const background = accountState?.profileBackground || 'stadium';
+  if (background === 'el-demon' && hasElDemonProfile(accountState)) return `class="${baseClass} background-el-demon"`;
   if (background === 'ai') {
     const hue = Math.max(0, Math.min(359, Number(accountState?.profileAiBackground?.hue) || 268));
     const imageUrl = accountState?.profileAiBackground?.imageUrl || '';
@@ -364,6 +365,71 @@ if (labRoot) {
   renderLabNews();
 }
 
+const labDesktopPrototype = document.querySelector('#labDesktopPrototype');
+const labDesktopWorkspace = document.querySelector('#labDesktopWorkspace');
+const labDesktopHeadings = {
+  home: ['GOOD EVENING, MANAGER', 'Own the pitch.<br><em>Write your story.</em>'],
+  packs: ['RISING ICONS', 'Find your next<br><em>match winner.</em>'],
+  squad: ['STARTING XI', 'Shape a team<br><em>that flows.</em>'],
+  play: ['MATCHDAY', 'The lights are on.<br><em>Step onto the pitch.</em>'],
+  club: ['CLUB HQ', 'Make every detail<br><em>feel like yours.</em>'],
+  news: ['THE DAILY TOUCHLINE', 'Football never<br><em>stands still.</em>'],
+  profile: ['MANAGER PROFILE', 'Your club.<br><em>Your football story.</em>']
+};
+
+function labDesktopHomeMarkup() {
+  return `<section class="desktop-hero nightmare-hero">
+    <div class="desktop-hero-copy"><span class="hero-live"><i></i> NEW RANK · NIGHTMARE</span><p>THE FINAL BOSS HAS ARRIVED</p><h3>Prime Ronaldo.<br><em>Limits removed.</em></h3><button data-lab-desktop-view="squad">♛ VIEW NIGHTMARE XI <span>∞ RP</span></button><small class="stadium-hero-note">The most powerful card in FC Stars.</small></div>
+    <div class="hero-player prime-hero-player nightmare-hero-player" aria-hidden="true"><img src="assets/players/prime-ronaldo.png" alt=""><span><b>∞ × ∞</b><small>ST</small></span><strong>PRIME RONALDO<small>NIGHTMARE RANK</small></strong></div>
+  </section>
+  <section class="home-command-grid" aria-label="Club overview">
+    <button class="home-arena-card" data-lab-desktop-view="play"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>SMOOTHER CONTROL · REAL BALL PHYSICS · SMARTER AI</small><em>PLAY NOW →</em></button>
+    <article class="home-progress-card"><span class="home-card-kicker">ROAD TO DIVISION 3</span><div><b>62</b><small>/ 100 RP</small></div><i><b style="width:62%"></b></i><small>38 RP TO PROMOTION</small></article>
+    <article class="home-club-card"><span class="home-card-kicker">CLUB SNAPSHOT</span><div><span><b>89</b><small>XI RATING</small></span><span><b>24</b><small>CARDS</small></span></div><p>LATEST PULL · NEYMAR JR</p><button data-lab-desktop-view="squad">VIEW SQUAD →</button></article>
+  </section>
+  <section class="daily-hub"><header><div><span>DAILY TREBLE</span><h3>Three moves. One reward.</h3></div><b>🔥 4 DAY STREAK</b></header><div class="daily-quest-grid"><article class="complete"><i>✓</i><span><b>Finish a match</b><small>1 / 1</small></span><em><u style="width:100%"></u></em></article><article class="complete"><i>✓</i><span><b>Score 2 goals</b><small>2 / 2</small></span><em><u style="width:100%"></u></em></article><article><i>▣</i><span><b>Open a pack</b><small>0 / 1</small></span><em><u style="width:0%"></u></em></article></div><button class="locked">2 / 3 COMPLETE</button></section>`;
+}
+
+function labDesktopViewMarkup(view) {
+  if (view === 'packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Tap once for a polished walkout and add a new star to this prototype squad.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> STARS</span><span><b>0</b> DUPLICATES</span></div><button data-lab-desktop-open-pack>OPEN PACK <b>75 GEMS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal</small></div><button class="workspace-pack-art" data-lab-desktop-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
+  if (view === 'squad') return `<section class="workspace-card squad-workspace nightmare-squad"><div class="side-heading"><div><p>NIGHTMARE XI · 4–3–3 ATTACK</p><h3>Starting XI</h3></div><button data-lab-desktop-view="play">TEST IN MATCH →</button></div><div class="squad-metrics"><span><b>∞</b><small>TEAM RATING</small></span><span><b>31</b><small>CHEMISTRY</small></span><span><b>4–3–3</b><small>FORMATION</small></span></div><section class="desktop-xi"><div class="squad-star nightmare-mini"><b>∞ × ∞</b><span>PRIME CR7</span><small>NIGHTMARE · ST</small></div><div><b>91</b><span>NEYMAR</span><small>LW</small></div><div><b>90</b><span>VINI JR</span><small>RW</small></div><div><b>89</b><span>BELLINGHAM</span><small>CAM</small></div><strong>∞<small>TEAM RATING</small></strong></section><p class="squad-tip">Prime Ronaldo now sits above every rank with unlimited Ranked Points and Coins.</p></section>`;
+  if (view === 'play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCH CENTRE</p><h3>Choose your challenge</h3><span>The upgraded live match has momentum, player switching, through balls, crosses and goalkeeper reactions.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-lab-desktop-live-match><i>01</i><span>RANKED RUSH</span><b>Climb your<br>division</b><small>90 SECOND MATCH · FULL REWARDS</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode draft" data-lab-desktop-live-match><i>02</i><span>DRAFT CHALLENGE</span><b>Build fast.<br>Play brave.</b><small>ROTATING SQUAD · QUICK MATCH</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode friendly" data-lab-desktop-live-match><i>03</i><span>FRIENDLY</span><b>Learn the<br>new controls</b><small>NO ENTRY COST · NO PRESSURE</small><em>ENTER LIVE GAME →</em></button></div></section>`;
+  if (view === 'club') return `<section class="workspace-card club-workspace"><div class="club-banner"><span>EST. 2026 · STADIUM AFTER DARK</span><b id="labDesktopClubBannerName">ARJUN FC</b><small>Build. Play. Become.</small></div><div class="club-photo-row"><button class="club-photo-add" data-lab-desktop-view="profile"><span>AR</span><b>EDIT PROFILE</b></button><div><strong>Your identity travels with the team.</strong><small>Pick club colours on the toolbar, then see them update across the prototype immediately.</small><button data-lab-desktop-colour>CHANGE CLUB COLOURS</button></div></div><div class="club-record"><span><b>24</b><small>MATCHES</small></span><span><b>15</b><small>WINS</small></span><span><b>44</b><small>GOALS</small></span></div></section>`;
+  if (view === 'news') return `<section class="workspace-card news-workspace"><header class="news-workspace-head"><div><span class="news-live-badge"><i></i> UPDATED NOW</span><p>THE DAILY TOUCHLINE</p><h3>Stories shaping the game.</h3><small>Player focus, tactics and classic-match rewinds.</small></div><div class="news-pulse"><b>${prototypeNewsStories.length}</b><span>LIVE STORIES</span><i>NEWEST FIRST</i></div></header><div class="prototype-news-feed">${newsCardsMarkup(prototypeNewsStories.slice(0, 3))}</div></section>`;
+  if (view === 'profile') return `<section class="workspace-card profile-workspace"><section class="profile-showcase-card background-stadium"><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">AR</span><div><small>LEVEL 50 · DIVISION 4</small><h3>ARJUN FC</h3><p>Build. Play. Become.</p></div><b>CLUB FOUNDER</b></header><div class="profile-player-showcase"><article><img src="assets/players/cristiano-ronaldo-v2.jpg" alt="Cristiano Ronaldo"><span><b>95</b><small>ST</small></span><strong>RONALDO</strong></article><article><img src="assets/neymar-jr.png" alt="Neymar"><span><b>91</b><small>LW</small></span><strong>NEYMAR</strong></article><article><img src="assets/players/lionel-messi-v2.jpg" alt="Lionel Messi"><span><b>94</b><small>RW</small></span><strong>MESSI</strong></article></div></section><p class="profile-viewing-note">Profile backgrounds, showcase players and earned titles can be customised in the live game.</p></section>`;
+  return labDesktopHomeMarkup();
+}
+
+function selectLabDesktopView(requestedView) {
+  if (!labDesktopWorkspace) return;
+  const view = requestedView === 'match' ? 'play' : (requestedView || 'home');
+  const heading = labDesktopHeadings[view] || labDesktopHeadings.home;
+  labDesktopPrototype.querySelectorAll('[data-lab-desktop-view]').forEach((button) => button.classList.toggle('rail-active', button.closest('.desktop-rail') && button.dataset.labDesktopView === view));
+  document.querySelector('#labDesktopKicker').textContent = heading[0];
+  document.querySelector('#labDesktopTitle').innerHTML = heading[1];
+  labDesktopWorkspace.innerHTML = labDesktopViewMarkup(view);
+  labDesktopPrototype.dataset.activeView = view;
+}
+
+if (labDesktopPrototype) {
+  selectLabDesktopView('home');
+  tabs.forEach((tab) => tab.addEventListener('click', () => selectLabDesktopView(tab.dataset.screen)));
+  labDesktopPrototype.addEventListener('click', (event) => {
+    const viewButton = event.target.closest('[data-lab-desktop-view]');
+    if (viewButton) { selectLabDesktopView(viewButton.dataset.labDesktopView); return; }
+    if (event.target.closest('[data-lab-desktop-open-pack]')) {
+      const card = labCards[Math.floor(Math.random() * labCards.length)];
+      labDesktopWorkspace.innerHTML = `<section class="workspace-card lab-desktop-walkout"><span class="hero-live"><i></i> RISING ICONS WALKOUT</span><img src="${card[1].includes('NEYMAR') ? 'assets/neymar-jr.png' : 'assets/generated/generic-player.png'}" alt=""><div><p>WELCOME TO THE CLUB</p><b>${card[0]}</b><h3>${card[1]}</h3><small>${card[2]}</small><button data-lab-desktop-view="squad">VIEW IN SQUAD →</button></div></section>`;
+      showLabToast(`${card[1]} joins your prototype squad!`); return;
+    }
+    if (event.target.closest('[data-lab-desktop-live-match]')) { window.location.href = 'index.html'; return; }
+    if (event.target.closest('[data-lab-desktop-colour]')) { document.querySelector('[data-stadium-theme="cyan"]')?.click(); showLabToast('Ice club colours equipped.'); }
+  });
+  document.querySelector('#labDesktopAddBalance')?.addEventListener('click', () => {
+    showLabToast('Nightmare access is active — Ranked Points and Coins are unlimited.');
+  });
+}
+
 const prototypeToast = document.querySelector('#prototypeToast');
 const prototypeModal = document.querySelector('#prototypePackModal');
 const prototypeCoins = document.querySelector('#prototypeCoins');
@@ -400,12 +466,13 @@ function syncPrototypeBalances() {
   const rankedPoints = Number(state?.rankedPoints) || 0;
   const division = prototypeDivision(rankedPoints);
   const infiniteCoinsActive = Boolean(state?.infiniteCoins);
-  if (prototypeCoins) prototypeCoins.textContent = String(rankedPoints);
+  const infiniteRankedPointsActive = Boolean(state?.infiniteRankedPoints);
+  if (prototypeCoins) prototypeCoins.textContent = infiniteRankedPointsActive ? '∞' : String(rankedPoints);
   if (prototypeGems) prototypeGems.textContent = infiniteCoinsActive ? '∞' : String(state?.matchPoints ?? 56);
-  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division ${division} · ${rankedPoints} RP`;
-  if (prototypeDivisionLabel) prototypeDivisionLabel.textContent = `DIVISION ${division}`;
-  if (prototypeRailDivision) prototypeRailDivision.textContent = `Division ${division}`;
-  if (prototypeRankPoints) prototypeRankPoints.textContent = String(rankedPoints);
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = infiniteRankedPointsActive ? 'Nightmare Division · ∞ RP' : `Division ${division} · ${rankedPoints} RP`;
+  if (prototypeDivisionLabel) prototypeDivisionLabel.textContent = infiniteRankedPointsActive ? 'NIGHTMARE DIVISION' : `DIVISION ${division}`;
+  if (prototypeRailDivision) prototypeRailDivision.textContent = infiniteRankedPointsActive ? 'Nightmare Division' : `Division ${division}`;
+  if (prototypeRankPoints) prototypeRankPoints.textContent = infiniteRankedPointsActive ? '∞' : String(rankedPoints);
   const missionComplete = state?.dailyRankedWinDate === localDateKey();
   if (prototypeMissionProgress) prototypeMissionProgress.style.width = missionComplete ? '100%' : '0%';
   if (prototypeMissionLabel) prototypeMissionLabel.textContent = missionComplete ? '1 / 1 completed' : '0 / 1 completed';
@@ -414,7 +481,9 @@ function syncPrototypeBalances() {
 function syncPrototypeProfile() {
   const account = typeof activeAccount === 'function' ? activeAccount() : null;
   if (prototypeUsername) prototypeUsername.textContent = account?.username || 'FC Manager';
-  if (prototypeProfileMeta) prototypeProfileMeta.textContent = `Division ${prototypeDivision()} · ${Number(state?.rankedPoints) || 0} RP`;
+  if (prototypeProfileMeta) prototypeProfileMeta.textContent = state?.infiniteRankedPoints
+    ? 'Nightmare Division · ∞ RP'
+    : `Division ${prototypeDivision()} · ${Number(state?.rankedPoints) || 0} RP`;
   if (prototypeProfileAvatar) {
     const photo = account?.profilePhoto || '';
     prototypeProfileAvatar.textContent = photo ? '' : avatarStyles[account?.avatarStyle] || 'FC';
@@ -440,7 +509,7 @@ function prototypeDivision(points = Number(state?.rankedPoints) || 0) {
 
 function prototypeTeamRating() {
   const team = buildTeam();
-  return Math.round(team.reduce((sum, player) => sum + Number(player.rating === '∞' ? 99 : player.rating || 60), 0) / Math.max(1, team.length));
+  return Math.round(team.reduce((sum, player) => sum + Number(isInfiniteRating(player) ? 99 : player.rating || 60), 0) / Math.max(1, team.length));
 }
 
 function homeWorkspaceMarkup() {
@@ -457,9 +526,9 @@ function homeWorkspaceMarkup() {
   ];
   const dailyDone = dailyQuests.filter((quest) => quest.value >= quest.target).length;
   const loginStreak = Math.max(0, Number(state?.loginStreak?.current) || 0);
-  return `<section class="desktop-hero">
-    <div class="desktop-hero-copy"><span class="hero-live"><i></i> RISING ICONS</span><p>FEATURED PACK · 50 COINS</p><h3>Make football<br>history.</h3><button data-prototype-open-pack>OPEN PACK <span>50 COINS</span></button></div>
-    <div class="hero-player" aria-hidden="true"><img src="assets/neymar-jr.png" alt=""><span><b>91</b><small>LW</small></span><strong>NEYMAR JR<small>RISING ICON</small></strong></div>
+  return `<section class="desktop-hero nightmare-hero">
+    <div class="desktop-hero-copy"><span class="hero-live"><i></i> NEW RANK · NIGHTMARE</span><p>THE FINAL BOSS HAS ARRIVED</p><h3>Prime Ronaldo.<br><em>Limits removed.</em></h3><button data-prototype-open-pitch>♛ VIEW NIGHTMARE XI <span>∞ COINS</span></button><small class="stadium-hero-note">The most powerful card in FC Stars.</small></div>
+    <div class="hero-player prime-hero-player nightmare-hero-player" aria-hidden="true"><img src="assets/players/prime-ronaldo.png" alt=""><span><b>∞ × ∞</b><small>ST</small></span><strong>PRIME RONALDO<small>NIGHTMARE RANK</small></strong></div>
   </section>
   <section class="home-command-grid" aria-label="Club overview">
     <button class="home-arena-card" data-prototype-play="Ranked Rush"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>25 COINS PER GOAL · +10 RP FOR A WIN</small><em>PLAY NOW →</em></button>
@@ -487,12 +556,32 @@ function updatePrototypeNewsResults() {
   if (pulse) pulse.textContent = stories.length;
 }
 
+function hasElDemonProfile(accountState) {
+  if (accountState?.elDemonUnlocked) return true;
+  if (typeof hasElDemonGift !== 'function') return false;
+  const account = accounts.find((item) => item.state === accountState);
+  return hasElDemonGift(account?.id);
+}
+
+function elDemonRewardMarkup(accountState) {
+  const unlocked = hasElDemonProfile(accountState);
+  return `<section class="el-demon-reward ${unlocked ? 'is-owned' : 'is-locked'}"><div class="el-demon-preview el-demon-reaper-art" aria-hidden="true"><span>Ⅲ</span></div><div><p>THE CHOSEN THREE</p><h3>El Demon</h3><small>${unlocked ? 'Gifted to you by S7ph_Void4. Your exclusive title + background.' : 'Exclusive title + background. Only three gifts from S7ph_Void4.'}</small></div><button data-equip-el-demon ${unlocked ? '' : 'disabled'}>${unlocked ? 'EQUIP SET' : 'GIFT ONLY'}</button></section>`;
+}
+
+function elDemonGiftingMarkup() {
+  if (!canGiftElDemon()) return '';
+  const remaining = Math.max(0, elDemonGiftLimit - elDemonGrants.length);
+  const eligible = accounts.filter((account) => !hasElDemonGift(account.id));
+  return `<section class="el-demon-gifting"><header><div><p>S7PH_VOID4 · EXCLUSIVE GIFTS</p><h3>Choose your three.</h3></div><b>${elDemonGrants.length} / 3 GIVEN</b></header><p>Give the El Demon title and matching background to a saved account on this device.</p><div class="el-demon-gift-controls"><label for="elDemonRecipient">Recipient<select id="elDemonRecipient" ${remaining ? '' : 'disabled'}><option value="">Choose a player</option>${eligible.map((account) => `<option value="${newsEscape(account.username)}">${newsEscape(account.username)}${account.id === activeAccountId ? ' (you)' : ''}</option>`).join('')}</select></label><button data-gift-el-demon ${remaining && eligible.length ? '' : 'disabled'}>${remaining ? 'GIFT EL DEMON ↗' : 'ALL THREE GIVEN'}</button></div><ol class="el-demon-recipients">${[0,1,2].map((index) => { const gift = elDemonGrants[index]; const recipient = gift && accounts.find((account) => account.id === gift.accountId); return `<li class="${gift ? 'is-gifted' : ''}"><i>${['I','II','III'][index]}</i><span>${gift ? newsEscape(recipient?.username || gift.username) : 'Unclaimed gift'}</span><b>${gift ? 'GIFTED' : 'AVAILABLE'}</b></li>`; }).join('')}</ol><small>Three lifetime recipients. Gifts cannot be reassigned; deleting an account keeps its slot used.</small></section>`;
+}
+
 function profileTitles(accountState) {
-  const iconCount = (accountState.inventory || []).filter((card) => card.rarity === 'Icon' || card.rarity === 'G.O.A.T').length;
+  const iconCount = (accountState.inventory || []).filter((card) => ['Icon', 'G.O.A.T', 'NIGHTMARE'].includes(card.rarity)).length;
   const ronaldoStreak = Number(accountState.taskProgress?.ronaldoWinStreak) || 0;
   const totalWins = Number(accountState.taskProgress?.totalWins) || 0;
   const bestLoginStreak = Number(accountState.loginStreak?.best) || 0;
   return [
+    { name:'El Demon', unlocked:hasElDemonProfile(accountState), progress:hasElDemonProfile(accountState) ? 1 : 0, target:1, task:'Gifted by S7ph_Void4 · only three recipients' },
     { name:'Club Founder', unlocked:true, progress:1, target:1, task:'Create your club' },
     { name:'Siuuu Streak', unlocked:ronaldoStreak >= 10, progress:ronaldoStreak, target:10, task:'Win 10 matches in a row controlling Ronaldo' },
     { name:'Icon Collector', unlocked:iconCount >= 5, progress:iconCount, target:5, task:'Own 5 Icon or G.O.A.T players' },
@@ -525,9 +614,10 @@ function profileWorkspaceMarkup() {
       ? `<label class="ai-background-maker"><span>Describe the background you want</span><input id="prototypeAiBackgroundPrompt" maxlength="80" value="${newsEscape(viewedState.profileAiBackground?.prompt || '')}" placeholder="e.g. neon Champions League night"><button type="button" data-generate-profile-background ${profileAiGenerating ? 'disabled' : ''}>${profileAiGenerating ? 'GENERATING…' : '✦ GENERATE AI IMAGE'}</button><small>A real AI image is generated from your prompt. It can take up to a minute.</small>${viewedState.profileAiBackground?.imageUrl ? `<i class="ai-background-preview" style="background-image:url(${newsEscape(viewedState.profileAiBackground.imageUrl)})"></i>` : ''}</label>`
       : `<button type="button" class="upload-background-button" data-upload-profile-background><b>↑</b><span>CHOOSE FROM FINDER OR PHOTOS</span><small>Works on laptop and phone · JPG, PNG or WebP</small></button><input id="prototypeProfileBackgroundInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>`;
   return `<section class="workspace-card profile-workspace">
+    ${elDemonGiftingMarkup()}
     <div class="profile-search-panel"><div><p>FIND A MANAGER</p><h3>Search profiles</h3></div><label><span>⌕</span><input id="prototypeProfileSearch" value="${newsEscape(prototypeProfileQuery)}" placeholder="Search any username" autocomplete="off"></label><div id="prototypeProfileResults" class="profile-search-results">${query ? (matches.length ? matches.map((account) => `<button data-profile-account="${account.id}"><i>${newsEscape(avatarStyles[account.avatarStyle] || 'FC')}</i><span><b>${newsEscape(account.username)}</b><small>${newsEscape(account.state?.profileTitle || 'Club Founder')} · Level ${newsEscape(levelDisplay(account.state?.level || 1, account.state?.infiniteLevel))}</small></span><em>VIEW →</em></button>`).join('') : '<p>No local profile found.</p>') : '<p>Search profiles created on this game.</p>'}</div></div>
-    <section ${profileBackgroundHeroAttributes(viewedState)}><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">${newsEscape(avatarStyles[viewed?.avatarStyle] || 'YOU')}</span><div><small>LEVEL ${newsEscape(levelDisplay(viewedState.level || 1, viewedState.infiniteLevel))} · DIVISION ${prototypeDivision(viewedState.rankedPoints)}</small><h3>${newsEscape(viewed?.username || 'FC Manager')}</h3><p>${newsEscape(viewed?.motto || 'Build your XI')}</p></div><b>${newsEscape(selectedTitle)}</b></header><div class="profile-player-showcase">${showcase.length ? showcase.map((card) => `<article><img src="${newsEscape(playerPhoto(card))}" alt="${newsEscape(card.name)}"><span><b>${newsEscape(ratingLabel(card))}</b><small>${newsEscape(card.position)}</small></span><strong>${newsEscape(shortName(card.name))}</strong></article>`).join('') : '<div class="profile-empty-showcase">Choose up to three players below to build your showcase.</div>'}</div></section>
-    ${isOwn ? `<section class="profile-customize"><div class="profile-section-heading"><div><p>PROFILE BACKGROUND</p><h3>Set the atmosphere</h3></div><button class="profile-see-all" data-profile-see-all>${prototypeBackgroundStudioOpen ? 'CLOSE ×' : 'SEE ALL +'}</button></div><div class="profile-backgrounds profile-backgrounds-quick">${['stadium','royal','midnight','crimson'].map((background) => `<button class="background-${background} ${viewedState.profileBackground === background ? 'selected' : ''}" data-profile-background="${background}"><i></i><b>${background}</b></button>`).join('')}</div>${prototypeBackgroundStudioOpen ? `<section class="background-studio"><div class="background-studio-options"><button class="${prototypeBackgroundMode === 'library' ? 'selected' : ''}" data-profile-bg-mode="library"><b>10</b><span>Choose backgrounds</span><small>Pick a ready-made scene</small></button><button class="${prototypeBackgroundMode === 'ai' ? 'selected' : ''}" data-profile-bg-mode="ai"><b>✦</b><span>Make with AI</span><small>Describe your dream scene</small></button><button class="${prototypeBackgroundMode === 'upload' ? 'selected' : ''}" data-profile-bg-mode="upload"><b>↑</b><span>Finder or Photos</span><small>Add your own image</small></button></div><div class="background-studio-pane">${studioPane}</div></section>` : ''}<div class="profile-section-heading"><div><p>SHOWCASE PLAYERS</p><h3>Choose up to three</h3></div><span>${showcaseNames.length} / 3 selected</span></div><div class="profile-player-picker">${owned.length ? owned.map((card) => `<button class="${showcaseNames.includes(card.name) ? 'selected' : ''}" data-profile-player="${newsEscape(card.name)}"><img src="${newsEscape(playerPhoto(card))}" alt=""><span><b>${newsEscape(shortName(card.name))}</b><small>${newsEscape(card.rarity)}</small></span></button>`).join('') : '<p>Collect players to build your showcase.</p>'}</div><div class="profile-section-heading"><div><p>UNLOCKABLE TITLES</p><h3>Complete tasks. Earn status.</h3></div></div><div class="profile-title-grid">${titles.map((title) => `<button class="${title.unlocked ? 'unlocked' : 'locked'} ${selectedTitle === title.name ? 'selected' : ''}" data-profile-title="${newsEscape(title.name)}" ${title.unlocked ? '' : 'disabled'}><span>${title.unlocked ? '◆' : '🔒'}</span><b>${newsEscape(title.name)}</b><small>${newsEscape(title.task)}</small><i><em style="width:${Math.min(100,title.progress/title.target*100)}%"></em></i><u>${Math.min(title.progress,title.target)} / ${title.target}</u></button>`).join('')}</div></section>` : '<p class="profile-viewing-note">Viewing another manager’s public profile.</p>'}
+    <section ${profileBackgroundHeroAttributes(viewedState)}><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">${newsEscape(avatarStyles[viewed?.avatarStyle] || 'YOU')}</span><div><small>LEVEL ${newsEscape(levelDisplay(viewedState.level || 1, viewedState.infiniteLevel))} · DIVISION ${prototypeDivision(viewedState.rankedPoints)}</small><h3>${newsEscape(viewed?.username || 'FC Manager')}</h3><p>${newsEscape(viewed?.motto || 'Build your XI')}</p></div><b class="${selectedTitle === 'El Demon' ? 'el-demon-title' : ''}">${newsEscape(selectedTitle)}</b></header><div class="profile-player-showcase">${showcase.length ? showcase.map((card) => `<article><img src="${newsEscape(playerPhoto(card))}" alt="${newsEscape(card.name)}"><span><b>${newsEscape(ratingLabel(card))}</b><small>${newsEscape(card.position)}</small></span><strong>${newsEscape(shortName(card.name))}</strong></article>`).join('') : '<div class="profile-empty-showcase">Choose up to three players below to build your showcase.</div>'}</div></section>
+    ${isOwn ? `<section class="profile-customize"><div class="profile-section-heading"><div><p>PROFILE BACKGROUND</p><h3>Set the atmosphere</h3></div><button class="profile-see-all" data-profile-see-all>${prototypeBackgroundStudioOpen ? 'CLOSE ×' : 'SEE ALL +'}</button></div><div class="profile-backgrounds profile-backgrounds-quick">${['stadium','royal','midnight','crimson'].map((background) => `<button class="background-${background} ${viewedState.profileBackground === background ? 'selected' : ''}" data-profile-background="${background}"><i></i><b>${background}</b></button>`).join('')}</div>${prototypeBackgroundStudioOpen ? `<section class="background-studio"><div class="background-studio-options"><button class="${prototypeBackgroundMode === 'library' ? 'selected' : ''}" data-profile-bg-mode="library"><b>10</b><span>Choose backgrounds</span><small>Pick a ready-made scene</small></button><button class="${prototypeBackgroundMode === 'ai' ? 'selected' : ''}" data-profile-bg-mode="ai"><b>✦</b><span>Make with AI</span><small>Describe your dream scene</small></button><button class="${prototypeBackgroundMode === 'upload' ? 'selected' : ''}" data-profile-bg-mode="upload"><b>↑</b><span>Finder or Photos</span><small>Add your own image</small></button></div><div class="background-studio-pane">${studioPane}</div></section>` : ''}${elDemonRewardMarkup(viewedState)}<div class="profile-section-heading"><div><p>SHOWCASE PLAYERS</p><h3>Choose up to three</h3></div><span>${showcaseNames.length} / 3 selected</span></div><div class="profile-player-picker">${owned.length ? owned.map((card) => `<button class="${showcaseNames.includes(card.name) ? 'selected' : ''}" data-profile-player="${newsEscape(card.name)}"><img src="${newsEscape(playerPhoto(card))}" alt=""><span><b>${newsEscape(shortName(card.name))}</b><small>${newsEscape(card.rarity)}</small></span></button>`).join('') : '<p>Collect players to build your showcase.</p>'}</div><div class="profile-section-heading"><div><p>UNLOCKABLE TITLES</p><h3>Complete tasks. Earn status.</h3></div></div><div class="profile-title-grid">${titles.map((title) => `<button class="${title.unlocked ? 'unlocked' : 'locked'} ${selectedTitle === title.name ? 'selected' : ''} ${title.name === 'El Demon' ? 'el-demon-title-card' : ''}" data-profile-title="${newsEscape(title.name)}" ${title.unlocked ? '' : 'disabled'}><span>${title.unlocked ? '◆' : '🔒'}</span><b>${newsEscape(title.name)}</b><small>${newsEscape(title.task)}</small><i><em style="width:${Math.min(100,title.progress/title.target*100)}%"></em></i><u>${Math.min(title.progress,title.target)} / ${title.target}</u></button>`).join('')}</div></section>` : '<p class="profile-viewing-note">Viewing another manager’s public profile.</p>'}
   </section>`;
 }
 
@@ -538,7 +628,7 @@ function prototypeViewMarkup(view) {
   if (view === 'Squad') {
     const team = buildTeam().slice().sort((a,b) => ratingSortValue(b) - ratingSortValue(a));
     const rating = prototypeTeamRating();
-    return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>4-3-3</b><small>FORMATION</small></span></div><section class="desktop-xi">${team.slice(0,5).map((player,index) => `<div class="${index === 0 ? 'squad-star' : ''}"><small>${escapeHtml(player.position || 'XI')}</small><b>${escapeHtml(ratingLabel(player))}</b><span>${escapeHtml(shortName(player.name).toUpperCase())}</span></div>`).join('')}<strong>${rating}<small>OVR</small></strong></section><p class="squad-tip">Select Manage XI to swap cards, inspect positions, and build your strongest lineup.</p></section>`;
+    return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>4-3-3</b><small>FORMATION</small></span></div><section class="desktop-xi">${team.slice(0,5).map((player,index) => `<div class="desktop-xi-card ${index === 0 ? 'squad-star' : ''} ${playerCardThemeClass(player.name)} rarity-${rarityClass(player.rarity || 'Silver')}"><small>${escapeHtml(player.position || player.slot || 'XI')}</small><b>${escapeHtml(ratingLabel(player))}</b><span>${escapeHtml(shortName(player.name).toUpperCase())}</span></div>`).join('')}<strong>${rating}<small>OVR</small></strong></section><p class="squad-tip">Select Manage XI to swap cards, inspect positions, and build your strongest lineup.</p></section>`;
   }
   if (view === 'Play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCHDAY</p><h3>Pick your arena.</h3><span>Every match uses your real Starting XI.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><i>♛</i><span>RANKED RUSH</span><b>Climb the<br>divisions</b><small>25 COINS / GOAL · 10 RP / WIN</small><em>PLAY RANKED →</em></button><button class="desktop-mode draft" data-prototype-play="Quick Match"><i>⚡</i><span>QUICK MATCH</span><b>Instant<br>kickoff</b><small>XP AND COIN REWARDS</small><em>PLAY NOW →</em></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><i>∞</i><span>FRIENDLY</span><b>Play with<br>no pressure</b><small>NO RANKED POINTS</small><em>PLAY FRIENDLY →</em></button></div></section>`;
   if (view === 'Club') {
@@ -681,7 +771,20 @@ document.addEventListener('click', async (event) => {
   }
   if (event.target.closest('[data-upload-profile-background]')) document.querySelector('#prototypeProfileBackgroundInput')?.click();
   const profileBackground = event.target.closest('[data-profile-background]');
-  if (profileBackground && activeAccount()) { state.profileBackground = profileBackground.dataset.profileBackground; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Profile background equipped.'); }
+  if (profileBackground && activeAccount()) {
+    const background = profileBackground.dataset.profileBackground;
+    if (!profileBackgroundOptions.includes(background) && !(background === 'el-demon' && hasElDemonProfile(state))) return;
+    state.profileBackground = background; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('Profile background equipped.');
+  }
+  if (event.target.closest('[data-gift-el-demon]')) {
+    const result = giftElDemon(document.querySelector('#elDemonRecipient')?.value);
+    if (result.ok) prototypeWorkspace.innerHTML = profileWorkspaceMarkup();
+    showPrototypeToast(result.message); return;
+  }
+  if (event.target.closest('[data-equip-el-demon]') && hasElDemonProfile(state)) {
+    state.profileTitle = 'El Demon'; state.profileBackground = 'el-demon'; saveState();
+    prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast('El Demon title and background equipped.'); return;
+  }
   const profilePlayer = event.target.closest('[data-profile-player]');
   if (profilePlayer && activeAccount()) {
     const name = profilePlayer.dataset.profilePlayer; const selected = [...(state.showcasePlayerNames || [])]; const index = selected.indexOf(name);
@@ -689,7 +792,13 @@ document.addEventListener('click', async (event) => {
     state.showcasePlayerNames = selected; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup();
   }
   const profileTitle = event.target.closest('[data-profile-title]');
-  if (profileTitle && !profileTitle.disabled && activeAccount()) { state.profileTitle = profileTitle.dataset.profileTitle; saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast(`${state.profileTitle} title equipped.`); }
+  if (profileTitle && !profileTitle.disabled && activeAccount()) {
+    const title = profileTitles(state).find((item) => item.name === profileTitle.dataset.profileTitle);
+    if (!title?.unlocked) return;
+    state.profileTitle = title.name;
+    if (title.name === 'El Demon') state.profileBackground = 'el-demon';
+    saveState(); prototypeWorkspace.innerHTML = profileWorkspaceMarkup(); showPrototypeToast(`${state.profileTitle} title equipped.`);
+  }
   const newsFilter = event.target.closest('#prototypeNewsFilters [data-news-filter]');
   if (newsFilter) {
     prototypeNewsFilter = newsFilter.dataset.newsFilter;
@@ -862,6 +971,14 @@ function openPrototypeMatch(mode) {
   prototypeMatchOverlay.hidden = false;
   startMatch(mode);
 }
+
+function launchFCStarsMatch(mode = 'Ranked Rush') {
+  if (!prototypePitchOverlay?.hidden) closePrototypePitch();
+  openPrototypeMatch(mode);
+}
+
+window.launchFCStarsMatch = launchFCStarsMatch;
+document.querySelector('#prototypePitchPlay')?.addEventListener('click', () => launchFCStarsMatch('Ranked Rush'));
 
 function closePrototypeMatch() {
   if (state?.activeMatch) endMatch({ abandoned: true });

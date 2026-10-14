@@ -1,5 +1,6 @@
 const cardPool = [
   { name: "Cristiano Ronaldo", position: "ST", team: "Portugal", rating: "∞", rarity: "G.O.A.T", chance: 0, specialAccess: true, image: "assets/players/cristiano-ronaldo-v2.jpg" },
+  { name: "Prime Ronaldo", position: "ST", team: "Man United", rating: "∞ × ∞", rarity: "NIGHTMARE", chance: 0, specialAccess: true, adminOnly: true, image: "assets/players/prime-ronaldo.png" },
   { name: "Pele", position: "CF", team: "Brazil", rating: 95, rarity: "Icon", chance: 1, image: "assets/players/pele-v2.jpg" },
   { name: "Diego Maradona", position: "CAM", team: "Argentina", rating: 95, rarity: "Icon", chance: 1, image: "assets/players/diego-maradona-v2.jpg" },
   { name: "Mbappu", position: "LM", team: "India", rating: 99, rarity: "Legend", chance: 0.3, image: "assets/mbappu.png" },
@@ -142,6 +143,9 @@ const databaseVersion = 1;
 const databaseStoreName = "state";
 const accountsDatabaseKey = "accounts";
 const activeAccountDatabaseKey = "active-account";
+const elDemonGrantsKey = "fc-stars-el-demon-gifts";
+const elDemonGifterUsername = "S7ph_Void4";
+const elDemonGiftLimit = 3;
 const developerUsername = "S7ph_Vo1d";
 const legacyDeveloperUsernames = ["Sync_Vo1d"];
 const additionalDeveloperUsernames = ["S7ph_Void4"];
@@ -246,6 +250,8 @@ const defaultState = {
   adminXp: "0",
   infiniteLevel: false,
   infiniteCoins: false,
+  infiniteRankedPoints: false,
+  elDemonUnlocked: false,
   inventory: [],
   teamCards: {},
   selectedStarSlot: null,
@@ -275,6 +281,7 @@ const defaultState = {
   loginStreak: { lastDate: "", current: 0, best: 0 }
 };
 
+let elDemonGrants = normalizeElDemonGrants(safeJson(storageGet(elDemonGrantsKey)));
 let accounts = loadAccounts();
 let activeAccountId = storageGet(activeAccountKey);
 if (activeAccountId && !accounts.some((account) => account.id === activeAccountId)) {
@@ -352,6 +359,7 @@ const quickLoginTitle = document.querySelector("#quickLoginTitle");
 const quickLoginMessage = document.querySelector("#quickLoginMessage");
 const accountList = document.querySelector("#accountList");
 const createAccountBtn = document.querySelector("#createAccountBtn");
+const primeRonaldoDemoBtn = document.querySelector("#primeRonaldoDemoBtn");
 const gamePromptOverlay = document.querySelector("#gamePromptOverlay");
 const gamePromptForm = document.querySelector("#gamePromptForm");
 const gamePromptTitle = document.querySelector("#gamePromptTitle");
@@ -436,9 +444,13 @@ function loadState() {
 }
 
 function freshState(inventoryGrant = false) {
+  const isDeveloperGrant = inventoryGrant === "dev";
   return {
     ...defaultState,
-    level: inventoryGrant === "dev" ? 50 : 1,
+    level: inventoryGrant === "dev" || inventoryGrant === "all" ? 50 : 1,
+    infiniteCoins: isDeveloperGrant,
+    infiniteRankedPoints: isDeveloperGrant,
+    elDemonUnlocked: false,
     inventory: inventoryGrant ? allInventoryCards(inventoryGrant) : [],
     teamCards: {},
     deletedCardNames: [],
@@ -466,6 +478,47 @@ function saveAccounts() {
   storageSet(accountsKey, JSON.stringify(accounts));
   saveToLocalDatabase(accountsDatabaseKey, accounts);
   saveToLocalDatabase(activeAccountDatabaseKey, activeAccountId);
+}
+
+function normalizeElDemonGrants(records) {
+  const unique = new Map();
+  for (const record of Array.isArray(records) ? records : []) {
+    const accountId = cleanText(record?.accountId, 96);
+    if (!accountId || record?.giftedBy !== elDemonGifterUsername || unique.has(accountId)) continue;
+    unique.set(accountId, { accountId, username: cleanText(record.username, 24), giftedBy: elDemonGifterUsername,
+      grantedAt: /^\d{4}-\d{2}-\d{2}T/.test(record.grantedAt || "") ? record.grantedAt : "" });
+    if (unique.size === elDemonGiftLimit) break;
+  }
+  return [...unique.values()];
+}
+
+function hasElDemonGift(accountId) {
+  return Boolean(accountId && elDemonGrants.some((grant) => grant.accountId === accountId));
+}
+
+function canGiftElDemon(account = activeAccount()) {
+  return account?.username === elDemonGifterUsername && isDeveloperUsername(account.username);
+}
+
+function giftElDemon(username) {
+  if (!canGiftElDemon()) return { ok: false, message: "Only S7ph_Void4 can gift El Demon." };
+  const persisted = safeJson(storageGet(elDemonGrantsKey));
+  elDemonGrants = normalizeElDemonGrants([...elDemonGrants, ...(Array.isArray(persisted) ? persisted : [])]);
+  const name = String(username || "").trim().toLocaleLowerCase();
+  const recipient = accounts.find((account) => account.username.toLocaleLowerCase() === name);
+  if (!recipient) return { ok: false, message: "Choose a saved player account first." };
+  if (hasElDemonGift(recipient.id)) return { ok: false, message: `${recipient.username} already owns El Demon.` };
+  if (elDemonGrants.length >= elDemonGiftLimit) return { ok: false, message: "All three El Demon gifts have been given." };
+  elDemonGrants = [...elDemonGrants, { accountId: recipient.id, username: recipient.username,
+    giftedBy: elDemonGifterUsername, grantedAt: new Date().toISOString() }];
+  recipient.state = recipient.state || freshState(accountInventoryGrant(recipient));
+  recipient.state.profileTitle = "El Demon";
+  recipient.state.profileBackground = "el-demon";
+  if (recipient.id === activeAccountId) state = recipient.state;
+  storageSet(elDemonGrantsKey, JSON.stringify(elDemonGrants));
+  saveToLocalDatabase(elDemonGrantsKey, elDemonGrants);
+  saveAccounts();
+  return { ok: true, message: `El Demon title and background gifted to ${recipient.username}.` };
 }
 
 function activeAccount() {
@@ -519,14 +572,21 @@ function normalizeAccount(account, index) {
   const id = account.id || `account-${Date.now()}-${index}`;
   const username = cleanText(account.username, 24) || `Player ${index + 1}`;
   const isDev = isDeveloperUsername(username);
-  const inventoryGrant = isDev ? "dev" : hasFullInventoryUsername(username) ? "special" : false;
-  const normalizedState = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
+  const inventoryGrant = accountInventoryGrant({ username, isDev });
+  const normalizedState = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant, id);
   if (isDev) {
     normalizedState.level = Math.max(50, Number(normalizedState.level) || 1);
+    normalizedState.infiniteCoins = true;
+    normalizedState.infiniteRankedPoints = true;
     if (String(normalizedState.adminXp || "0").length > 6 || normalizedState.xp > 1000000000) {
       normalizedState.adminXp = "0";
       normalizedState.xp = 0;
     }
+  }
+  if (isPrimaryDeveloperUsername(username)) {
+    normalizedState.elDemonUnlocked = true;
+    normalizedState.profileTitle = "El Demon";
+    normalizedState.profileBackground = "el-demon";
   }
   return {
     id,
@@ -583,6 +643,9 @@ function mergeStates(baseState, incomingState) {
       ? String(baseState.adminXp || "0")
       : String(incomingState.adminXp || "0"),
     infiniteLevel: Boolean(baseState.infiniteLevel || incomingState.infiniteLevel),
+    infiniteCoins: Boolean(baseState.infiniteCoins || incomingState.infiniteCoins),
+    infiniteRankedPoints: Boolean(baseState.infiniteRankedPoints || incomingState.infiniteRankedPoints),
+    elDemonUnlocked: Boolean(baseState.elDemonUnlocked || incomingState.elDemonUnlocked),
     inventory: uniqueCards([...list(baseState.inventory), ...list(incomingState.inventory)]),
     teamCards: { ...record(baseState.teamCards), ...record(incomingState.teamCards) },
     deletedCardNames: uniqueNames([...list(baseState.deletedCardNames), ...list(incomingState.deletedCardNames)]),
@@ -620,7 +683,7 @@ function hasFullInventoryUsername(username) {
 
 function accountInventoryGrant(account) {
   if (account?.isDev) return "dev";
-  if (allCardAccessUsernames.includes(String(account?.username || "").trim())) return "dev";
+  if (allCardAccessUsernames.includes(String(account?.username || "").trim())) return "all";
   if (hasFullInventoryUsername(account?.username)) return "special";
   return false;
 }
@@ -629,14 +692,16 @@ function isDeveloperNameTaken(accountId = null) {
   return accounts.some((account) => account.username === developerUsername && account.id !== accountId);
 }
 
-function migrateState(savedState, inventoryGrant = false) {
+function migrateState(savedState, inventoryGrant = false, accountId = null) {
   const hasFullInventory = Boolean(inventoryGrant);
-  const isDeveloperInventory = inventoryGrant === "dev";
+  const isDeveloperInventory = inventoryGrant === "dev" || inventoryGrant === "all";
   savedState.level = Number.isFinite(Number(savedState.level)) && Number(savedState.level) > 0 ? Number(savedState.level) : 1;
   savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
   savedState.adminXp = /^\d+$/.test(String(savedState.adminXp || "0")) ? String(savedState.adminXp || "0") : "0";
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
   savedState.infiniteCoins = Boolean(savedState.infiniteCoins);
+  savedState.infiniteRankedPoints = Boolean(savedState.infiniteRankedPoints);
+  savedState.elDemonUnlocked = Boolean(savedState.elDemonUnlocked);
   savedState.selectedStar = savedState.selectedStar ? enrichCard(savedState.selectedStar) : null;
   savedState.deletedCardNames = Array.isArray(savedState.deletedCardNames) ? savedState.deletedCardNames : [];
   savedState.redeemedCodes = Array.isArray(savedState.redeemedCodes) ? savedState.redeemedCodes : [];
@@ -646,7 +711,11 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.playerStats = savedState.playerStats && typeof savedState.playerStats === "object" && !Array.isArray(savedState.playerStats)
     ? savedState.playerStats : {};
   savedState.profileTitle = cleanText(savedState.profileTitle, 32) || "Club Founder";
-  savedState.profileBackground = ["stadium", "royal", "midnight", "crimson", "aurora", "ocean", "sunset", "galaxy", "trophy", "electric", "ai", "upload"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
+  savedState.profileBackground = ["stadium", "royal", "midnight", "crimson", "aurora", "ocean", "sunset", "galaxy", "trophy", "electric", "ai", "upload", "el-demon"].includes(savedState.profileBackground) ? savedState.profileBackground : "stadium";
+  if (!savedState.elDemonUnlocked && !hasElDemonGift(accountId)) {
+    if (savedState.profileTitle === "El Demon") savedState.profileTitle = "Club Founder";
+    if (savedState.profileBackground === "el-demon") savedState.profileBackground = "stadium";
+  }
   savedState.profileAiBackground = savedState.profileAiBackground && typeof savedState.profileAiBackground === "object"
     ? {
         prompt: cleanText(savedState.profileAiBackground.prompt, 80),
@@ -695,6 +764,23 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.joinRequest = isRealJoinRequest(savedState.joinRequest) ? enrichCard(savedState.joinRequest) : null;
   savedState.activeMatch = savedState.activeMatch && typeof savedState.activeMatch === "object" ? savedState.activeMatch : null;
   savedState.inventory = uniqueCards((Array.isArray(savedState.inventory) ? savedState.inventory : []).map(enrichCard));
+  savedState.inventory = savedState.inventory.filter((card) => !card.adminOnly || inventoryGrant === "dev");
+  if (inventoryGrant !== "dev") {
+    if (savedState.selectedStar?.adminOnly) {
+      savedState.selectedStar = null;
+      savedState.selectedStarSlot = null;
+    }
+    if (enrichCard(savedState.currentCard)?.adminOnly) {
+      savedState.currentCard = null;
+      savedState.currentCardSaved = false;
+    }
+    if (savedState.joinRequest?.adminOnly) savedState.joinRequest = null;
+    const matchCards = [
+      ...(Array.isArray(savedState.activeMatch?.homeTeam) ? savedState.activeMatch.homeTeam : []),
+      ...(Array.isArray(savedState.activeMatch?.homePlayers) ? savedState.activeMatch.homePlayers : [])
+    ];
+    if (matchCards.some((card) => enrichCard(card)?.adminOnly)) savedState.activeMatch = null;
+  }
   if (!isDeveloperInventory) {
     savedState.inventory = savedState.inventory.filter((card) => !isExcludedFullInventoryGrant(card));
   }
@@ -728,6 +814,7 @@ function migrateState(savedState, inventoryGrant = false) {
   savedState.teamCards = Object.fromEntries(
     Object.entries(savedState.teamCards && typeof savedState.teamCards === "object" && !Array.isArray(savedState.teamCards) ? savedState.teamCards : {}).flatMap(([slot, card]) => {
       const enrichedCard = enrichCard(card);
+      if (enrichedCard?.adminOnly && inventoryGrant !== "dev") return [];
       if (!isDeveloperInventory && isExcludedFullInventoryGrant(enrichedCard)) return [];
       if (!hasFullInventory && isDevGrantedCard(enrichedCard)) return [];
       const targetSlot = slotIdFromSave(slot, enrichedCard);
@@ -768,9 +855,10 @@ function enrichCard(card) {
 }
 
 function allInventoryCards(inventoryGrant = "special") {
-  const sourceCards = inventoryGrant === "dev" ? [...cardPool, ...codeOnlyCards] : cardPool;
+  const sourceCards = inventoryGrant === "dev" || inventoryGrant === "all" ? [...cardPool, ...codeOnlyCards] : cardPool;
   return sourceCards
-    .filter((card) => inventoryGrant === "dev" || card.name !== "Cristiano Ronaldo")
+    .filter((card) => !card.adminOnly || inventoryGrant === "dev")
+    .filter((card) => inventoryGrant === "dev" || inventoryGrant === "all" || card.name !== "Cristiano Ronaldo")
     .map((card) => ({
       ...card,
       id: `owned-${card.name.toLowerCase().replaceAll(" ", "-").replaceAll(".", "")}`
@@ -844,12 +932,16 @@ function hydrateFromLocalDatabase() {
       if (!databaseReady) return Promise.resolve();
       return Promise.all([
         loadFromLocalDatabase(accountsDatabaseKey),
-        loadFromLocalDatabase(activeAccountDatabaseKey)
+        loadFromLocalDatabase(activeAccountDatabaseKey),
+        loadFromLocalDatabase(elDemonGrantsKey)
       ]);
     })
     .then((saved) => {
       if (!Array.isArray(saved)) return;
-      const [databaseAccounts, databaseActiveAccountId] = saved;
+      const [databaseAccounts, databaseActiveAccountId, databaseElDemonGrants] = saved;
+      elDemonGrants = normalizeElDemonGrants([...elDemonGrants, ...(Array.isArray(databaseElDemonGrants) ? databaseElDemonGrants : [])]);
+      storageSet(elDemonGrantsKey, JSON.stringify(elDemonGrants));
+      saveToLocalDatabase(elDemonGrantsKey, elDemonGrants);
       if (!Array.isArray(databaseAccounts) || !databaseAccounts.length) {
         saveAccounts();
         return;
@@ -881,7 +973,7 @@ function hydrateFromLocalDatabase() {
 
 function renderStars() {
   starList.innerHTML = "";
-  selectablePlayers.slice().sort(compareCardsByRarity).forEach((star) => {
+  selectablePlayers.filter((card) => canAccessCard(card)).sort(compareCardsByRarity).forEach((star) => {
     const card = document.createElement("div");
     card.className = `star-card ${state.selectedStar?.name === star.name ? "active" : ""}`;
     card.innerHTML = `
@@ -897,7 +989,7 @@ function renderStars() {
 
 function renderLoginBackdrop() {
   loginCardBackdrop.innerHTML = "";
-  cardPool.slice(0, 28).forEach((card) => {
+  cardPool.filter((card) => !card.adminOnly).slice(0, 28).forEach((card) => {
     const tile = document.createElement("div");
     tile.className = `login-mini-card rarity-${rarityClass(card.rarity)}`;
     tile.innerHTML = `
@@ -1039,7 +1131,7 @@ function loginAccount(id) {
   account.isDev = isDeveloperUsername(account.username);
   const inventoryGrant = accountInventoryGrant(account);
   storageSet(activeAccountKey, activeAccountId);
-  state = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant);
+  state = migrateState({ ...defaultState, ...(account.state || {}) }, inventoryGrant, account.id);
   account.state = state;
   const dailyReward = recordDailyVisit(state);
   saveAccounts();
@@ -1103,6 +1195,51 @@ function finishCreateAccount(username) {
   saveAccounts();
   closeGamePrompt();
   loginAccount(account.id);
+  state.infiniteCoins = true;
+  state.infiniteRankedPoints = true;
+  state.elDemonUnlocked = true;
+  state.profileTitle = "El Demon";
+  state.profileBackground = "el-demon";
+}
+
+function openPrimeRonaldoDemo() {
+  let account = accounts.find((item) => isPrimaryDeveloperUsername(item.username));
+  if (!account) {
+    account = {
+      id: `account-${Date.now()}-prime-demo`,
+      username: developerUsername,
+      motto: "Prime Ronaldo showcase",
+      avatarStyle: "goat",
+      profilePhoto: "",
+      isDev: true,
+      state: freshState("dev")
+    };
+    accounts = [account, ...accounts];
+    saveAccounts();
+  }
+  loginAccount(account.id);
+  state.infiniteCoins = true;
+  state.infiniteRankedPoints = true;
+  state.elDemonUnlocked = true;
+  state.profileTitle = "El Demon";
+  state.profileBackground = "el-demon";
+  const primeRonaldo = state.inventory.find((card) => card.name === "Prime Ronaldo");
+  if (primeRonaldo) {
+    state.selectedStar = primeRonaldo;
+    state.selectedStarSlot = "st";
+    state.currentCard = primeRonaldo;
+    state.currentCardSaved = true;
+    state.inventoryOpen = true;
+    saveState();
+    render();
+  }
+  window.requestAnimationFrame(() => {
+    if (typeof selectPrototypeView === "function") selectPrototypeView("Squad");
+    if (typeof openPrototypePitch === "function") openPrototypePitch();
+    inventorySearch.value = "Prime Ronaldo";
+    renderInventory();
+    window.showPrototypeToast?.("Prime Ronaldo is selected at striker and ready to play.");
+  });
 }
 
 function addFriend() {
@@ -1302,7 +1439,7 @@ function saveProfile() {
   account.motto = cleanText(profileMottoInput.value, 42) || defaultProfileMotto;
   account.avatarStyle = selectedAvatarStyle() === "goat" && !canUseGoatProfile() ? "gold" : selectedAvatarStyle();
   account.isDev = isDeveloperUsername(account.username);
-  state = migrateState({ ...defaultState, ...state }, accountInventoryGrant(account));
+  state = migrateState({ ...defaultState, ...state }, accountInventoryGrant(account), account.id);
   account.state = state;
   saveAccounts();
   closeProfileEditor();
@@ -1578,11 +1715,11 @@ function endMatch({ abandoned = false } = {}) {
     addDailyChallengeProgress("matches", 1);
     addDailyChallengeProgress("goals", Math.max(0, Number(finishedMatch.home) || 0));
   }
-  if (tablePoints) {
+  if (tablePoints && !state.infiniteRankedPoints) {
     state.rankedPoints = Math.max(0, Number(state.rankedPoints) || 0) + tablePoints;
     state.dailyRankedWinDate = localDateKey();
   }
-  state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + coinReward;
+  if (!state.infiniteCoins) state.matchPoints = Math.max(0, Number(state.matchPoints) || 0) + coinReward;
   const xpResult = completedWin ? addXp(winXp) : { leveledUpTo: [], rewardMessages: [] };
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
@@ -2482,8 +2619,9 @@ function renderPitch() {
 function playerNode(player) {
   const node = document.createElement("div");
   const rarity = player.rarity || "Silver";
-  const isGoat = rarityClass(rarity) === "goat" || player.specialAccess || player.rating === "∞";
-  node.className = `player-dot rarity-${rarityClass(rarity)} ${isGoat ? "pitch-goat-card" : ""} ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
+  const isNightmare = rarityClass(rarity) === "nightmare";
+  const isGoat = isNightmare || rarityClass(rarity) === "goat" || player.specialAccess || player.rating === "∞";
+  node.className = `player-dot rarity-${rarityClass(rarity)} ${playerCardThemeClass(player.name)} ${player.adminOnly ? "admin-exclusive" : ""} ${isGoat ? "pitch-goat-card" : ""} ${player.controlled ? "controlled" : ""} ${state.replaceSlot === player.id ? "selected-slot" : ""}`;
   node.style.left = `${player.x}%`;
   node.style.top = `${player.y}%`;
   node.innerHTML = `
@@ -2495,7 +2633,7 @@ function playerNode(player) {
       <strong>${ratingLabel(player)}</strong>
       <span>${escapeHtml(player.slot)}</span>
     </span>
-    <span class="tag">${player.controlled ? `YOU${isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
+    <span class="tag">${player.controlled ? `YOU${isNightmare ? " · NIGHTMARE" : isGoat ? " · G.O.A.T" : ""}` : rarity}</span>
   `;
   node.addEventListener("click", () => selectReplaceSlot(player));
   return node;
@@ -2503,6 +2641,7 @@ function playerNode(player) {
 
 function jerseyNumber(player) {
   const numbers = {
+    "Prime Ronaldo": 7,
     "Cristiano Ronaldo": 7,
     IshowSpeed: 7,
     "Lionel Messi": 10,
@@ -2695,6 +2834,7 @@ function cancelCurrentCard() {
 }
 
 function addCardToInventory(cards, card) {
+  if (!canAccessCard(card)) return cards;
   if (cards.some((item) => item.name === card.name)) return cards;
   return [card, ...cards];
 }
@@ -3015,6 +3155,7 @@ function renderInventory() {
   const visibleCards = state.inventory
     .map(enrichCard)
     .filter(Boolean)
+    .filter((card) => canAccessCard(card))
     .filter((card) => card.name.toLowerCase().includes(searchTerm))
     .slice()
     .sort((a, b) => {
@@ -3033,7 +3174,7 @@ function renderInventory() {
 
   visibleCards.forEach((card) => {
     const item = document.createElement("div");
-    item.className = `inventory-card rarity-${rarityClass(card.rarity)}`;
+    item.className = `inventory-card rarity-${rarityClass(card.rarity)} ${playerCardThemeClass(card.name)} ${card.adminOnly ? "admin-exclusive" : ""}`;
     const canPlaceAtSelectedSpot = selectedSpot && canPlaySlot(card, selectedSpot.slot);
     item.innerHTML = `
       <div class="card-rating">
@@ -3051,6 +3192,7 @@ function renderInventory() {
       <div class="inventory-actions">
         <button data-become>Become</button>
         <button class="${canPlaceAtSelectedSpot ? "secondary" : "danger-btn"}" data-card data-action="${canPlaceAtSelectedSpot ? "place" : "delete"}">${canPlaceAtSelectedSpot ? `Put at ${escapeHtml(selectedSpot.slot)}` : "Delete"}</button>
+        ${card.rarity === "NIGHTMARE" ? '<button class="nightmare-card-match" data-card-match>⚽ Play Football Match</button>' : ""}
       </div>
     `;
     item.querySelector("[data-card]").addEventListener("click", (event) => {
@@ -3061,6 +3203,10 @@ function renderInventory() {
       useCard(card.id);
     });
     item.querySelector("[data-become]").addEventListener("click", () => becomeInventoryCard(card.id));
+    item.querySelector("[data-card-match]")?.addEventListener("click", () => {
+      becomeInventoryCard(card.id);
+      window.requestAnimationFrame(() => window.launchFCStarsMatch?.("Ranked Rush"));
+    });
     inventory.appendChild(item);
     const cardImage = item.querySelector("img");
     cardImage.src = playerPhoto(card);
@@ -3070,6 +3216,13 @@ function renderInventory() {
 
 function rarityClass(rarity) {
   return rarity.toLowerCase().replaceAll(".", "").replaceAll(" ", "-");
+}
+
+function playerCardThemeClass(name) {
+  if (name === "Cristiano Ronaldo") return "player-theme-ronaldo";
+  if (name === "Lionel Messi") return "player-theme-messi";
+  if (name === "Neymar" || name === "Neymar Jr") return "player-theme-neymar";
+  return "";
 }
 
 function deleteInventoryCard(id) {
@@ -3098,7 +3251,7 @@ function deleteInventoryCard(id) {
 
 function becomeInventoryCard(id) {
   const card = state.inventory.find((item) => item.id === id);
-  if (!card) return;
+  if (!card || !canAccessCard(card)) return;
 
   state.selectedStar = card;
   state.selectedStarSlot = bestSlotIdForPosition(card.position);
@@ -3121,7 +3274,7 @@ function useCard(id) {
 
   const cardIndex = state.inventory.findIndex((item) => item.id === id);
   const card = state.inventory[cardIndex];
-  if (!card) return;
+  if (!card || !canAccessCard(card)) return;
 
   if (state.selectedStar?.name === card.name && !isControlledSlot(state.replaceSlot)) {
     state.replaceSlot = null;
@@ -3289,6 +3442,7 @@ function formatChance(chance) {
 }
 
 function chanceLabel(card) {
+  if (card.adminOnly) return "admins only";
   if (card.specialAccess) return "only special guest and devs";
   if (card.codeOnly) return "code only";
   if (card.realPlayer || card.rarity === "Friend") return "friended player";
@@ -3304,15 +3458,16 @@ function chanceSortValue(card) {
 
 function raritySortValue(card) {
   const order = {
-    "G.O.A.T": 0,
-    Legend: 1,
-    Icon: 2,
-    Elite: 3,
-    Hero: 4,
-    Friend: 4.5,
-    Gold: 5,
-    Silver: 6,
-    Bronze: 7
+    NIGHTMARE: 0,
+    "G.O.A.T": 1,
+    Legend: 2,
+    Icon: 3,
+    Elite: 4,
+    Hero: 5,
+    Friend: 5.5,
+    Gold: 6,
+    Silver: 7,
+    Bronze: 8
   };
   return order[card.rarity] ?? 99;
 }
@@ -3325,7 +3480,17 @@ function compareCardsByRarity(a, b) {
 }
 
 function ratingSortValue(card) {
-  return card.rating === "∞" ? Number.POSITIVE_INFINITY : Number(card.rating) || 0;
+  if (card.rating === "∞ × ∞") return Number.POSITIVE_INFINITY;
+  return card.rating === "∞" ? Number.MAX_SAFE_INTEGER : Number(card.rating) || 0;
+}
+
+function isInfiniteRating(card) {
+  return card?.rating === "∞" || card?.rating === "∞ × ∞";
+}
+
+function canAccessCard(card, account = activeAccount()) {
+  const adminOnly = card?.adminOnly || cardPool.find((item) => item.name === card?.name)?.adminOnly;
+  return !adminOnly || isDeveloperUsername(account?.username);
 }
 
 function ratingLabel(card) {
@@ -3716,6 +3881,7 @@ profilePhotoInput.addEventListener("change", () => {
 });
 addFriendBtn.addEventListener("click", addFriend);
 createAccountBtn.addEventListener("click", createAccount);
+primeRonaldoDemoBtn?.addEventListener("click", openPrimeRonaldoDemo);
 gamePromptForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!activePromptSubmit) return;

@@ -302,6 +302,59 @@ body.prototype-lab:before { background:linear-gradient(180deg,#08091ad9 0,#08091
 .prototype-lab .field-player.you.is-sprinting { transform:translateY(-55px); }
 .prototype-lab .joystick { touch-action:none; }
 .prototype-lab .joystick i { transition:transform .08s linear; }
+
+/* Prime Ronaldo — NIGHTMARE rank presentation */
+.desktop-hero.nightmare-hero {
+  background:linear-gradient(90deg,#050108cf 0%,#15000d60 46%,#40001608),url("assets/generated/nightmare-shrine-arena-v4.webp") center/cover no-repeat;
+  border:1px solid #ff55733d;
+  box-shadow:inset 0 0 65px #dc123130,0 20px 55px #0007;
+}
+.desktop-hero.nightmare-hero:before {
+  animation:nightmareHeroLines 4.2s linear infinite;
+  background:
+    radial-gradient(circle at 58% 43%,#ff17465c,transparent 29%),
+    linear-gradient(111deg,transparent 0 43%,#ffffff00 46%,#fff 46.35%,#ff1e4c 46.75%,transparent 47.45%),
+    linear-gradient(69deg,transparent 0 58%,#5effe800 60%,#5effe8 60.35%,transparent 61%);
+  background-position:center,160% 0,-150% 0;
+  background-size:100% 100%,220% 100%,250% 100%;
+  filter:drop-shadow(0 0 7px #ff1748);
+  mask-image:none;
+  mix-blend-mode:screen;
+  opacity:.82;
+}
+.nightmare-hero .hero-live { border-color:#ff6d875e; color:#ffdbe2; }
+.nightmare-hero .hero-live i { background:#ff244d; box-shadow:0 0 16px #ff244d; }
+.nightmare-hero .desktop-hero-copy>p,.nightmare-hero .desktop-hero-copy h3 em { color:#ff536f; }
+.nightmare-hero .desktop-hero-copy>button { background:linear-gradient(135deg,#ff3158,#970d38 55%,#260312); color:#fff; box-shadow:0 0 26px #f117473b; }
+.nightmare-hero-player>img { filter:saturate(.8) contrast(1.17) drop-shadow(0 0 22px #ff244d75); opacity:.98; }
+.nightmare-hero-player:after { background:linear-gradient(90deg,#19000f 0,transparent 50%),radial-gradient(circle at 65% 48%,#ff17443b,transparent 38%); }
+.nightmare-hero-player>span { animation:nightmarePrototypeBadge 2.8s ease-in-out infinite;background:linear-gradient(145deg,#fff,#ff7890 28%,#bb123f 60%,#23020e);border-color:#ffe0e6;box-shadow:0 0 25px #ff224eaa;color:#fff;width:70px; }
+.nightmare-hero-player>span b { font-size:1.05rem; white-space:nowrap; }
+.nightmare-hero-player>strong small { color:#ff6d86; text-shadow:0 0 12px #ff214b; }
+.card-nightmare,.nightmare-mini {
+  animation:nightmarePrototypeCard 2.6s ease-in-out infinite;
+  background:radial-gradient(circle at 50% 24%,#ff315d66,transparent 38%),url("assets/generated/nightmare-shrine-arena-v4.webp") center/cover!important;
+  border-color:#ffafbd!important;
+  box-shadow:0 0 0 2px #ffccd5,0 0 25px #f51249,0 0 48px #772dff80!important;
+  color:#fff!important;
+}
+.card-nightmare { height:82px; width:64px; }
+.card-nightmare b { font-size:.95rem; white-space:nowrap; }
+.card-nightmare span { color:#ff94a7; font-size:.36rem; }
+.nightmare-mini b { font-size:.78rem!important; white-space:nowrap; }
+.nightmare-mini span { color:#fff!important; font-size:.38rem!important; }
+.desktop-xi>div.rarity-nightmare { animation:nightmarePrototypeCard 2.6s ease-in-out infinite;background:radial-gradient(circle at 50% 24%,#ff315d66,transparent 38%),url("assets/generated/nightmare-shrine-arena-v4.webp") center/cover!important;border-color:#ffafbd!important;box-shadow:0 0 0 2px #ffccd5,0 0 25px #f51249,0 0 48px #772dff80!important;color:#fff!important;height:88px;width:62px;z-index:3; }
+.desktop-xi>div.rarity-nightmare b { font-size:.82rem;white-space:nowrap; }
+.desktop-xi>div.rarity-nightmare span { color:#fff;text-shadow:0 0 8px #ff3158; }
+.nightmare-rank { background:linear-gradient(145deg,#260713,#09010a)!important;border-color:#ff496866!important;box-shadow:inset 0 0 28px #f8173f18,0 0 26px #b921ff1c; }
+.nightmare-rank p,.nightmare-rank b,.nightmare-rank i { color:#ff637d!important;text-shadow:0 0 12px #f71746; }
+.nightmare-squad { background:radial-gradient(circle at 50% 65%,#d80f3430,transparent 38%),linear-gradient(145deg,#20121e,#0d0912); }
+.nightmare-squad .squad-star.nightmare-mini { height:96px;width:68px; }
+
+@keyframes nightmarePrototypeBadge { 50% { box-shadow:0 0 42px #ff224eee;transform:rotate(1deg) scale(1.05); } }
+@keyframes nightmarePrototypeCard { 50% { box-shadow:0 0 0 3px #ffe2e7,0 0 38px #ff1649,0 0 62px #7730ff99;filter:brightness(1.12); } }
+@keyframes nightmareHeroLines { from { background-position:center,160% 0,-150% 0; } to { background-position:center,-160% 0,170% 0; } }
+@media (prefers-reduced-motion:reduce) { .desktop-hero.nightmare-hero:before,.nightmare-hero-player>span,.card-nightmare,.nightmare-mini { animation:none; } }
 .club-mobile-screen { background:radial-gradient(circle at 80% 18%,#8c3eff40,transparent 26%),#10121f; padding:14px 17px; }
 .club-hero-mobile { background:linear-gradient(120deg,#4b2bd0b8,#da367cb8),url("assets/generated/fc-stars-stadium-v2.png") center/cover; border:1px solid #ffffff30; border-radius:17px; display:grid; height:210px; margin-top:18px; overflow:hidden; padding:20px; position:relative; }
 .club-hero-mobile:after { border:25px solid #ffffff16; border-radius:50%; content:""; height:180px; position:absolute; right:-65px; top:7px; width:180px; }

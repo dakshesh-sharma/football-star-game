@@ -5,16 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FC Stars</title>
     <link rel="icon" type="image/svg+xml" href="assets/fc-stars-square-icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=20260928-daily14" />
-    <link rel="stylesheet" href="prototype.css?v=20260928-daily14" />
+    <link rel="stylesheet" href="styles.css?v=20261013-shrine1" />
+    <link rel="stylesheet" href="prototype.css?v=20261013-shrine1" />
     <link rel="stylesheet" href="match.css?v=20260926-matchday2" />
+    <link rel="stylesheet" href="stadium.css?v=20261013-demonbanner1" />
   </head>
   <body class="fc-stars-prototype-mode">
     <section class="in-game-prototype" aria-label="FC Stars laptop prototype">
       <div class="in-game-prototype-bar">
-        <span>FC STARS · MATCHDAY</span>
-        <span>Web edition</span>
+        <span>✦ FC STARS · STADIUM AFTER DARK</span>
+        <span>SEASON 01 / PLAY YOUR WAY</span>
       </div>
+      <div class="stadium-toolbar"><span><i></i> THE LIGHTS ARE ON. YOUR STAGE IS SET.</span><div class="stadium-themes" role="group" aria-label="Stadium colour theme"><span>SET THE VIBE</span><button data-stadium-theme="violet" aria-label="Aurora theme" aria-pressed="true" title="Aurora"><i></i></button><button data-stadium-theme="cyan" aria-label="Ice theme" aria-pressed="false" title="Ice"><i></i></button><button data-stadium-theme="coral" aria-label="Sunset theme" aria-pressed="false" title="Sunset"><i></i></button><button data-stadium-theme="gold" aria-label="Gold theme" aria-pressed="false" title="Gold"><i></i></button></div></div>
       <section class="desktop-prototype">
         <aside class="desktop-rail">
           <a class="desktop-logo" href="index.html"><span>FC</span>STARS</a>
@@ -63,7 +65,7 @@
         </form>
       </section>
       <section id="prototypePitchOverlay" class="prototype-pitch-overlay" hidden aria-label="Squad pitch editor">
-        <div class="prototype-pitch-toolbar"><div><p>STARTING XI</p><h2>Squad Builder</h2></div><button id="prototypePitchClose">← Back to dashboard</button></div>
+        <div class="prototype-pitch-toolbar"><div><p>STARTING XI</p><h2>Squad Builder</h2></div><div class="prototype-pitch-toolbar-actions"><button id="prototypePitchPlay" class="prototype-pitch-play">⚽ PLAY FOOTBALL MATCH</button><button id="prototypePitchClose">← Back to dashboard</button></div></div>
         <div class="prototype-pitch-layout"><div id="prototypePitchHost" class="prototype-pitch-host"></div><div id="prototypeInventoryHost" class="prototype-inventory-host"></div></div>
       </section>
       <section id="prototypeMatchOverlay" class="prototype-pitch-overlay prototype-match-overlay" hidden aria-label="Live match">
@@ -267,13 +269,13 @@
         <section class="login-showcase" aria-label="FC Stars Matchday">
           <div class="login-showcase-brand"><span>FC</span><b>FC STARS</b></div>
           <div class="login-showcase-copy">
-            <p><i></i> SEASON 01 IS LIVE</p>
-            <h1>BUILD.<br>PLAY.<br><em>BECOME.</em></h1>
-            <span>Build your dream XI, walk out under the lights, and take your club to the top.</span>
+            <p><i></i> NEW RANK · NIGHTMARE</p>
+            <h1>PRIME.<br>RONALDO.<br><em>NIGHTMARE.</em></h1>
+            <span>The most powerful card in FC Stars. Enter with unlimited Ranked Points and Coins.</span>
           </div>
-          <img src="assets/neymar-jr.png" alt="" />
-          <div class="login-showcase-rating"><b>91</b><small>RISING ICON</small></div>
-          <div class="login-showcase-features"><span>11v11 MATCHES</span><span>ICON PACKS</span><span>RANKED RUSH</span></div>
+          <img class="login-prime-ronaldo" src="assets/players/prime-ronaldo.png" alt="Prime Ronaldo" />
+          <div class="login-showcase-rating prime-rating"><b>∞ × ∞</b><small>NIGHTMARE · ST</small></div>
+          <div class="login-showcase-features"><span>NIGHTMARE RANK</span><span>∞ RP + COINS</span><span>11v11 MATCHES</span></div>
         </section>
         <div class="quick-login-box">
           <p class="login-kicker">YOUR CLUB AWAITS</p>
@@ -282,6 +284,10 @@
           <p id="quickLoginMessage" class="quick-login-message" hidden></p>
           <div id="accountList" class="account-list"></div>
           <button id="createAccountBtn" class="login-create-button" type="button">Create New Club</button>
+          <div class="login-entry-actions">
+            <a class="login-prototype-button" href="prototypes.html">OPEN INTERACTIVE PROTOTYPE →</a>
+            <button id="primeRonaldoDemoBtn" class="login-prime-button" type="button"><span>∞ × ∞</span> UNLEASH PRIME RONALDO · NIGHTMARE</button>
+          </div>
           <small class="login-save-note">Progress saves automatically on this device.</small>
         </div>
       </div>
@@ -350,8 +356,9 @@
     </section>
 
     <script src="match-physics.js?v=20260926-matchday2"></script>
-    <script src="script.js?v=20260928-daily14"></script>
-    <script src="prototype.js?v=20260928-daily14"></script>
+    <script src="script.js?v=20261013-player-art1"></script>
+    <script src="prototype.js?v=20261013-demonbanner1"></script>
+    <script src="stadium.js?v=20261012-nightmare1"></script>
     <script type="module" src="three-match.js?v=20260926-matchday2"></script>
   </body>
 </html>
