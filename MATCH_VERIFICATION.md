@@ -56,3 +56,19 @@ The login screen now exposes both previously hidden entry points: **Open Interac
 ## Remaining validation limits
 
 This environment required Chrome's SwiftShader software renderer. The live audit's median rendering interval was approximately **117 ms**; this is not evidence of 60 FPS hardware performance. Hardware-accelerated desktop performance, physical touch devices, and other browsers still need manual checks. The gameplay uses procedural animation and lightweight football rules, not a full professional football simulation.
+
+## Interface polish — 18 October 2026
+
+The live game and standalone prototype share `polish.css`, with readable type, consistent surfaces, a complete 3–4–3 squad overview and mobile bottom navigation. Pack descriptions now reflect the actual available-player pool; prototype draws are labelled as previews.
+
+Fixed repeated pack purchases while a reveal is pending, Escape handling on the standalone prototype, blocked-storage errors during colour changes, cancelled joystick pointers, and navigation state when moving between desktop and phone layouts. Dialogs trap keyboard focus and restore it to the opening control.
+
+Verified the release checkout in an isolated Chrome profile:
+
+- 24 match and 29 full-game regression checks passed, including two new checks for repeated pack requests/refunds and selecting any of eleven squad positions.
+- 22 desktop and 19 phone prototype interaction checks passed with no runtime exceptions.
+- All six main screens fit 1440px and 390px viewports; prototype screens also fit 320px without horizontal overflow or broken visible images.
+- Pack focus, Tab containment, Escape dismissal and focus restoration passed. Prototype Escape, blocked local storage, pointer cancellation and synchronized navigation passed.
+- A live match rendered 22 players with a finite camera and advancing clock at 390×844. Match overlays cover the mobile navigation correctly.
+
+Hardware performance and physical touch devices were not tested. The existing match physics and account/reward systems are unchanged.

@@ -76,3 +76,47 @@
     }).observe(score, { childList: true, characterData: true, subtree: true });
   }
 })();
+
+/* Keep keyboard users inside open dialogs and return them to their trigger. */
+(() => {
+  const dialogs = [...document.querySelectorAll('.prototype-modal')];
+  const previousFocus = new WeakMap();
+  let lastOutsideFocus = document.activeElement;
+  document.addEventListener('focusin', event => {
+    if (!event.target.closest('.prototype-modal')) lastOutsideFocus = event.target;
+  });
+  const focusable = dialog => [...dialog.querySelectorAll('button, input, select, a[href], [tabindex="0"]')]
+    .filter(element => !element.disabled && element.getClientRects().length);
+  for (const dialog of dialogs) {
+    new MutationObserver(() => {
+      if (dialog.hidden) {
+        const previous = previousFocus.get(dialog);
+        if (previous?.isConnected && previous.getClientRects().length) previous.focus();
+        return;
+      }
+      previousFocus.set(dialog, lastOutsideFocus);
+      if (!dialog.contains(document.activeElement)) focusable(dialog)[0]?.focus();
+    }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });
+  }
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const dialog = dialogs.find(item => !item.hidden);
+    if (!dialog) return;
+    const controls = focusable(dialog);
+    const first = controls[0], last = controls.at(-1);
+    if (!first) return;
+    if (!dialog.contains(document.activeElement) || event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); (event.shiftKey ? last : first).focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  });
+  // A failed portrait must not leave a broken image icon over a player card.
+  document.addEventListener('error', event => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement && target.closest('.squad-overview, #prototypePackReveal') && !target.dataset.fallback) {
+      target.dataset.fallback = 'true';
+      target.src = 'assets/generated/generic-player.png';
+    }
+  }, true);
+})();

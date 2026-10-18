@@ -131,6 +131,7 @@ function showLabToast(message) {
 function selectLabScreen(screen, mode = '') {
   tabs.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.screen === screen));
   panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.screenPanel === screen));
+  if (document.querySelector('#labDesktopWorkspace')) selectLabDesktopView(screen);
   if (screen === 'match' && mode) document.querySelector('#labMatchMode').textContent = `DIVISION 4 · ${mode.toUpperCase()}`;
   document.querySelector('#labMenu')?.setAttribute('hidden', '');
 }
@@ -150,7 +151,7 @@ function applyLabColour(name, primary, accent, persist = true) {
   labRoot.style.setProperty('--purple', primary);
   labRoot.dataset.clubColour = name;
   document.querySelectorAll('[data-club-colour]').forEach((item) => item.classList.toggle('selected', item.dataset.clubColour === name));
-  if (persist) localStorage.setItem('fc-stars-lab-colour', JSON.stringify({ name, primary, accent }));
+  if (persist) { try { localStorage.setItem('fc-stars-lab-colour', JSON.stringify({ name, primary, accent })); } catch { /* Keep the preview usable without storage. */ } }
 }
 
 tabs.forEach((tab) => tab.addEventListener('click', () => selectLabScreen(tab.dataset.screen)));
@@ -183,7 +184,7 @@ let labPackOpen = false;
 packButton?.addEventListener('click', () => {
   if (labPackOpen) {
     labPackOpen = false; reveal.hidden = true; pack.classList.remove('is-opening');
-    packButton.innerHTML = 'OPEN PACK <span>◆ 75</span>'; packHint.textContent = 'Guaranteed: 1 player rated 82+'; return;
+    packButton.innerHTML = 'OPEN PACK <span>DEMO</span>'; packHint.textContent = 'Demo pack · four players, equal chances'; return;
   }
   const card = labCards[Math.floor(Math.random() * labCards.length)];
   document.querySelector('#labRevealRating').textContent = card[0];
@@ -192,7 +193,7 @@ packButton?.addEventListener('click', () => {
   pack.classList.add('is-opening'); packButton.disabled = true; packHint.textContent = 'A superstar is walking out…';
   setTimeout(() => {
     reveal.hidden = false; labPackOpen = true; packButton.disabled = false;
-    packButton.textContent = 'OPEN ANOTHER'; packHint.textContent = `${card[1]} added to your club.`; showLabToast(`${card[1]} joins your squad!`);
+    packButton.textContent = 'OPEN ANOTHER'; packHint.textContent = `Demo reveal · ${card[1]}`; showLabToast(`${card[1]} walkout preview.`);
   }, 650);
 });
 
@@ -246,7 +247,9 @@ function moveLabStick(event) {
 }
 joystick?.addEventListener('pointerdown', (event) => { joystick.setPointerCapture(event.pointerId); moveLabStick(event); });
 joystick?.addEventListener('pointermove', moveLabStick);
-joystick?.addEventListener('pointerup', () => { joystick.querySelector('i').style.transform = ''; });
+for (const eventName of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  joystick?.addEventListener(eventName, () => { joystick.querySelector('i').style.transform = ''; });
+}
 document.querySelector('#labSaveClub')?.addEventListener('click', () => {
   const name = document.querySelector('#labClubName').value.trim().slice(0, 18) || 'FC STARS';
   document.querySelector('#labClubHeroName').textContent = name; showLabToast(`${name} club identity saved.`);
@@ -391,9 +394,9 @@ function labDesktopHomeMarkup() {
 }
 
 function labDesktopViewMarkup(view) {
-  if (view === 'packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Tap once for a polished walkout and add a new star to this prototype squad.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> STARS</span><span><b>0</b> DUPLICATES</span></div><button data-lab-desktop-open-pack>OPEN PACK <b>75 GEMS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal</small></div><button class="workspace-pack-art" data-lab-desktop-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
-  if (view === 'squad') return `<section class="workspace-card squad-workspace nightmare-squad"><div class="side-heading"><div><p>NIGHTMARE XI · 4–3–3 ATTACK</p><h3>Starting XI</h3></div><button data-lab-desktop-view="play">TEST IN MATCH →</button></div><div class="squad-metrics"><span><b>∞</b><small>TEAM RATING</small></span><span><b>31</b><small>CHEMISTRY</small></span><span><b>4–3–3</b><small>FORMATION</small></span></div><section class="desktop-xi"><div class="squad-star nightmare-mini"><b>∞ × ∞</b><span>PRIME CR7</span><small>NIGHTMARE · ST</small></div><div><b>91</b><span>NEYMAR</span><small>LW</small></div><div><b>90</b><span>VINI JR</span><small>RW</small></div><div><b>89</b><span>BELLINGHAM</span><small>CAM</small></div><strong>∞<small>TEAM RATING</small></strong></section><p class="squad-tip">Prime Ronaldo now sits above every rank with unlimited Ranked Points and Coins.</p></section>`;
-  if (view === 'play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCH CENTRE</p><h3>Choose your challenge</h3><span>The upgraded live match has momentum, player switching, through balls, crosses and goalkeeper reactions.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-lab-desktop-live-match><i>01</i><span>RANKED RUSH</span><b>Climb your<br>division</b><small>90 SECOND MATCH · FULL REWARDS</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode draft" data-lab-desktop-live-match><i>02</i><span>DRAFT CHALLENGE</span><b>Build fast.<br>Play brave.</b><small>ROTATING SQUAD · QUICK MATCH</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode friendly" data-lab-desktop-live-match><i>03</i><span>FRIENDLY</span><b>Learn the<br>new controls</b><small>NO ENTRY COST · NO PRESSURE</small><em>ENTER LIVE GAME →</em></button></div></section>`;
+  if (view === 'packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Preview the walkout. Four featured stars, each with an equal chance.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>4</b> STARS</span><span><b>25%</b> EACH PLAYER</span></div><button data-lab-desktop-open-pack>OPEN PACK <b>DEMO PACK</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal</small></div><button class="workspace-pack-art" data-lab-desktop-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
+  if (view === 'squad') return `<section class="workspace-card squad-workspace nightmare-squad"><div class="side-heading"><div><p>PROTOTYPE XI · 3–4–3</p><h3>Every position.<br>One team.</h3></div><button data-lab-desktop-view="play">MATCHDAY →</button></div><div class="squad-metrics"><span><b>∞</b><small>TEAM RATING</small></span><span><b>11</b><small>PLAYERS</small></span><span><b>3–4–3</b><small>FORMATION</small></span></div>${squadOverviewMarkup(labOverviewTeam(), true)}<div id="demoSquadInspector" class="squad-inspector" role="status">Select a player to inspect their card. This is a sample XI; manage your saved team in the live game.</div></section>`;
+  if (view === 'play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCH CENTRE</p><h3>Choose your challenge</h3><span>The upgraded live match has momentum, player switching, through balls, crosses and goalkeeper reactions.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-lab-desktop-live-match><i>01</i><span>RANKED RUSH</span><b>Climb your<br>division</b><small>90 SECOND MATCH · FULL REWARDS</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode draft" data-lab-desktop-live-match><i>02</i><span>QUICK MATCH</span><b>Instant<br>kickoff.</b><small>YOUR XI · QUICK MATCH</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode friendly" data-lab-desktop-live-match><i>03</i><span>FRIENDLY</span><b>Learn the<br>new controls</b><small>NO ENTRY COST · NO PRESSURE</small><em>ENTER LIVE GAME →</em></button></div></section>`;
   if (view === 'club') return `<section class="workspace-card club-workspace"><div class="club-banner"><span>EST. 2026 · STADIUM AFTER DARK</span><b id="labDesktopClubBannerName">ARJUN FC</b><small>Build. Play. Become.</small></div><div class="club-photo-row"><button class="club-photo-add" data-lab-desktop-view="profile"><span>AR</span><b>EDIT PROFILE</b></button><div><strong>Your identity travels with the team.</strong><small>Pick club colours on the toolbar, then see them update across the prototype immediately.</small><button data-lab-desktop-colour>CHANGE CLUB COLOURS</button></div></div><div class="club-record"><span><b>24</b><small>MATCHES</small></span><span><b>15</b><small>WINS</small></span><span><b>44</b><small>GOALS</small></span></div></section>`;
   if (view === 'news') return `<section class="workspace-card news-workspace"><header class="news-workspace-head"><div><span class="news-live-badge"><i></i> UPDATED NOW</span><p>THE DAILY TOUCHLINE</p><h3>Stories shaping the game.</h3><small>Player focus, tactics and classic-match rewinds.</small></div><div class="news-pulse"><b>${prototypeNewsStories.length}</b><span>LIVE STORIES</span><i>NEWEST FIRST</i></div></header><div class="prototype-news-feed">${newsCardsMarkup(prototypeNewsStories.slice(0, 3))}</div></section>`;
   if (view === 'profile') return `<section class="workspace-card profile-workspace"><section class="profile-showcase-card background-stadium"><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">AR</span><div><small>LEVEL 50 · DIVISION 4</small><h3>ARJUN FC</h3><p>Build. Play. Become.</p></div><b>CLUB FOUNDER</b></header><div class="profile-player-showcase"><article><img src="assets/players/cristiano-ronaldo-v2.jpg" alt="Cristiano Ronaldo"><span><b>95</b><small>ST</small></span><strong>RONALDO</strong></article><article><img src="assets/neymar-jr.png" alt="Neymar"><span><b>91</b><small>LW</small></span><strong>NEYMAR</strong></article><article><img src="assets/players/lionel-messi-v2.jpg" alt="Lionel Messi"><span><b>94</b><small>RW</small></span><strong>MESSI</strong></article></div></section><p class="profile-viewing-note">Profile backgrounds, showcase players and earned titles can be customised in the live game.</p></section>`;
@@ -415,12 +418,19 @@ if (labDesktopPrototype) {
   selectLabDesktopView('home');
   tabs.forEach((tab) => tab.addEventListener('click', () => selectLabDesktopView(tab.dataset.screen)));
   labDesktopPrototype.addEventListener('click', (event) => {
+    const selected = event.target.closest('[data-demo-player]');
+    if (selected) {
+      const player = labOverviewTeam().find(item => item.name === selected.dataset.demoPlayer);
+      document.querySelector('#demoSquadInspector').textContent = `${player.name} · ${player.position} · ${player.rating} OVR${player.controlled ? ' · NIGHTMARE RANK' : ''}`;
+      labDesktopWorkspace.querySelectorAll('[data-demo-player]').forEach(button => button.setAttribute('aria-pressed', String(button === selected)));
+      return;
+    }
     const viewButton = event.target.closest('[data-lab-desktop-view]');
-    if (viewButton) { selectLabDesktopView(viewButton.dataset.labDesktopView); return; }
+    if (viewButton) { selectLabScreen(viewButton.dataset.labDesktopView === 'play' ? 'match' : viewButton.dataset.labDesktopView); return; }
     if (event.target.closest('[data-lab-desktop-open-pack]')) {
       const card = labCards[Math.floor(Math.random() * labCards.length)];
       labDesktopWorkspace.innerHTML = `<section class="workspace-card lab-desktop-walkout"><span class="hero-live"><i></i> RISING ICONS WALKOUT</span><img src="${card[1].includes('NEYMAR') ? 'assets/neymar-jr.png' : 'assets/generated/generic-player.png'}" alt=""><div><p>WELCOME TO THE CLUB</p><b>${card[0]}</b><h3>${card[1]}</h3><small>${card[2]}</small><button data-lab-desktop-view="squad">VIEW IN SQUAD →</button></div></section>`;
-      showLabToast(`${card[1]} joins your prototype squad!`); return;
+      showLabToast(`${card[1]} walkout preview.`); return;
     }
     if (event.target.closest('[data-lab-desktop-live-match]')) { window.location.href = 'index.html'; return; }
     if (event.target.closest('[data-lab-desktop-colour]')) { document.querySelector('[data-stadium-theme="cyan"]')?.click(); showLabToast('Ice club colours equipped.'); }
@@ -499,7 +509,7 @@ window.syncPrototypeShell = () => {
   syncPrototypeBalances();
   syncPrototypeProfile();
   const activeView = document.querySelector('.desktop-rail .rail-active')?.dataset.prototypeView;
-  if (activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'Profile') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
+  if (activeView === 'Packs' || activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'Profile') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
   if (activeView === 'Club') restorePrototypeClubPhoto();
 };
 
@@ -510,6 +520,38 @@ function prototypeDivision(points = Number(state?.rankedPoints) || 0) {
 function prototypeTeamRating() {
   const team = buildTeam();
   return Math.round(team.reduce((sum, player) => sum + Number(isInfiniteRating(player) ? 99 : player.rating || 60), 0) / Math.max(1, team.length));
+}
+
+function labOverviewTeam() {
+  const players = [
+    ['Alisson', 'GK', 89], ['Saliba', 'CB', 87], ['Van Dijk', 'CB', 89], ['Rúben Dias', 'CB', 88],
+    ['Vini Jr', 'LM', 90], ['Bellingham', 'CM', 91], ['Pedri', 'CM', 87], ['Yamal', 'RM', 88],
+    ['Neymar Jr', 'LW', 91, 'assets/neymar-jr.png'], ['Prime Ronaldo', 'ST', '∞ × ∞', 'assets/players/prime-ronaldo.png'], ['Messi', 'RW', 94, 'assets/players/lionel-messi-v2.jpg']
+  ];
+  return players.map(([name, position, rating, image]) => ({ name, position, rating, image, controlled: name === 'Prime Ronaldo' }));
+}
+
+function squadOverviewMarkup(team, demo = false) {
+  const rows = [team.slice(8, 11), team.slice(4, 8), team.slice(1, 4), team.slice(0, 1)];
+  return `<div class="squad-overview" aria-label="Starting eleven in a 3–4–3 formation">${rows.map(row => `<div class="squad-row">${row.map(player => {
+    const label = String(player.rating ?? 60);
+    const slot = player.id || '';
+    const attribute = demo ? `data-demo-player="${newsEscape(player.name)}"` : `data-squad-slot="${newsEscape(slot)}"`;
+    const photo = player.image || 'assets/generated/generic-player.png';
+    return `<button class="squad-player ${player.controlled ? 'is-captain' : ''}" ${attribute} aria-label="${newsEscape(player.name)}, ${newsEscape(player.slot || player.position || 'XI')}, ${newsEscape(label)} rated"><small>${newsEscape(player.slot || player.position || 'XI')}</small><b>${newsEscape(label)}</b><img src="${newsEscape(photo)}" alt="" loading="lazy"><span>${newsEscape(player.name)}</span></button>`;
+  }).join('')}</div>`).join('')}</div>`;
+}
+
+function prototypePackPool() {
+  const owned = ownedPlayerNames();
+  const featured = featuredPackNames.map(name => cardPool.find(card => card.name === name)).filter(card => card && !owned.has(card.name));
+  return featured.length ? featured : cardPool.filter(card => !card.specialAccess && !owned.has(card.name));
+}
+
+function packStoreMarkup() {
+  const pool = prototypePackPool();
+  const complete = !pool.length;
+  return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS · PLAYER PACK</p><h3>Your next<br>match winner.</h3><span>Three taps. One new star. Every pack adds a player you do not already own.</span><div class="pack-odds"><span><b>1</b> NEW PLAYER</span><span><b>${pool.length}</b> AVAILABLE</span><span><b>0</b> DUPLICATES</span></div><button data-prototype-open-pack ${complete ? 'disabled' : ''}>${complete ? 'COLLECTION COMPLETE' : 'OPEN PACK <b>50 COINS</b>'}</button><small>${complete ? 'You have collected every player in this pack.' : `Equal chance per available player (${(100 / pool.length).toFixed(1)}%). Featured players are offered first, then the wider collection.`}</small></div><button class="workspace-pack-art" data-prototype-open-pack aria-label="Open Rising Icons pack" ${complete ? 'disabled' : ''}><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
 }
 
 function homeWorkspaceMarkup() {
@@ -624,11 +666,11 @@ function profileWorkspaceMarkup() {
 function prototypeViewMarkup(view) {
   if (view === 'Profile') return profileWorkspaceMarkup();
   if (view === 'News') return newsWorkspaceMarkup();
-  if (view === 'Packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Three taps. One walkout. A new superstar for your collection.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>5</b> ICONS</span><span><b>0</b> DUPLICATES</span></div><button data-prototype-open-pack>OPEN PACK <b>50 COINS</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal · Alisson</small></div><button class="workspace-pack-art" data-prototype-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
+  if (view === 'Packs') return packStoreMarkup();
   if (view === 'Squad') {
-    const team = buildTeam().slice().sort((a,b) => ratingSortValue(b) - ratingSortValue(a));
+    const team = buildTeam();
     const rating = prototypeTeamRating();
-    return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>4-3-3</b><small>FORMATION</small></span></div><section class="desktop-xi">${team.slice(0,5).map((player,index) => `<div class="desktop-xi-card ${index === 0 ? 'squad-star' : ''} ${playerCardThemeClass(player.name)} rarity-${rarityClass(player.rarity || 'Silver')}"><small>${escapeHtml(player.position || player.slot || 'XI')}</small><b>${escapeHtml(ratingLabel(player))}</b><span>${escapeHtml(shortName(player.name).toUpperCase())}</span></div>`).join('')}<strong>${rating}<small>OVR</small></strong></section><p class="squad-tip">Select Manage XI to swap cards, inspect positions, and build your strongest lineup.</p></section>`;
+    return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI · 3–4–3</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => isInfiniteRating(player) || Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>3–4–3</b><small>FORMATION</small></span></div>${squadOverviewMarkup(team)}<p class="squad-tip">Select a player to find their replacement in your collection. Your controlled star has a highlighted card.</p></section>`;
   }
   if (view === 'Play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCHDAY</p><h3>Pick your arena.</h3><span>Every match uses your real Starting XI.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><i>♛</i><span>RANKED RUSH</span><b>Climb the<br>divisions</b><small>25 COINS / GOAL · 10 RP / WIN</small><em>PLAY RANKED →</em></button><button class="desktop-mode draft" data-prototype-play="Quick Match"><i>⚡</i><span>QUICK MATCH</span><b>Instant<br>kickoff</b><small>XP AND COIN REWARDS</small><em>PLAY NOW →</em></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><i>∞</i><span>FRIENDLY</span><b>Play with<br>no pressure</b><small>NO RANKED POINTS</small><em>PLAY FRIENDLY →</em></button></div></section>`;
   if (view === 'Club') {
@@ -659,6 +701,8 @@ function selectPrototypeView(view) {
 }
 
 function openPrototypePack() {
+  if (!prototypeModal || prototypePendingPack) return;
+  if (!activeAccount()) { showQuickLogin(); return; }
   const cost = 50;
   const points = Number(state?.matchPoints) || 0;
   const infiniteCoinsActive = Boolean(state?.infiniteCoins);
@@ -666,12 +710,7 @@ function openPrototypePack() {
     showPrototypeToast('You need 50 Coins to open this pack.');
     return;
   }
-  const availableFeatured = featuredPackNames
-    .map(name => cardPool.find(card => card.name === name))
-    .filter(card => card && !ownedPlayerNames().has(card.name));
-  const available = availableFeatured.length
-    ? availableFeatured
-    : cardPool.filter(card => !card.specialAccess && !ownedPlayerNames().has(card.name));
+  const available = prototypePackPool();
   if (!available.length) {
     showPrototypeToast('Collection complete — no duplicate card was charged.');
     return;
@@ -681,6 +720,8 @@ function openPrototypePack() {
   prototypePendingPack = { ...card, id: `pack-${Date.now()}-${Math.random().toString(16).slice(2)}` };
   prototypePackClaimed = false;
   prototypePackTaps = 0;
+  const portrait = document.querySelector('#prototypePackPortrait');
+  if (portrait) { portrait.src = card.image || 'assets/generated/generic-player.png'; portrait.alt = card.name; }
   document.querySelector('#prototypePackRating').textContent = ratingLabel(card);
   document.querySelector('#prototypePackTitle').textContent = card.name;
   document.querySelector('#prototypePackMeta').textContent = `${card.position} · ${card.team} · ${card.rarity}`.toUpperCase();
@@ -696,6 +737,7 @@ function openPrototypePack() {
 }
 
 function closePrototypePack(refundUnclaimed = false) {
+  if (!prototypeModal) return;
   if (refundUnclaimed && prototypePendingPack && !prototypePackClaimed && !state?.infiniteCoins) {
     state.matchPoints = (Number(state.matchPoints) || 0) + 50;
     saveState();
@@ -739,6 +781,10 @@ document.querySelector('#prototypePackTapTarget')?.addEventListener('click', () 
 document.querySelector('#prototypeModalClose')?.addEventListener('click', () => closePrototypePack(true));
 document.querySelector('#prototypeKeepCard')?.addEventListener('click', claimPrototypePack);
 document.addEventListener('click', async (event) => {
+  const slotButton = event.target.closest('[data-squad-slot]');
+  if (slotButton && typeof state !== 'undefined') {
+    state.replaceSlot = slotButton.dataset.squadSlot; openPrototypePitch(); renderInventory(); return;
+  }
   const viewButton = event.target.closest('[data-prototype-view]');
   if (viewButton) selectPrototypeView(viewButton.dataset.prototypeView);
   if (event.target.closest('[data-claim-daily-chest]')) {
@@ -1023,10 +1069,10 @@ for (const modal of [prototypeModal, prototypeSettingsModal]) {
 }
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  if (!prototypeModal?.hidden) closePrototypePack(true);
-  else if (!prototypeSettingsModal?.hidden) prototypeSettingsModal.hidden = true;
-  else if (!prototypePitchOverlay?.hidden) closePrototypePitch();
-  else if (!prototypeMatchOverlay?.hidden) closePrototypeMatch();
+  if (prototypeModal && !prototypeModal.hidden) closePrototypePack(true);
+  else if (prototypeSettingsModal && !prototypeSettingsModal.hidden) prototypeSettingsModal.hidden = true;
+  else if (prototypePitchOverlay && !prototypePitchOverlay.hidden) closePrototypePitch();
+  else if (prototypeMatchOverlay && !prototypeMatchOverlay.hidden) closePrototypeMatch();
 });
 
 if (prototypeWorkspace && typeof state !== 'undefined') window.syncPrototypeShell();

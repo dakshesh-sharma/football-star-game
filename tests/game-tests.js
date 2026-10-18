@@ -222,6 +222,26 @@ window.runFCGameTests = function () {
       assert(state.matchPoints === 100 && state.inventory.length === 0, 'Unclaimed pack was charged');
     });
 
+    check('Repeated pack requests cannot charge or replace a pending card', () => {
+      state = account.state = freshState(false); state.matchPoints = 150;
+      openPrototypePack();
+      const pending = prototypePendingPack;
+      openPrototypePack(); openPrototypePack();
+      assert(state.matchPoints === 100 && prototypePendingPack === pending, 'Repeated open changed the purchase');
+      closePrototypePack(true); closePrototypePack(true);
+      assert(state.matchPoints === 150, 'Refund was missing or paid twice');
+    });
+
+    check('Squad overview exposes eleven unique slots and opens the selected replacement', () => {
+      state = account.state = freshState(false);
+      selectPrototypeView('Squad');
+      const slots = [...prototypeWorkspace.querySelectorAll('[data-squad-slot]')];
+      assert(slots.length === 11 && new Set(slots.map(button => button.dataset.squadSlot)).size === 11, 'Starting XI is incomplete');
+      slots.find(button => button.dataset.squadSlot === 'st').click();
+      assert(!prototypePitchOverlay.hidden && state.replaceSlot === 'st', 'Selected position did not open');
+      closePrototypePitch();
+    });
+
     check('Ranked, friendly and abandoned rewards stay distinct', () => {
       const finish = (mode, abandoned = false) => {
         state = freshState(false); account.state = state;
@@ -272,7 +292,7 @@ window.runFCGameTests = function () {
       state.selectedStar = { ...cardPool.find(card => card.name === 'Neymar Jr'), id: 'test-neymar' };
       state.selectedStarSlot = 'lw';
       const markup = prototypeViewMarkup('Squad');
-      assert(markup.includes('NEYMAR') && !markup.includes('RONALDO'), 'Squad summary is still hard-coded');
+      assert(markup.toUpperCase().includes('NEYMAR') && !markup.toUpperCase().includes('RONALDO'), 'Squad summary is still hard-coded');
     });
 
     check('Any player can be placed in any position', () => {

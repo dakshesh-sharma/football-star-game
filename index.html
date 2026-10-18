@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="prototype.css?v=20261013-shrine1" />
     <link rel="stylesheet" href="match.css?v=20260926-matchday2" />
     <link rel="stylesheet" href="stadium.css?v=20261013-demonbanner1" />
+    <link rel="stylesheet" href="polish.css?v=20261018-polish1" />
+    <meta name="theme-color" content="#101421" />
   </head>
   <body class="fc-stars-prototype-mode">
     <section class="in-game-prototype" aria-label="FC Stars laptop prototype">
@@ -27,6 +29,7 @@
           <button data-prototype-view="Play">⚔ <span>Play</span></button>
           <button data-prototype-view="Club">◉ <span>Club</span></button>
           <button data-prototype-view="Profile">◎ <span>Profile</span></button>
+          <a class="prototype-link" href="prototypes.html">Explore prototype ↗</a>
           <div class="rail-profile"><i>FC</i><span><b>YOUR CLUB</b><small id="prototypeRailDivision">Division 4</small></span><em>⌄</em></div>
         </aside>
         <main class="desktop-main">
@@ -50,11 +53,11 @@
         <div class="prototype-modal-card prototype-pack-modal-card" role="dialog" aria-modal="true" aria-labelledby="prototypePackTitle">
           <button id="prototypeModalClose" class="prototype-modal-close" aria-label="Close pack reveal">×</button>
           <div id="prototypeClosedPack" class="prototype-closed-pack"><button id="prototypePackTapTarget" type="button" aria-label="Tap the FC Stars Rising Icons pack to open"></button><p id="prototypePackTapLabel">TAP TO OPEN</p><small id="prototypePackTapCount">Tap 3 times to reveal your player</small></div>
-          <div id="prototypePackReveal" hidden><p>RISING ICONS PACK</p><div id="prototypePackRating" class="modal-card-rating">91</div><h2 id="prototypePackTitle">NEYMAR JR</h2><span id="prototypePackMeta">LW · BRAZIL · G.O.A.T.</span><button id="prototypeKeepCard">ADD TO COLLECTION</button></div>
+          <div id="prototypePackReveal" hidden><img id="prototypePackPortrait" class="prototype-pack-portrait" src="assets/generated/generic-player.png" alt="" /><p>RISING ICONS PACK</p><div id="prototypePackRating" class="modal-card-rating">91</div><h2 id="prototypePackTitle">NEYMAR JR</h2><span id="prototypePackMeta">LW · BRAZIL · G.O.A.T.</span><button id="prototypeKeepCard">ADD TO COLLECTION</button></div>
         </div>
       </section>
       <section id="prototypeSettingsModal" class="prototype-modal" hidden>
-        <form id="prototypeSettingsForm" class="prototype-modal-card prototype-settings-card" aria-labelledby="prototypeSettingsTitle">
+        <form id="prototypeSettingsForm" class="prototype-modal-card prototype-settings-card" role="dialog" aria-modal="true" aria-labelledby="prototypeSettingsTitle">
           <button id="prototypeSettingsClose" class="prototype-modal-close" type="button" aria-label="Close settings">×</button>
           <p>PROFILE SETTINGS</p>
           <h2 id="prototypeSettingsTitle">Your Club</h2>
@@ -357,8 +360,8 @@
 
     <script src="match-physics.js?v=20260926-matchday2"></script>
     <script src="script.js?v=20261013-player-art1"></script>
-    <script src="prototype.js?v=20261013-demonbanner1"></script>
-    <script src="stadium.js?v=20261012-nightmare1"></script>
+    <script src="prototype.js?v=20261018-polish1"></script>
+    <script src="stadium.js?v=20261018-polish1"></script>
     <script type="module" src="three-match.js?v=20260926-matchday2"></script>
   </body>
 </html>
