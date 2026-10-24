@@ -698,6 +698,8 @@ function migrateState(savedState, inventoryGrant = false, accountId = null) {
   savedState.level = Number.isFinite(Number(savedState.level)) && Number(savedState.level) > 0 ? Number(savedState.level) : 1;
   savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
   savedState.adminXp = /^\d+$/.test(String(savedState.adminXp || "0")) ? String(savedState.adminXp || "0") : "0";
+  savedState.matchSettings = FCMatchday.settings(savedState.matchSettings);
+  savedState.matchHistory = FCMatchday.history(savedState.matchHistory);
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
   savedState.infiniteCoins = Boolean(savedState.infiniteCoins);
   savedState.infiniteRankedPoints = Boolean(savedState.infiniteRankedPoints);
@@ -1604,6 +1606,7 @@ function starterCardForName(name) {
 }
 
 function startMatch(mode = "Quick Match") {
+  if (state.activeMatch) return;
   if (!activeAccount()) {
     pendingMatchLogin = true;
     pendingMatchMode = cleanText(mode, 32) || "Quick Match";
@@ -1641,6 +1644,8 @@ function startMatch(mode = "Quick Match") {
   const controlledStart = homeMatchPlayers[controlledPlayerIndex];
   state.activeMatch = {
     mode: cleanText(mode, 32) || "Quick Match",
+    settings: FCMatchday.settings(window.FCMatchdayUI?.consumeSettings(mode) || state.matchSettings),
+    userPaused: false,
     home: 0,
     away: 0,
     minute: 1,
@@ -1680,6 +1685,8 @@ function startMatch(mode = "Quick Match") {
       id, name, position, team, rating, image: image || "", controlled: Boolean(controlled)
     }))
   };
+  if (mode === "Ranked Rush") state.activeMatch.settings.difficulty = "balanced";
+  state.matchSettings = { ...state.activeMatch.settings };
   normalizeMatchState(state.activeMatch);
   state.inventoryOpen = false;
   reportTitle.textContent = "Match started";
@@ -1724,6 +1731,8 @@ function endMatch({ abandoned = false } = {}) {
   const levelMessage = xpResult.leveledUpTo.length
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
     : "";
+  const result = FCMatchday.result(finishedMatch, { coins: coinReward, xp: winXp, rp: tablePoints });
+  if (!abandoned) state.matchHistory = [result, ...FCMatchday.history(state.matchHistory)].slice(0, 10);
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = abandoned ? "Match left" : "Full time";
@@ -1737,7 +1746,7 @@ function endMatch({ abandoned = false } = {}) {
       : `Defeat ${score}. +${coinReward} Coins for your goals. Win a match to earn XP.`;
   saveState();
   render();
-  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won: completedWin, tablePoints, coinReward, score, mode: finishedMatch.mode, abandoned } }));
+  window.dispatchEvent(new CustomEvent("fc-stars-match-ended", { detail: { won: completedWin, tablePoints, coinReward, score, mode: finishedMatch.mode, abandoned, result } }));
 }
 
 function matchWinXp(homeGoals, awayGoals) {
@@ -1783,6 +1792,7 @@ function updateMatchField() {
   matchOpponent.style.left = `${Math.max(12, match.playerX + 30)}%`;
   matchOpponent.style.top = `${Math.min(82, match.playerY + 7)}%`;
   window.match3D?.update(match);
+  window.FCMatchdayUI?.update(match);
 }
 
 function formatMatchClock(match) {
@@ -1794,7 +1804,7 @@ function formatMatchClock(match) {
 
 function matchAction(kind, power = 0.42) {
   const match = state.activeMatch;
-  if (!match || match.phase !== "play") return;
+  if (!match || match.userPaused || match.phase !== "play") return;
   const p = match.homePlayers[match.controlledPlayerIndex];
   const input = matchMovementInput();
   const hasAim = Math.hypot(input.x, input.y) > 0.2;
@@ -1802,7 +1812,7 @@ function matchAction(kind, power = 0.42) {
 }
 
 function queuePlayerAction(match, p, kind, power = 0.42, aim = null) {
-  if (!p || match.phase !== "play" || p.action && match.simulationTime < p.action.until) return false;
+  if (!p || match.userPaused || match.phase !== "play" || p.action && match.simulationTime < p.action.until) return false;
   const distance = FCMatchPhysics.distance(p.x, p.y, match.ballX, match.ballY);
   if (kind !== "tackle" && (distance > 1.25 || match.ballHeight > 0.85 || match.keeperHold)) return false;
   const contactDelay = kind === "tackle" ? 0.14 : kind === "cross" ? 0.19 : kind === "shoot" ? 0.16 : 0.11;
@@ -1812,6 +1822,7 @@ function queuePlayerAction(match, p, kind, power = 0.42, aim = null) {
 }
 
 function emitMatchEvent(match, type, player = null, details = {}) {
+  FCMatchday.record(match, type, player, details);
   const event = { id: ++match.eventSequence, type, playerId: player?.id, team: player?.team, time: match.simulationTime, ...details };
   match.events.push(event);
   if (match.events.length > 32) match.events.shift();
@@ -1908,6 +1919,7 @@ function resolvePlayerActions(match) {
 let matchAudioContext = null;
 
 function playMatchSound(kind, power = 0.5) {
+  if (state.activeMatch?.settings?.sound === false) return;
   try {
     matchAudioContext ||= new (window.AudioContext || window.webkitAudioContext)();
     const context = matchAudioContext;
@@ -1996,7 +2008,7 @@ function switchControlledPlayer() {
 }
 
 function beginShotCharge() {
-  if (!state.activeMatch || state.activeMatch.phase !== "play" || matchShootCharging) return;
+  if (!state.activeMatch || state.activeMatch.userPaused || state.activeMatch.phase !== "play" || matchShootCharging) return;
   matchShootCharging = true;
   matchShootChargeStarted = performance.now();
   matchShootBtn.classList.add("is-charging");
@@ -2029,6 +2041,9 @@ function releaseShotCharge() {
 }
 
 function normalizeMatchState(match) {
+  match.settings = FCMatchday.settings(match.settings);
+  if (match.mode === "Ranked Rush") match.settings.difficulty = "balanced";
+  FCMatchday.stats(match);
   if (match.physicsVersion === 2) return;
   const cards = match.homeTeam?.length ? match.homeTeam : buildTeam();
   for (const team of ["home", "away"]) {
@@ -2063,7 +2078,7 @@ function normalizeMatchState(match) {
 }
 
 function startMatchPhysics() {
-  if (matchPhysicsFrame || !state.activeMatch || document.hidden) return;
+  if (matchPhysicsFrame || !state.activeMatch || state.activeMatch.userPaused || document.hidden) return;
   normalizeMatchState(state.activeMatch);
   matchPhysicsPreviousTime = performance.now();
   matchAccumulator = 0;
@@ -2076,6 +2091,7 @@ function stopMatchPhysics() {
 }
 
 function advanceMatch(match, elapsed) {
+  if (match.userPaused) return;
   matchAccumulator += Math.min(0.25, Math.max(0, elapsed));
   const dt = FCMatchPhysics.pitch.step;
   while (matchAccumulator + 1e-9 >= dt) {
@@ -2103,7 +2119,7 @@ function advanceMatch(match, elapsed) {
 function stepMatchPhysics(time) {
   matchPhysicsFrame = null;
   const match = state.activeMatch;
-  if (!match || document.hidden) return;
+  if (!match || match.userPaused || document.hidden) return;
   advanceMatch(match, (time - matchPhysicsPreviousTime) / 1000);
   matchPhysicsPreviousTime = time;
   match.minute = Math.floor(match.displaySeconds / 60);
@@ -2218,6 +2234,7 @@ function simulateMatchAI(match, dt) {
   let owner = all.find(p => p.id === match.possessionId);
   if (owner && (P.distance(owner.x, owner.y, match.ballX, match.ballY) > 1.35 || b.y > 1)) owner = null;
   match.possessionId = owner?.id || null;
+  if (owner) FCMatchday.stats(match)[owner.team].possession += dt;
   if (match.simulationTime >= (match.nextTacticalUpdate || 0)) {
     match.nextTacticalUpdate = match.simulationTime + 0.15;
     for (const team of ["home", "away"]) assignTacticalTargets(match, team, owner);
@@ -2227,11 +2244,12 @@ function simulateMatchAI(match, dt) {
     if (p.role === "GK") { moveGoalkeeper(match, p, p.team, dt); continue; }
     const target = p.target || { x: P.x(p.baseX), z: P.z(p.baseY) };
     const dx = target.x - P.x(p.x), dz = target.z - P.z(p.y), distance = Math.hypot(dx, dz);
-    const speed = Math.min(p.task === "press" || p.task === "receive" ? 3.45 : 2.65, distance * 2.5);
+    const challenge = p.team === "away" ? FCMatchday.difficulty(match) : FCMatchday.difficulties.balanced;
+    const speed = Math.min((p.task === "press" || p.task === "receive" ? 3.45 : 2.65) * challenge.speed, distance * 2.5);
     steerMatchPlayer(p, distance > 0.03 ? dx / distance : 0, distance > 0.03 ? dz / distance : 0, speed, dt);
     dribbleMatchPlayer(match, p, dt);
     if (match.possessionId === p.id && match.simulationTime >= (p.nextDecision || 0)) {
-      p.nextDecision = match.simulationTime + 0.45;
+      p.nextDecision = match.simulationTime + 0.45 / challenge.reaction;
       const dir = p.team === "home" ? -1 : 1;
       const opponents = match[p.team === "home" ? "awayPlayers" : "homePlayers"];
       const pressure = Math.min(...opponents.map(q => P.distance(q.x, q.y, p.x, p.y)));
@@ -3662,6 +3680,7 @@ function renderMatch() {
 
   if (!match) { window.match3D?.update(null); return; }
   normalizeMatchState(match);
+  window.FCMatchdayUI?.restore(match);
 
   homeLeaderLabel.textContent = match.homeLeader || teamLeaderName();
   awayLeaderLabel.textContent = match.awayLeader || "Rival XI";
@@ -3768,7 +3787,7 @@ matchSprintBtn.addEventListener("pointerleave", () => {
   updateMatchField();
 });
 matchJoystick.addEventListener("pointerdown", (event) => {
-  if (!state.activeMatch) return;
+  if (!state.activeMatch || state.activeMatch.userPaused) return;
   activeJoystickPointer = event.pointerId;
   matchJoystick.setPointerCapture(event.pointerId);
   updateJoystick(event);
@@ -3784,7 +3803,7 @@ matchJoystick.addEventListener("pointerup", (event) => {
 matchJoystick.addEventListener("pointercancel", stopMatchMovement);
 matchJoystick.addEventListener("lostpointercapture", stopMatchMovement);
 window.addEventListener("keydown", (event) => {
-  if (!state.activeMatch) return;
+  if (!state.activeMatch || state.activeMatch.userPaused || event.target.closest?.("input, textarea, select, dialog[open]")) return;
   if (event.key === "Shift") {
     state.activeMatch.sprinting = true;
     updateMatchField();
@@ -3833,7 +3852,7 @@ pitchFullscreenBtn.addEventListener("click", (event) => {
 });
 document.addEventListener("fullscreenchange", updatePitchFullscreenButton);
 redeemCodeBtn.addEventListener("click", redeemCode);
-endMatchBtn.addEventListener("click", () => endMatch({ abandoned: true }));
+endMatchBtn.addEventListener("click", () => window.FCMatchdayUI?.pause(true));
 acceptJoinBtn.addEventListener("click", acceptJoinRequest);
 rejectJoinBtn.addEventListener("click", rejectJoinRequest);
 inventorySearch.addEventListener("input", renderInventory);

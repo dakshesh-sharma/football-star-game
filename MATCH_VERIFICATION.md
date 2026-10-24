@@ -72,3 +72,23 @@ Verified the release checkout in an isolated Chrome profile:
 - A live match rendered 22 players with a finite camera and advancing clock at 390×844. Match overlays cover the mobile navigation correctly.
 
 Hardware performance and physical touch devices were not tested. The existing match physics and account/reward systems are unchanged.
+
+## Matchday upgrade — 24 October 2026
+
+The main game and prototype now share a matchday home screen and match centre. Quick Match and Friendly expose Relaxed, Balanced and Competitive opponents; Ranked Rush fixes the challenge to Balanced. Setup also selects broadcast/tactical cameras and stadium audio.
+
+Matches have an on-screen radar, event-driven shot/pass/save totals, possession measured from controlled-ball time, and pause/resume with shot-input cancellation. Full time shows the score, stats, awarded coins/XP/RP, and a replay action. Each club keeps its ten most recent completed matches; leaving does not grant rewards or add a completed result. Saved paused games restore the match panel and retain their score and stats.
+
+The stadium rendering pass batches animated player parts, adds pitch texture, corner flags, advertising boards and lighting, and retains player identities. Per-instance team colours do not require geometry vertex colours. The radar is explicitly exempted from the legacy rule hiding old 2D match objects.
+
+Validation in an isolated Chrome profile:
+
+- All 24 match and 29 existing game regression checks pass.
+- All 12 new matchday checks pass (`python3 tests/run-browser-checks.py --matchday`), covering settings/migration, difficulty, pause/input cancellation, rewards/history, escaped opponent names, saved-match restoration, and visible radar/render lifecycle.
+- All 22 desktop and 19 phone prototype checks pass.
+- Live renderer inspection reports 22 players, a finite camera, 68 draw calls in the inspected frame, and no runtime exceptions. This is a draw-call measurement, not a hardware FPS guarantee.
+- Desktop and phone setup screens were inspected visually, and team kit colours and radar visibility were checked in the actual rendered match.
+- An unattended match reached full time naturally, displayed its result, saved history, and stopped rendering without a runtime exception.
+- Native Escape pause/resume and a page reload preserved the paused match clock. The phone controls use two rows so all eight actions and the power meter fit at 390×844.
+
+Physical-device performance and browsers other than Chrome remain unverified.

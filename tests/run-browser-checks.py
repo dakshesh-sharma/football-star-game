@@ -13,6 +13,8 @@ parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club","Prof
 parser.add_argument("--login",action="store_true",help="Show the login experience before capturing")
 parser.add_argument("--prototype-lab",action="store_true",help="Run the standalone laptop prototype interaction checks")
 parser.add_argument("--prime-demo",action="store_true",help="Click the login Prime Ronaldo showcase and verify the real squad card")
+parser.add_argument("--visual-smoke",action="store_true",help="Open a visible match and verify the 3D renderer stays responsive")
+parser.add_argument("--matchday",action="store_true",help="Verify match setup, pause, results, stats and radar")
 args=parser.parse_args()
 pages=json.load(urllib.request.urlopen(f'http://127.0.0.1:{args.port}/json/list'))
 target_paths=('/prototypes.html',) if args.prototype_lab else ('/','/index.html')
@@ -47,7 +49,7 @@ def call(method,params={}):
  while True:
   a,b=exact(2); n=b&127
   if n==126:n=struct.unpack('!H',exact(2))[0]
-  if n==127:n=struct.unpack('!Q',exact(8))[0]
+  elif n==127:n=struct.unpack('!Q',exact(8))[0]
   msg=json.loads(exact(n))
   if msg.get('id')==seq:return msg
   events.append(msg)
@@ -58,8 +60,13 @@ def evaluate(js):
 
 call("Runtime.enable")
 call("Page.enable")
+call("Page.bringToFront")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
-if args.prototype_lab:
+if args.matchday:
+ result=evaluate("fetch('tests/matchday-tests.js',{cache:'no-store'}).then(r=>r.text()).then(source=>{(0,eval)(source);return runFCMatchdayTests();})")
+elif args.visual_smoke and not args.prototype_lab:
+ result=evaluate("""(async()=>{for(let attempts=0;attempts<50&&(!window.match3D||!window.launchFCStarsMatch);attempts++)await new Promise(resolve=>setTimeout(resolve,100));showQuickLogin();document.querySelector('#primeRonaldoDemoBtn').click();await new Promise(resolve=>setTimeout(resolve,120));window.launchFCStarsMatch('Quick Match');document.querySelector('[data-md-kickoff]').click();await new Promise(resolve=>setTimeout(resolve,900));const info=window.match3D?.inspect();const finiteCamera=info?.camera?.every(Number.isFinite);return {passed:Boolean(info&&info.players.length===22&&finiteCamera&&Number.isFinite(info.drawCalls)&&info.drawCalls>0&&Number.isFinite(info.geometries)&&info.geometries>0&&info.rendering&&matchCanvas.width>0&&matchCanvas.height>0),players:info?.players.length,camera:info?.camera,drawCalls:info?.drawCalls,geometries:info?.geometries,rendering:info?.rendering,canvas:[matchCanvas.width,matchCanvas.height],score:matchScoreLabel.textContent};})()""")
+elif args.prototype_lab:
  result=evaluate("""(async()=>{const results=[];const check=(name,value)=>results.push({name,passed:Boolean(value)});
 	  if(innerWidth>=800){check('desktop prototype is visible',getComputedStyle(document.querySelector('#labDesktopPrototype')).display==='grid'&&getComputedStyle(document.querySelector('.phone')).display==='none');document.querySelector('[data-lab-desktop-view="packs"]').click();check('desktop packs view opens',Boolean(document.querySelector('#labDesktopWorkspace .pack-workspace')));document.querySelector('#labDesktopWorkspace [data-lab-desktop-open-pack]').click();check('desktop pack walkout renders',Boolean(document.querySelector('#labDesktopWorkspace .lab-desktop-walkout')));document.querySelector('[data-lab-desktop-view="squad"]').click();check('desktop squad view opens',Boolean(document.querySelector('#labDesktopWorkspace .squad-workspace')));}else{check('phone prototype is visible',getComputedStyle(document.querySelector('.phone')).display!=='none'&&getComputedStyle(document.querySelector('#labDesktopPrototype')).display==='none');}
   for(const screen of ['home','packs','squad','match','club','profile']){document.querySelector(`[data-screen="${screen}"]`).click();check(`${screen} opens`,document.querySelector(`[data-screen-panel="${screen}"]`).classList.contains('is-active'));}
@@ -83,6 +90,7 @@ prime_demo=None
 if args.prime_demo and not args.prototype_lab:
  prime_demo=evaluate("""(async()=>{showQuickLogin();document.querySelector('#primeRonaldoDemoBtn').click();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const card=state.inventory.find(item=>item.name==='Prime Ronaldo');return {passed:Boolean(card&&card.rating==='∞ × ∞'&&card.rarity==='NIGHTMARE'&&state.infiniteCoins&&state.infiniteRankedPoints&&state.elDemonUnlocked&&state.profileTitle==='El Demon'&&state.profileBackground==='el-demon'&&prototypeCoins.textContent==='∞'&&prototypeGems.textContent==='∞'&&state.selectedStar?.name==='Prime Ronaldo'&&state.selectedStarSlot==='st'&&!document.querySelector('#prototypePitchOverlay').hidden&&inventorySearch.value==='Prime Ronaldo'),card:card&&{name:card.name,rating:card.rating,rarity:card.rarity,image:card.image},balances:{rankedPoints:prototypeCoins.textContent,coins:prototypeGems.textContent},elDemon:{unlocked:state.elDemonUnlocked,title:state.profileTitle,background:state.profileBackground},squad:state.selectedStar?.name,inventoryOpen:!document.querySelector('#prototypePitchOverlay').hidden};})()""")
 if args.screenshot:
+ if not args.matchday: evaluate("document.querySelector('#matchdayDialog')?.close()")
  if args.dashboard:
   evaluate("quickLoginOverlay.hidden=true;prototypeToast.classList.remove('is-visible');document.querySelectorAll('.prototype-modal,.prototype-pitch-overlay').forEach(node=>node.hidden=true)")
  if args.view: evaluate(f"selectPrototypeView({json.dumps(args.view)})")
@@ -92,6 +100,6 @@ if args.screenshot:
 errors=[e for e in events if e.get("method")=="Runtime.exceptionThrown"]
 print(json.dumps({"checks":result,"primeDemo":prime_demo,"runtimeErrors":errors},indent=2))
 s.close()
-passed=result.get("passed") if args.prototype_lab and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
+passed=result.get("passed") if (args.prototype_lab or args.visual_smoke or args.matchday) and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
 if args.prime_demo: passed=passed and prime_demo and prime_demo.get("passed")
 raise SystemExit(0 if passed and not errors else 1)

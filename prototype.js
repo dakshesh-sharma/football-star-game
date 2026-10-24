@@ -381,10 +381,7 @@ const labDesktopHeadings = {
 };
 
 function labDesktopHomeMarkup() {
-  return `<section class="desktop-hero nightmare-hero">
-    <div class="desktop-hero-copy"><span class="hero-live"><i></i> NEW RANK · NIGHTMARE</span><p>THE FINAL BOSS HAS ARRIVED</p><h3>Prime Ronaldo.<br><em>Limits removed.</em></h3><button data-lab-desktop-view="squad">♛ VIEW NIGHTMARE XI <span>∞ RP</span></button><small class="stadium-hero-note">The most powerful card in FC Stars.</small></div>
-    <div class="hero-player prime-hero-player nightmare-hero-player" aria-hidden="true"><img src="assets/players/prime-ronaldo.png" alt=""><span><b>∞ × ∞</b><small>ST</small></span><strong>PRIME RONALDO<small>NIGHTMARE RANK</small></strong></div>
-  </section>
+  return `${window.FCMatchdayUI.heroMarkup(true)}
   <section class="home-command-grid" aria-label="Club overview">
     <button class="home-arena-card" data-lab-desktop-view="play"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>SMOOTHER CONTROL · REAL BALL PHYSICS · SMARTER AI</small><em>PLAY NOW →</em></button>
     <article class="home-progress-card"><span class="home-card-kicker">ROAD TO DIVISION 3</span><div><b>62</b><small>/ 100 RP</small></div><i><b style="width:62%"></b></i><small>38 RP TO PROMOTION</small></article>
@@ -396,7 +393,7 @@ function labDesktopHomeMarkup() {
 function labDesktopViewMarkup(view) {
   if (view === 'packs') return `<section class="workspace-card pack-workspace"><div class="workspace-copy"><p>RISING ICONS</p><h3>Greatness is<br>inside.</h3><span>Preview the walkout. Four featured stars, each with an equal chance.</span><div class="pack-odds"><span><b>91</b> TOP RATING</span><span><b>4</b> STARS</span><span><b>25%</b> EACH PLAYER</span></div><button data-lab-desktop-open-pack>OPEN PACK <b>DEMO PACK</b></button><small>Neymar Jr · Vini Jr · Bellingham · Yamal</small></div><button class="workspace-pack-art" data-lab-desktop-open-pack aria-label="Open Rising Icons pack"><img src="assets/generated/fc-stars-rising-icons-pack.png" alt="Rising Icons pack"><i></i></button></section>`;
   if (view === 'squad') return `<section class="workspace-card squad-workspace nightmare-squad"><div class="side-heading"><div><p>PROTOTYPE XI · 3–4–3</p><h3>Every position.<br>One team.</h3></div><button data-lab-desktop-view="play">MATCHDAY →</button></div><div class="squad-metrics"><span><b>∞</b><small>TEAM RATING</small></span><span><b>11</b><small>PLAYERS</small></span><span><b>3–4–3</b><small>FORMATION</small></span></div>${squadOverviewMarkup(labOverviewTeam(), true)}<div id="demoSquadInspector" class="squad-inspector" role="status">Select a player to inspect their card. This is a sample XI; manage your saved team in the live game.</div></section>`;
-  if (view === 'play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCH CENTRE</p><h3>Choose your challenge</h3><span>The upgraded live match has momentum, player switching, through balls, crosses and goalkeeper reactions.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-lab-desktop-live-match><i>01</i><span>RANKED RUSH</span><b>Climb your<br>division</b><small>90 SECOND MATCH · FULL REWARDS</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode draft" data-lab-desktop-live-match><i>02</i><span>QUICK MATCH</span><b>Instant<br>kickoff.</b><small>YOUR XI · QUICK MATCH</small><em>ENTER LIVE GAME →</em></button><button class="desktop-mode friendly" data-lab-desktop-live-match><i>03</i><span>FRIENDLY</span><b>Learn the<br>new controls</b><small>NO ENTRY COST · NO PRESSURE</small><em>ENTER LIVE GAME →</em></button></div></section>`;
+  if (view === 'play') return window.FCMatchdayUI.hubMarkup();
   if (view === 'club') return `<section class="workspace-card club-workspace"><div class="club-banner"><span>EST. 2026 · STADIUM AFTER DARK</span><b id="labDesktopClubBannerName">ARJUN FC</b><small>Build. Play. Become.</small></div><div class="club-photo-row"><button class="club-photo-add" data-lab-desktop-view="profile"><span>AR</span><b>EDIT PROFILE</b></button><div><strong>Your identity travels with the team.</strong><small>Pick club colours on the toolbar, then see them update across the prototype immediately.</small><button data-lab-desktop-colour>CHANGE CLUB COLOURS</button></div></div><div class="club-record"><span><b>24</b><small>MATCHES</small></span><span><b>15</b><small>WINS</small></span><span><b>44</b><small>GOALS</small></span></div></section>`;
   if (view === 'news') return `<section class="workspace-card news-workspace"><header class="news-workspace-head"><div><span class="news-live-badge"><i></i> UPDATED NOW</span><p>THE DAILY TOUCHLINE</p><h3>Stories shaping the game.</h3><small>Player focus, tactics and classic-match rewinds.</small></div><div class="news-pulse"><b>${prototypeNewsStories.length}</b><span>LIVE STORIES</span><i>NEWEST FIRST</i></div></header><div class="prototype-news-feed">${newsCardsMarkup(prototypeNewsStories.slice(0, 3))}</div></section>`;
   if (view === 'profile') return `<section class="workspace-card profile-workspace"><section class="profile-showcase-card background-stadium"><div class="profile-showcase-shade"></div><header><span class="profile-big-avatar">AR</span><div><small>LEVEL 50 · DIVISION 4</small><h3>ARJUN FC</h3><p>Build. Play. Become.</p></div><b>CLUB FOUNDER</b></header><div class="profile-player-showcase"><article><img src="assets/players/cristiano-ronaldo-v2.jpg" alt="Cristiano Ronaldo"><span><b>95</b><small>ST</small></span><strong>RONALDO</strong></article><article><img src="assets/neymar-jr.png" alt="Neymar"><span><b>91</b><small>LW</small></span><strong>NEYMAR</strong></article><article><img src="assets/players/lionel-messi-v2.jpg" alt="Lionel Messi"><span><b>94</b><small>RW</small></span><strong>MESSI</strong></article></div></section><p class="profile-viewing-note">Profile backgrounds, showcase players and earned titles can be customised in the live game.</p></section>`;
@@ -568,10 +565,7 @@ function homeWorkspaceMarkup() {
   ];
   const dailyDone = dailyQuests.filter((quest) => quest.value >= quest.target).length;
   const loginStreak = Math.max(0, Number(state?.loginStreak?.current) || 0);
-  return `<section class="desktop-hero nightmare-hero">
-    <div class="desktop-hero-copy"><span class="hero-live"><i></i> NEW RANK · NIGHTMARE</span><p>THE FINAL BOSS HAS ARRIVED</p><h3>Prime Ronaldo.<br><em>Limits removed.</em></h3><button data-prototype-open-pitch>♛ VIEW NIGHTMARE XI <span>∞ COINS</span></button><small class="stadium-hero-note">The most powerful card in FC Stars.</small></div>
-    <div class="hero-player prime-hero-player nightmare-hero-player" aria-hidden="true"><img src="assets/players/prime-ronaldo.png" alt=""><span><b>∞ × ∞</b><small>ST</small></span><strong>PRIME RONALDO<small>NIGHTMARE RANK</small></strong></div>
-  </section>
+  return `${window.FCMatchdayUI.heroMarkup(false)}
   <section class="home-command-grid" aria-label="Club overview">
     <button class="home-arena-card" data-prototype-play="Ranked Rush"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>25 COINS PER GOAL · +10 RP FOR A WIN</small><em>PLAY NOW →</em></button>
     <article class="home-progress-card"><span class="home-card-kicker">${division > 1 ? `ROAD TO DIVISION ${division - 1}` : 'DIVISION 1 MASTERY'}</span><div><b>${divisionProgress}</b><small>/ 100 RP</small></div><i><b style="width:${divisionProgress}%"></b></i><small>${Math.max(0, 100 - divisionProgress)} RP TO ${division > 1 ? 'PROMOTION' : 'THE NEXT MILESTONE'}</small></article>
@@ -672,7 +666,7 @@ function prototypeViewMarkup(view) {
     const rating = prototypeTeamRating();
     return `<section class="workspace-card squad-workspace"><div class="side-heading"><div><p>STARTING XI · 3–4–3</p><h3>Your stars.<br>Your system.</h3></div><button data-prototype-open-pitch>MANAGE XI →</button></div><div class="squad-metrics"><span><b>${rating}</b><small>TEAM RATING</small></span><span><b>${team.filter(player => isInfiniteRating(player) || Number(player.rating) >= 85).length}</b><small>ELITE PLAYERS</small></span><span><b>3–4–3</b><small>FORMATION</small></span></div>${squadOverviewMarkup(team)}<p class="squad-tip">Select a player to find their replacement in your collection. Your controlled star has a highlighted card.</p></section>`;
   }
-  if (view === 'Play') return `<section class="workspace-card play-workspace"><div class="workspace-heading"><p>MATCHDAY</p><h3>Pick your arena.</h3><span>Every match uses your real Starting XI.</span></div><div class="desktop-modes"><button class="desktop-mode ranked" data-prototype-play="Ranked Rush"><i>♛</i><span>RANKED RUSH</span><b>Climb the<br>divisions</b><small>25 COINS / GOAL · 10 RP / WIN</small><em>PLAY RANKED →</em></button><button class="desktop-mode draft" data-prototype-play="Quick Match"><i>⚡</i><span>QUICK MATCH</span><b>Instant<br>kickoff</b><small>XP AND COIN REWARDS</small><em>PLAY NOW →</em></button><button class="desktop-mode friendly" data-prototype-play="Friendly"><i>∞</i><span>FRIENDLY</span><b>Play with<br>no pressure</b><small>NO RANKED POINTS</small><em>PLAY FRIENDLY →</em></button></div></section>`;
+  if (view === 'Play') return window.FCMatchdayUI.hubMarkup();
   if (view === 'Club') {
     const account = typeof activeAccount === 'function' ? activeAccount() : null;
     return `<section class="workspace-card club-workspace"><div class="club-banner"><span>EST. 2026</span><b>${escapeHtml(prototypeUsername?.textContent || 'FC Manager')}</b><small>${escapeHtml(account?.motto || 'Build your legacy')}</small></div><div class="club-profile-grid"><div><p>CLUB IDENTITY</p><div class="club-photo-row"><button id="prototypeAddPhoto" class="club-photo-add"><span id="prototypeClubPhoto">+</span><b>ADD BADGE PHOTO</b></button><input id="prototypeClubPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="club-edit-button" data-prototype-action="Club settings">EDIT CLUB DETAILS →</button></div></div><div class="club-record"><p>CLUB RECORD</p><span><b>${Number(state?.rankedPoints) || 0}</b><small>RANKED POINTS</small></span><span><b>${prototypeTeamRating()}</b><small>XI RATING</small></span><span><b>${new Set((state?.inventory || []).map(card => card.name)).size}</b><small>COLLECTED</small></span></div></div></section>`;
@@ -1019,8 +1013,7 @@ function openPrototypeMatch(mode) {
 }
 
 function launchFCStarsMatch(mode = 'Ranked Rush') {
-  if (!prototypePitchOverlay?.hidden) closePrototypePitch();
-  openPrototypeMatch(mode);
+  window.FCMatchdayUI.setup(mode);
 }
 
 window.launchFCStarsMatch = launchFCStarsMatch;
@@ -1032,7 +1025,7 @@ function closePrototypeMatch() {
   if (prototypeMatchOverlay) prototypeMatchOverlay.hidden = true;
 }
 
-document.querySelector('#prototypeMatchClose')?.addEventListener('click', closePrototypeMatch);
+document.querySelector('#prototypeMatchClose')?.addEventListener('click', () => window.FCMatchdayUI.pause(true));
 window.addEventListener('fc-stars-match-ended', (event) => {
   syncPrototypeBalances();
   if (event.detail.abandoned) {
@@ -1068,7 +1061,7 @@ for (const modal of [prototypeModal, prototypeSettingsModal]) {
   });
 }
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape') return;
+  if (event.key !== 'Escape' || document.querySelector('#matchdayDialog[open]')) return;
   if (prototypeModal && !prototypeModal.hidden) closePrototypePack(true);
   else if (prototypeSettingsModal && !prototypeSettingsModal.hidden) prototypeSettingsModal.hidden = true;
   else if (prototypePitchOverlay && !prototypePitchOverlay.hidden) closePrototypePitch();

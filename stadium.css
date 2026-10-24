@@ -616,6 +616,171 @@ body.prototype-lab .phone { border-color: #262a46; box-shadow: 0 30px 90px #0009
 #prototypeMatchHost .match-control-btn.switch { background: #29445d; }
 #prototypeMatchHost .match-joystick-ring { border-color: #a597ff70; box-shadow: 0 0 25px #8260ff25; }
 
+/* Matchday 3.0 — broadcast framing, stronger depth and cleaner controls. */
+#prototypeMatchOverlay {
+  background:
+    radial-gradient(ellipse at 50% -10%,#275b8050,transparent 48%),
+    radial-gradient(ellipse at 10% 100%,#64284b32,transparent 42%),
+    linear-gradient(180deg,#07121c,#070914 72%);
+}
+#prototypeMatchOverlay .prototype-pitch-toolbar {
+  background:#08111ed4;
+  border:1px solid #7cbcff31;
+  border-radius:14px;
+  box-shadow:0 12px 40px #0007,inset 0 1px #ffffff18;
+  padding:10px 14px;
+}
+#prototypeMatchOverlay .prototype-pitch-toolbar p { color:#70d9ff;letter-spacing:.18em; }
+#prototypeMatchOverlay .prototype-pitch-toolbar button { background:#ffffff0d;border:1px solid #ffffff22;border-radius:9px; }
+#prototypeMatchHost .match-panel {
+  background:linear-gradient(165deg,#131e33f5,#0a111ff7 65%,#111326f7);
+  border:1px solid #78b7ff4a;
+  border-radius:18px;
+  box-shadow:0 24px 70px #0009,0 0 38px #2376b31f,inset 0 1px #ffffff20;
+  padding:14px;
+}
+#prototypeMatchHost .match-scoreboard {
+  background:linear-gradient(90deg,#1b55a12e,#070c16d9 32% 68%,#a4214b2b);
+  border:1px solid #ffffff1f;
+  border-radius:13px;
+  min-height:62px;
+  overflow:hidden;
+  padding:8px 16px;
+  position:relative;
+}
+#prototypeMatchHost .match-scoreboard::before,
+#prototypeMatchHost .match-scoreboard::after {
+  bottom:0;
+  content:"";
+  height:3px;
+  position:absolute;
+  width:38%;
+}
+#prototypeMatchHost .match-scoreboard::before { background:linear-gradient(90deg,#33b5ff,transparent);left:0; }
+#prototypeMatchHost .match-scoreboard::after { background:linear-gradient(90deg,transparent,#ff416f);right:0; }
+#prototypeMatchHost .match-scoreboard span {
+  color:#f2f7ff;
+  font:850 clamp(.65rem,1vw,.82rem) "DM Sans",system-ui;
+  letter-spacing:.08em;
+  text-shadow:0 2px 8px #000;
+}
+#prototypeMatchHost .match-scoreboard span:first-child { text-align:right; }
+#prototypeMatchHost .match-scoreboard span:last-child { text-align:left; }
+#prototypeMatchHost .match-scoreboard strong {
+  background:#03070dcc;
+  border:1px solid #ffffff26;
+  border-radius:8px;
+  box-shadow:inset 0 0 18px #ffffff09,0 5px 18px #0008;
+  color:#fff;
+  font:900 1.72rem/1 "Barlow Condensed",system-ui;
+  min-width:104px;
+  padding:7px 14px;
+  text-shadow:0 0 18px #8fe8ff5c;
+}
+#prototypeMatchHost .match-score-center time { color:#aee7d0;font-size:.66rem;font-weight:850;letter-spacing:.16em; }
+#prototypeMatchHost .match-scene {
+  background:#06120f;
+  border:1px solid #a9d9ca57;
+  border-radius:16px;
+  box-shadow:0 18px 45px #0008,0 0 0 1px #ffffff0b,inset 0 0 38px #0008;
+  isolation:isolate;
+}
+#prototypeMatchHost .match-scene::before {
+  background:radial-gradient(ellipse at 50% 52%,transparent 52%,rgba(0,0,0,.48) 100%);
+  content:"";
+  inset:0;
+  pointer-events:none;
+  position:absolute;
+  z-index:2;
+}
+#prototypeMatchHost .match-scene::after {
+  background:linear-gradient(180deg,rgba(120,205,255,.08),transparent 13%,transparent 87%,rgba(0,0,0,.28));
+  content:"";
+  inset:0;
+  pointer-events:none;
+  position:absolute;
+  z-index:2;
+}
+#prototypeMatchHost .match-canvas { filter:saturate(1.1) contrast(1.035); }
+#prototypeMatchHost .scene-goal-text {
+  background:linear-gradient(90deg,transparent,#081019d9 23% 77%,transparent);
+  color:#fff;
+  font:950 clamp(1.6rem,4vw,3.6rem)/1 "Barlow Condensed",system-ui;
+  left:0;
+  letter-spacing:.16em;
+  padding:14px;
+  right:0;
+  text-shadow:0 0 12px #fff,0 0 32px #41d6ff,0 3px 8px #000;
+  top:42%;
+  z-index:4;
+}
+#prototypeMatchHost .match-player-hud {
+  background:#07111cba;
+  border:1px solid #ffffff17;
+  border-radius:10px;
+  min-height:35px;
+  padding:6px 10px;
+}
+#prototypeMatchHost .match-player-hud > span:first-child i {
+  animation:matchControlledPulse 1.5s ease-in-out infinite;
+  background:#ffdc57;
+  box-shadow:0 0 0 4px #ffdc5720,0 0 16px #ffdc57;
+}
+#prototypeMatchHost .match-stamina > i,
+#prototypeMatchHost .match-shot-meter i { background:#02070bbf;border:1px solid #ffffff16;height:8px; }
+#prototypeMatchHost .match-stamina b { background:linear-gradient(90deg,#27d89d,#bffb68);box-shadow:0 0 9px #38e6aa; }
+#prototypeMatchHost .match-controls {
+  background:linear-gradient(180deg,#ffffff05,#02070d52);
+  border:1px solid #ffffff10;
+  border-radius:14px;
+  padding:12px 12px 22px;
+}
+#prototypeMatchHost .match-joystick-ring {
+  background:radial-gradient(circle,#1b2b47 0 24%,#10182ce6 25% 54%,#5576a33d 55% 58%,#080d19e6 59%);
+  border:1px solid #9bbcff80;
+  box-shadow:0 0 0 5px #6f8cff0d,0 9px 22px #0008,inset 0 0 24px #6b91db25;
+}
+#prototypeMatchHost .match-joystick-knob {
+  background:radial-gradient(circle at 36% 30%,#fff,#acc9ec 48%,#526c91);
+  border:1px solid #d8ecff;
+  box-shadow:0 5px 12px #0008,0 0 15px #86bfff4a;
+}
+#prototypeMatchHost .match-control-btn {
+  border-radius:10px;
+  box-shadow:inset 0 1px #ffffff30,0 7px 15px #0005;
+  min-height:50px;
+  position:relative;
+  transition:filter .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+#prototypeMatchHost .match-control-btn:hover { filter:brightness(1.18);transform:translateY(-2px); }
+#prototypeMatchHost .match-control-btn kbd { background:#02050a66;border:1px solid #ffffff1b;color:#dbe9f5; }
+#prototypeMatchHost .match-control-btn.shoot { background:linear-gradient(145deg,#f1396f,#9b194f);box-shadow:inset 0 1px #ffffff35,0 0 22px #ff2c6b38,0 7px 15px #0005; }
+#prototypeMatchHost .match-control-btn.sprint { background:linear-gradient(145deg,#e5a72f,#8e5610); }
+#prototypeMatchHost .match-control-btn.tackle { background:linear-gradient(145deg,#7e4cba,#45206b); }
+#prototypeMatchHost .match-control-btn.dribble { background:linear-gradient(145deg,#3e68d1,#283687); }
+#prototypeMatchHost .match-control-btn.through,
+#prototypeMatchHost .match-control-btn.cross { background:linear-gradient(145deg,#268a96,#155365); }
+#prototypeMatchHost .match-control-btn.switch { background:linear-gradient(145deg,#405e79,#263749); }
+#prototypeMatchHost .match-control-btn.shoot.is-charging { animation:matchCharge .65s ease-in-out infinite alternate; }
+#prototypeMatchHost .match-shot-meter { color:#b8c7d6;font-size:.58rem;left:116px;right:12px; }
+#prototypeMatchHost .match-shot-meter b { background:linear-gradient(90deg,#29e1a3 0 46%,#ffd74e 66%,#ff3c62 100%);box-shadow:0 0 12px currentColor; }
+@keyframes matchControlledPulse { 50% { box-shadow:0 0 0 7px #ffdc5700,0 0 22px #ffdc57;transform:scale(1.12); } }
+@keyframes matchCharge { to { filter:brightness(1.28);box-shadow:inset 0 1px #fff5,0 0 34px #ff2c6b85,0 8px 18px #0006;transform:translateY(-2px) scale(1.025); } }
+
+@media (max-width:600px) {
+  #prototypeMatchHost .match-scoreboard { min-height:52px;padding:6px 8px; }
+  #prototypeMatchHost .match-scoreboard strong { font-size:1.4rem;min-width:82px;padding-inline:8px; }
+  #prototypeMatchHost .match-controls { padding:9px 8px 21px; }
+  #prototypeMatchHost .match-control-btn { border-radius:8px;min-height:46px; }
+  #prototypeMatchHost .scene-goal-text { top:38%; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #prototypeMatchHost .match-player-hud > span:first-child i,
+  #prototypeMatchHost .match-control-btn.shoot.is-charging { animation:none; }
+  #prototypeMatchHost .match-control-btn { transition:none; }
+}
+
 /* Short, finite celebrations never intercept gameplay input. */
 .stadium-confetti { inset: 0; overflow: hidden; pointer-events: none; position: fixed; z-index: 200; }
 .stadium-confetti i { animation: stadium-confetti-fall 1.5s cubic-bezier(.15,.55,.35,1) both; background: var(--confetti-color); height: 12px; left: var(--confetti-left); position: absolute; top: 28%; width: 6px; }
