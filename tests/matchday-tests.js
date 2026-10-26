@@ -109,6 +109,61 @@ window.runFCMatchdayTests = async function () {
       FCMatchdayUI.pause(true);assert(!window.match3D.inspect().rendering,'Paused renderer keeps running');
       FCMatchdayUI.pause(false);await delay(100);assert(window.match3D.inspect().rendering,'Renderer failed to resume');stopMatchPhysics();
     });
+    await check('Tactics change actual team shape and pressing with safe pitch boundaries', () => {
+      const m=start(), owner=m.awayPlayers[9];m.possessionId=owner.id;
+      m.ballX=owner.x;m.ballY=owner.y;
+      const capture=tactic=>{
+        m.settings.tactic=tactic;assignTacticalTargets(m,'home',owner);
+        return m.homePlayers.filter(p=>p.role!=='GK').map(p=>({id:p.id,task:p.task,...p.target}));
+      };
+      const attack=capture('attack'), defend=capture('defend');
+      assert(attack.filter(p=>p.task==='press').length===2 && defend.filter(p=>p.task==='press').length===1,'Pressing does not change');
+      const same=attack.filter(p=>p.task!=='press' && defend.find(q=>q.id===p.id)?.task!=='press');
+      assert(same.some(p=>p.z<defend.find(q=>q.id===p.id).z),'Attack does not push the team forward');
+      assert([...attack,...defend].every(p=>Number.isFinite(p.x)&&Math.abs(p.x)<=8&&Math.abs(p.z)<=12.8),'Tactics moved targets outside pitch');
+    });
+    await check('Tactic selection preserves camera and sound and applies before and during a match', () => {
+      clear();FCMatchdayUI.setup('Friendly');
+      document.querySelector('#mdCamera').value='wide';document.querySelector('#mdSound').checked=false;
+      document.querySelector('[data-md-tactic="attack"]').click();
+      document.querySelector('[data-md-difficulty="relaxed"]').click();
+      assert(document.querySelector('[data-md-tactic="attack"]').getAttribute('aria-pressed')==='true','Difficulty reset tactics');
+      FCMatchdayUI.begin();stopMatchPhysics();const m=state.activeMatch;
+      assert(m.settings.tactic==='attack'&&m.settings.camera==='wide'&&!m.settings.sound,'Setup lost settings');
+      m.home=2;FCMatchdayUI.pause(true);const time=m.simulationTime;
+      document.querySelector('[data-md-tactic="defend"]').click();
+      assert(m.settings.tactic==='defend'&&state.matchSettings.tactic==='defend'&&m.home===2&&m.simulationTime===time&&m.userPaused,'Paused tactic change reset match');
+      FCMatchdayUI.pause(false);stopMatchPhysics();
+    });
+    await check('Prototype links preserve all settings and invalid tactics fall back safely', () => {
+      const link=FCMatchday.setupLink('Quick Match',{difficulty:'competitive',tactic:'attack',camera:'wide',sound:false});
+      const query=new URL(link,location.href).searchParams;
+      assert(query.get('match')==='Quick Match'&&query.get('tactic')==='attack'&&query.get('camera')==='wide'&&query.get('sound')==='false'&&query.get('difficulty')==='competitive','Prototype drops settings');
+      assert(FCMatchday.settings({tactic:'__proto__'}).tactic==='balanced','Invalid tactic accepted');
+    });
+    await check('Goals survive full time in chronological order and match reports never pay twice', () => {
+      const m=start();m.home=2;m.away=1;
+      m.goals=[{team:'home',scorer:'Late winner',minute:88},{team:'away',scorer:'<img src=x onerror=alert(1)>',minute:65,celebration:'Own goal'},{team:'home',scorer:'First goal',minute:12}];
+      endMatch();clearTimeout(prototypeMatchCloseTimer);
+      const result=state.matchHistory[0], coins=state.matchPoints, xp=state.xp;
+      assert(result.goals[0].minute===12&&result.goals[2].minute===88&&result.goals[1].ownGoal,'Timeline lost or reordered goals');
+      document.querySelector('[data-md-home]').click();
+      document.querySelector('[data-md-report="0"]').click();
+      assert(document.querySelector('.md-timeline').textContent.includes('OWN GOAL')&&!document.querySelector('.md-timeline img'),'Timeline is missing or unsafe');
+      assert(state.matchPoints===coins&&state.xp===xp&&!state.activeMatch,'Report paid or started a match');
+    });
+    await check('Restoring a paused match reopens a previously closed pause dialog', () => {
+      const m=start();FCMatchdayUI.pause(true);document.querySelector('#matchdayDialog').close();
+      FCMatchdayUI.restore(m);
+      assert(document.querySelector('#matchdayDialog').open&&m.userPaused&&!matchPhysicsFrame,'Restored paused game has no resume controls');
+    });
+    await check('Live match status shows tactic and goal context without executing player names', () => {
+      const m=start();m.settings.tactic='attack';m.phase='goal';m.home=1;m.goals=[{scorer:'<b>Test scorer</b>'}];
+      m.simulationTime+=1;FCMatchdayUI.update(m);
+      const status=document.querySelector('#mdMatchStatus');
+      assert(status.getBoundingClientRect().width>0&&status.classList.contains('is-goal')&&status.querySelector('b').textContent==='ATTACK','Live status is hidden or incorrect');
+      assert(status.querySelector('span').textContent.includes('<b>Test scorer</b>')&&!status.querySelector('span b'),'Scorer became HTML');
+    });
   } finally {
     clear(); state=saved.state;accounts=saved.accounts;activeAccountId=saved.activeAccountId;
     saveState=saved.saveState;saveAccounts=saved.saveAccounts;playMatchSound=saved.playMatchSound;

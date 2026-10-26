@@ -2281,13 +2281,15 @@ function assignTacticalTargets(match, team, owner) {
   if (!current || !candidates.includes(current) || candidates[0] && P.distance(current.x,current.y,match.ballX,match.ballY) > P.distance(candidates[0].x,candidates[0].y,match.ballX,match.ballY) + 1.1) match[key] = candidates[0]?.id;
   const marked = new Set();
   const possession = owner?.team === team;
+  const tactic = FCMatchday.tactics[team === 'home' ? FCMatchday.settings(match.settings).tactic : 'balanced'];
+  const secondPresser = tactic.pressers > 1 ? candidates.find(p => p.id !== match[key])?.id : null;
   for (const p of players) {
     if (p.role === "GK") continue;
     let tx = P.x(p.baseX), tz = P.z(p.baseY) + b.z * 0.22;
     p.markId = null; p.task = "shape";
     if (owner?.id === p.id) {
       tx = clamp(P.x(p.x) * 0.8, -7, 7); tz = P.z(p.y) + dir * 3; p.task = "carry";
-    } else if (p.id === match[key] && (!owner || !possession)) {
+    } else if ((p.id === match[key] || p.id === secondPresser) && (!owner || !possession)) {
       tx = b.x + clamp(b.vx * 0.28, -1.8, 1.8); tz = b.z + clamp(b.vz * 0.28, -2.2, 2.2); p.task = "press";
     } else if (p.id === match.intendedReceiverId && !owner) {
       tx = b.x + b.vx * 0.45; tz = b.z + b.vz * 0.45; p.task = "receive";
@@ -2305,6 +2307,10 @@ function assignTacticalTargets(match, team, owner) {
         marked.add(mark.id); p.markId = mark.id; p.task = "mark";
         tx = P.x(mark.x) * 0.6 + tx * 0.4; tz = P.z(mark.y) - dir * 0.85;
       }
+    }
+    if (['shape', 'run', 'support', 'mark'].includes(p.task)) {
+      tx *= tactic.width;
+      tz += dir * (possession ? tactic.depth + tactic.support : tactic.depth);
     }
     p.target = { x: clamp(tx,-8,8), z: clamp(tz,-12.8,12.8) };
   }

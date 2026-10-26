@@ -92,3 +92,20 @@ Validation in an isolated Chrome profile:
 - Native Escape pause/resume and a page reload preserved the paused match clock. The phone controls use two rows so all eight actions and the power meter fit at 390×844.
 
 Physical-device performance and browsers other than Chrome remain unverified.
+
+## Tactics upgrade — 26 October 2026
+
+Balanced, Attack and Defend are selectable from a shared visual tactics board in the main game and prototype. Attack raises and widens supporting positions and uses two pressers; Defend lowers and narrows supporting positions. Targets stay inside the existing pitch bounds. Tactics can change while paused without changing the score or clock, and Ranked retains its fixed opponent difficulty.
+
+The match HUD shows the active tactic, scorer during goals, restarts and the final stretch. Completed results preserve the latest twelve goals in chronological order, with own goals identified. Recent results offer a report button that reopens the stats and timeline without granting rewards again. Older saved results remain readable.
+
+Prototype-to-game links now carry difficulty, tactic, camera and sound choices. Restoring a paused match also reopens its resume dialog when that dialog was previously closed.
+
+Validation in isolated Chrome:
+
+- 24 match and 29 game regression checks passed, with no runtime exceptions.
+- 18 matchday checks passed, including six new checks for actual tactical targets/pressing, saved tactics, prototype links, goal history, report rewards, pause restoration and visible status.
+- 22 desktop and 19 phone prototype interaction checks passed.
+- Visually inspected desktop and phone setup and the live phone match. All eight match buttons fit at 390×844; the tactical camera, radar, active tactic and renderer were visible.
+
+Physical touch devices and browsers other than Chrome remain unverified.
