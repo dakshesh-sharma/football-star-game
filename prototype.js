@@ -506,7 +506,7 @@ window.syncPrototypeShell = () => {
   syncPrototypeBalances();
   syncPrototypeProfile();
   const activeView = document.querySelector('.desktop-rail .rail-active')?.dataset.prototypeView;
-  if (activeView === 'Packs' || activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'Profile') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
+  if (activeView === 'Season' || activeView === 'Play' || activeView === 'Packs' || activeView === 'Home' || activeView === 'Squad' || activeView === 'Club' || activeView === 'Profile') prototypeWorkspace.innerHTML = prototypeViewMarkup(activeView);
   if (activeView === 'Club') restorePrototypeClubPhoto();
 };
 
@@ -565,7 +565,7 @@ function homeWorkspaceMarkup() {
   ];
   const dailyDone = dailyQuests.filter((quest) => quest.value >= quest.target).length;
   const loginStreak = Math.max(0, Number(state?.loginStreak?.current) || 0);
-  return `${window.FCMatchdayUI.heroMarkup(false)}
+  return `${window.FCSeasonUI.banner(true)}${window.FCSeasonUI.teaser()}
   <section class="home-command-grid" aria-label="Club overview">
     <button class="home-arena-card" data-prototype-play="Ranked Rush"><span class="home-card-kicker"><i></i> MATCHDAY LIVE</span><b>RANKED<br>RUSH</b><small>25 COINS PER GOAL · +10 RP FOR A WIN</small><em>PLAY NOW →</em></button>
     <article class="home-progress-card"><span class="home-card-kicker">${division > 1 ? `ROAD TO DIVISION ${division - 1}` : 'DIVISION 1 MASTERY'}</span><div><b>${divisionProgress}</b><small>/ 100 RP</small></div><i><b style="width:${divisionProgress}%"></b></i><small>${Math.max(0, 100 - divisionProgress)} RP TO ${division > 1 ? 'PROMOTION' : 'THE NEXT MILESTONE'}</small></article>
@@ -616,7 +616,12 @@ function profileTitles(accountState) {
   const ronaldoStreak = Number(accountState.taskProgress?.ronaldoWinStreak) || 0;
   const totalWins = Number(accountState.taskProgress?.totalWins) || 0;
   const bestLoginStreak = Number(accountState.loginStreak?.best) || 0;
+  const season = window.FCSeason?.normalize(accountState.season);
   return [
+    ...(season ? [
+      { name:'Champion 02', unlocked:season.stage >= 7, progress:season.stage, target:7, task:'Champions Journey ke saare 7 stages jeeto' },
+      { name:'Season Legend', unlocked:season.xp >= 1500, progress:season.xp, target:1500, task:'Season 02 mein 1,500 XP kamao' }
+    ] : []),
     { name:'El Demon', unlocked:hasElDemonProfile(accountState), progress:hasElDemonProfile(accountState) ? 1 : 0, target:1, task:'Gifted by S7ph_Void4 · only three recipients' },
     { name:'Club Founder', unlocked:true, progress:1, target:1, task:'Create your club' },
     { name:'Siuuu Streak', unlocked:ronaldoStreak >= 10, progress:ronaldoStreak, target:10, task:'Win 10 matches in a row controlling Ronaldo' },
@@ -658,6 +663,7 @@ function profileWorkspaceMarkup() {
 }
 
 function prototypeViewMarkup(view) {
+  if (view === 'Season') return window.FCSeasonUI.markup();
   if (view === 'Profile') return profileWorkspaceMarkup();
   if (view === 'News') return newsWorkspaceMarkup();
   if (view === 'Packs') return packStoreMarkup();
@@ -677,6 +683,7 @@ function prototypeViewMarkup(view) {
 function selectPrototypeView(view) {
   const isHome = view === 'Home';
   const headings = {
+    Season: ['SEASON 02 · CHAMPIONS RISE', 'Ab banegi<br><em>tumhari legacy.</em>'],
     Home: ['HOME · FC STARS', 'Ready to build<br>your <em>legacy?</em>'],
     Packs: ['PACK STORE · RISING ICONS', 'Open the next<br><em>superstar.</em>'],
     Squad: ['SQUAD · STARTING XI', 'Build your<br><em>best XI.</em>'],

@@ -2,7 +2,7 @@
 (() => {
   const lab = document.body.classList.contains('prototype-lab');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const modes = ['Ranked Rush', 'Quick Match', 'Friendly'];
+  const modes = ['Ranked Rush', 'Quick Match', 'Friendly', ...(!lab ? ['Champions Journey'] : [])];
   let dialog, content, pending = null, dialogType = '', activeMode = 'Quick Match', lastHudTime = -1;
   let selectedSettings = FCMatchday.settings();
   const controls = `<div class="md-control-guide"><h3>Make your move.</h3><div><span><kbd>W A S D</kbd> / arrows · Move</span><span><kbd>Space</kbd> Hold & release · Shoot</span><span><kbd>P</kbd> Short pass</span><span><kbd>Q</kbd> Through ball</span><span><kbd>C</kbd> Cross</span><span><kbd>Shift</kbd> Hold · Sprint</span><span><kbd>T</kbd> Tackle</span><span><kbd>E</kbd> Dribble</span><span><kbd>Tab</kbd> Switch player</span><span><kbd>Esc</kbd> Pause / resume</span></div><p>On a phone, drag the left stick to move. Hold Shoot to build power. Sprint uses stamina; release it to recover.</p></div>`;
@@ -14,7 +14,7 @@
     return `<section class="md-history"><header><div><span class="md-eyebrow">YOUR RECENT FORM</span><h3>The last whistle.</h3></div><span>LAST 10 MATCHES</span></header>${items.length ? items.map((item,index) => `<article><b class="md-form ${esc(item.outcome)}">${item.outcome === 'win' ? 'W' : item.outcome === 'draw' ? 'D' : 'L'}</b><div><strong>${esc(item.opponent)}</strong><small>${esc(item.mode)} · ${esc(FCMatchday.difficulties[FCMatchday.settings(item.settings).difficulty].label)}</small></div><b>${item.home} – ${item.away}</b><span>+${Number(item.coins) || 0} coins</span>${item.stats?.home && item.stats?.away && Array.isArray(item.possession) ? `<button class="md-report-button" data-md-report="${index}" aria-label="View match report against ${esc(item.opponent)}">REPORT ↗</button>` : ''}</article>`).join('') : `<div class="md-empty"><span>◎</span><div><b>Your story starts at kickoff.</b><p>${lab ? 'Finished matches appear here in the live game.' : 'Finish a match to see your score, opponent and rewards here.'}</p></div></div>`}</section>`;
   }
   function hubMarkup() {
-    return `<section class="md-match-hub"><div class="md-hub-heading"><span class="md-eyebrow">PICK YOUR CHALLENGE</span><h3>Every game is<br>a fresh start.</h3><p>Your real squad. A new opponent. Your next big moment.</p></div><div class="md-mode-grid">${[
+    return `${!lab ? '<button class="s2-pass-teaser" data-prototype-view="Season"><span class="s2-pass-icon">♛</span><span><small>NAYA · CHAMPIONS JOURNEY</small><b>7 rivals. Ek trophy. Apni legacy banao.</b></span><em>↗</em></button>' : ''}<section class="md-match-hub"><div class="md-hub-heading"><span class="md-eyebrow">PICK YOUR CHALLENGE</span><h3>Every game is<br>a fresh start.</h3><p>Your real squad. A new opponent. Your next big moment.</p></div><div class="md-mode-grid">${[
       ['Ranked Rush','01','PLAY FOR<br>THE BADGE.','Balanced difficulty · +10 RP per win','ranked'],
       ['Quick Match','02','STRAIGHT TO<br>THE ACTION.','Choose your difficulty · no entry cost','quick'],
       ['Friendly','03','FIND YOUR<br>FOOTBALL.','Learn the controls · no ranked points','friendly']
@@ -36,8 +36,8 @@
     const goals = FCMatchday.goals(items);
     return `<section class="md-timeline"><span class="md-eyebrow">THE GOALS · ${goals.length ? 'LATEST '+goals.length : 'FULL TIME'}</span>${goals.length ? goals.map(goal=>`<div class="${goal.team}"><b>${goal.minute}′</b><i aria-hidden="true">⚽</i><span>${esc(goal.scorer)}${goal.ownGoal?' <small>OWN GOAL</small>':''}</span><small>${goal.team==='home'?'YOUR XI':'OPPONENT'}</small></div>`).join('') : '<p>No goals recorded for this match.</p>'}</section>`;
   }
-  function settingsMarkup(ranked = false) {
-    return `<fieldset class="md-difficulty"><legend>01 / THE CHALLENGE ${ranked ? '<span>RANKED IS BALANCED</span>' : ''}</legend><div>${Object.entries(FCMatchday.difficulties).map(([key,value]) => `<button type="button" data-md-difficulty="${key}" aria-pressed="${selectedSettings.difficulty === key}" ${ranked && key !== 'balanced' ? 'disabled' : ''}><b>${value.label}</b><small>${value.description}</small></button>`).join('')}</div></fieldset><div class="md-options"><label><span>02 / CAMERA</span><select id="mdCamera"><option value="broadcast" ${selectedSettings.camera === 'broadcast' ? 'selected' : ''}>Broadcast · follow the action</option><option value="wide" ${selectedSettings.camera === 'wide' ? 'selected' : ''}>Tactical · see more of the pitch</option></select></label><label class="md-sound"><input id="mdSound" type="checkbox" ${selectedSettings.sound ? 'checked' : ''}><span>Stadium sound<small>Kick, save and goal effects</small></span></label></div>`;
+  function settingsMarkup(ranked = false, career = false) {
+    return `<fieldset class="md-difficulty"><legend>01 / THE CHALLENGE ${career ? '<span>STAGE DIFFICULTY FIXED HAI</span>' : ranked ? '<span>RANKED IS BALANCED</span>' : ''}</legend><div>${Object.entries(FCMatchday.difficulties).map(([key,value]) => `<button type="button" data-md-difficulty="${key}" aria-pressed="${selectedSettings.difficulty === key}" ${(ranked && key !== 'balanced') || (career && key !== selectedSettings.difficulty) ? 'disabled' : ''}><b>${value.label}</b><small>${value.description}</small></button>`).join('')}</div></fieldset><div class="md-options"><label><span>02 / CAMERA</span><select id="mdCamera"><option value="broadcast" ${selectedSettings.camera === 'broadcast' ? 'selected' : ''}>Broadcast · follow the action</option><option value="wide" ${selectedSettings.camera === 'wide' ? 'selected' : ''}>Tactical · see more of the pitch</option></select></label><label class="md-sound"><input id="mdSound" type="checkbox" ${selectedSettings.sound ? 'checked' : ''}><span>Stadium sound<small>Kick, save and goal effects</small></span></label></div>`;
   }
   function setup(mode = 'Quick Match', overrides = null) {
     if (!dialog) return;
@@ -45,12 +45,18 @@
     activeMode = modes.includes(mode) ? mode : 'Quick Match';
     selectedSettings = FCMatchday.settings(overrides || (lab ? selectedSettings : state.matchSettings));
     if (activeMode === 'Ranked Rush') selectedSettings.difficulty = 'balanced';
+    if (activeMode === 'Champions Journey') {
+      const stage = FCSeason.stages[FCSeason.normalize(state.season).stage];
+      if (!stage) { window.FCSeasonUI.open('journey'); return; }
+      selectedSettings.difficulty = stage.difficulty;
+    }
     drawSetup();
   }
   function drawSetup() {
     const name = lab ? 'YOUR CLUB' : activeAccount()?.username || 'YOUR CLUB';
     const rating = lab ? '89' : prototypeTeamRating();
-    show('setup', `<div class="md-setup-banner"><span class="md-eyebrow">${esc(activeMode.toUpperCase())} · MATCH SETUP</span><h2 id="mdTitle">THIS IS<br>YOUR STAGE.</h2><div class="md-fixture"><span><i>FC</i><b>${esc(name)}</b><small>${rating} OVR · YOUR STARTING XI</small></span><em>VS</em><span><i class="opponent">?</i><b>CHALLENGER XI</b><small>DRAWN AT KICKOFF</small></span></div></div><div class="md-setup-body">${settingsMarkup(activeMode === 'Ranked Rush')}${tacticsMarkup(selectedSettings.tactic)}<div class="md-kickoff-row"><p>90 seconds. Every goal earns 25 coins.<br>${lab ? 'Preview the setup, then enter your live game.' : 'Match settings are saved with your club.'}</p><button class="md-primary" data-md-kickoff data-md-primary>${lab ? 'OPEN LIVE GAME' : 'KICK OFF'} <span>→</span></button></div><details class="md-help"><summary>First match? See the controls <span>+</span></summary>${controls}</details></div>`);
+    const stage = activeMode === 'Champions Journey' ? FCSeason.stages[FCSeason.normalize(state.season).stage] : null;
+    show('setup', `<div class="md-setup-banner"><span class="md-eyebrow">${esc(activeMode.toUpperCase())} · MATCH SETUP</span><h2 id="mdTitle">THIS IS<br>YOUR STAGE.</h2><div class="md-fixture"><span><i>FC</i><b>${esc(name)}</b><small>${rating} OVR · YOUR STARTING XI</small></span><em>VS</em><span><i class="opponent">?</i><b>${stage ? stage.name : 'CHALLENGER XI'}</b><small>${stage ? stage.round.toUpperCase() + ' · +' + stage.coins + ' BONUS COINS' : 'DRAWN AT KICKOFF'}</small></span></div></div><div class="md-setup-body">${settingsMarkup(activeMode === 'Ranked Rush', Boolean(stage))}${tacticsMarkup(selectedSettings.tactic)}<div class="md-kickoff-row"><p>90 seconds. Every goal earns 25 coins.<br>${lab ? 'Preview the setup, then enter your live game.' : 'Match settings are saved with your club.'}</p><button class="md-primary" data-md-kickoff data-md-primary>${lab ? 'OPEN LIVE GAME' : 'KICK OFF'} <span>→</span></button></div><details class="md-help"><summary>First match? See the controls <span>+</span></summary>${controls}</details></div>`);
   }
   function consumeSettings(mode) {
     if (!pending || pending.mode !== mode) return null;
@@ -86,7 +92,7 @@
     if (!result || lab) return;
     const home = result.stats.home, away = result.stats.away;
     const title = {win:'YOU OWNED IT.',draw:'HONOURS EVEN.',loss:'NEXT ONE IS YOURS.'}[result.outcome];
-    show('result', `<div class="md-result ${result.outcome}"><span class="md-eyebrow">FULL TIME · ${esc(result.mode.toUpperCase())}</span><h2 id="mdTitle">${title}</h2><div class="md-final-score"><span>YOUR XI</span><b>${result.home}<i>:</i>${result.away}</b><span>${esc(result.opponent)}</span></div><div class="md-rewards"><span><b>+${result.coins}</b> COINS</span><span><b>+${result.xp}</b> XP</span><span><b>+${result.rp}</b> RANK POINTS</span></div><div class="md-stat-table">${[['SHOTS',home.shots,away.shots],['PASSES PLAYED',home.passes,away.passes],['SAVES',home.saves,away.saves],['POSSESSION',result.possession[0]+'%',result.possession[1]+'%']].map(([name,a,b])=>`<div><b>${a}</b><span>${name}</span><b>${b}</b></div>`).join('')}</div>${timelineMarkup(result.goals)}<div class="md-result-actions"><button class="md-primary" data-md-again data-mode="${esc(result.mode)}" data-md-primary>PLAY AGAIN ↗</button><button data-md-home>BACK TO CLUB</button></div></div>`);
+    show('result', `<div class="md-result ${result.outcome}"><span class="md-eyebrow">FULL TIME · ${esc(result.mode.toUpperCase())}</span><h2 id="mdTitle">${title}</h2><div class="md-final-score"><span>YOUR XI</span><b>${result.home}<i>:</i>${result.away}</b><span>${esc(result.opponent)}</span></div><div class="md-rewards"><span><b>+${result.coins}</b> COINS</span><span><b>+${result.xp}</b> XP</span><span><b>+${result.rp}</b> RANK POINTS</span></div><div class="md-stat-table">${[['SHOTS',home.shots,away.shots],['PASSES PLAYED',home.passes,away.passes],['SAVES',home.saves,away.saves],['POSSESSION',result.possession[0]+'%',result.possession[1]+'%']].map(([name,a,b])=>`<div><b>${a}</b><span>${name}</span><b>${b}</b></div>`).join('')}</div>${window.FCSeasonUI?.resultMarkup(result) || ''}${timelineMarkup(result.goals)}<div class="md-result-actions"><button class="md-primary" data-md-again data-mode="${esc(result.mode)}" data-md-primary>${result.mode === 'Champions Journey' ? 'JOURNEY CONTINUE ↗' : 'PLAY AGAIN ↗'}</button><button data-md-home>BACK TO CLUB</button></div></div>`);
   }
   function update(match) {
     if (!match || lab) return;
@@ -155,7 +161,7 @@
       if(target.hasAttribute('data-md-leave')) {dialogType='';dialog.close();closePrototypeMatch();selectPrototypeView('Play');}
       if(target.hasAttribute('data-md-camera')&&!lab&&state.activeMatch){state.activeMatch.settings.camera=state.activeMatch.settings.camera==='wide'?'broadcast':'wide';state.matchSettings={...state.activeMatch.settings};pause(true);}
       if(target.hasAttribute('data-md-sound')&&!lab&&state.activeMatch){state.activeMatch.settings.sound=!state.activeMatch.settings.sound;state.matchSettings={...state.activeMatch.settings};pause(true);}
-      if(target.hasAttribute('data-md-again'))setup(target.dataset.mode);
+      if(target.hasAttribute('data-md-again')) { dialogType='';dialog.close();setup(target.dataset.mode); }
       if(target.hasAttribute('data-md-home')){dialogType='';dialog.close();selectPrototypeView('Play');}
     });
     document.addEventListener('click', event=>{

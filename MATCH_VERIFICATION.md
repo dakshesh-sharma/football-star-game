@@ -109,3 +109,16 @@ Validation in isolated Chrome:
 - Visually inspected desktop and phone setup and the live phone match. All eight match buttons fit at 390×844; the tactical camera, radar, active tactic and renderer were visible.
 
 Physical touch devices and browsers other than Chrome remain unverified.
+
+
+## Champions Rise — 31 October 2026
+
+Season 02 adds a seven-stage Champions Journey using the existing 11 v 11 match engine. Each fixture has a named opponent and fixed difficulty; only a win unlocks the next stage. Draws and losses can be retried. First-win stage bonuses total 1,400 coins, in addition to the existing goal rewards.
+
+All completed match modes earn separate Season XP: 50 for completion, 40 for a win, and 10 per goal up to five goals per match. Ten free tiers unlock every 150 XP and grant 2,000 coins in total. Rewards require an explicit claim and cannot be claimed twice. Eight trophies track season achievements; Champion 02 and Season Legend also unlock profile titles. Leaving a match grants no season progress.
+
+Progress lives in the existing per-club save. Migration preserves old inventories and currencies; account merges preserve higher season progress and the union of claimed tiers. Saved paused career matches retain their stage and opponent. The Home and Season screens expose the journey, reward pass, trophy cabinet and season statistics on desktop and mobile.
+
+Validation uses isolated Chrome profiles and fixture persistence is disabled. Run the new suite with `python3 tests/run-browser-checks.py --port 9232 --season`; add `--width 390 --height 844` for the phone viewport. It covers migrations, independent clubs, real fixture setup, all seven stages, payouts, retry/abandon behavior, reward gates and repeat claims, trophy rules, reports, account merging and saved-match restoration.
+
+Existing regression suites: 24 match, 29 full-game and 18 matchday checks passed with no runtime exceptions. The new season suite passed 17 checks on desktop and, after fixing the final-cup return tab, all 17 in the 390px phone viewport. All seven main screens and all three season tabs also fit 320px without horizontal overflow. Final phone checks and UI screenshot capture used a separate Chrome profile with WebGL disabled because GPU-backed capture and later emulation stalled; that profile reports the expected Three.js WebGL-context initialization exception. Match rendering and the existing gameplay checks ran separately with SwiftShader enabled and no runtime exceptions. Physical touch devices and hardware-accelerated performance remain unverified.

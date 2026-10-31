@@ -9,11 +9,12 @@ parser.add_argument("--screenshot",help="Write a PNG of the restored game page a
 parser.add_argument("--width",type=int,default=1440)
 parser.add_argument("--height",type=int,default=1000)
 parser.add_argument("--dashboard",action="store_true",help="Hide blocking dialogs before capturing the dashboard")
-parser.add_argument("--view",choices=("Home","Packs","Squad","Play","Club","Profile"),help="Dashboard view to capture")
+parser.add_argument("--view",choices=("Home","Season","Packs","Squad","Play","Club","Profile"),help="Dashboard view to capture")
 parser.add_argument("--login",action="store_true",help="Show the login experience before capturing")
 parser.add_argument("--prototype-lab",action="store_true",help="Run the standalone laptop prototype interaction checks")
 parser.add_argument("--prime-demo",action="store_true",help="Click the login Prime Ronaldo showcase and verify the real squad card")
 parser.add_argument("--visual-smoke",action="store_true",help="Open a visible match and verify the 3D renderer stays responsive")
+parser.add_argument("--season",action="store_true",help="Verify career progression, reward pass, trophies and mobile screens")
 parser.add_argument("--matchday",action="store_true",help="Verify match setup, pause, results, stats and radar")
 args=parser.parse_args()
 pages=json.load(urllib.request.urlopen(f'http://127.0.0.1:{args.port}/json/list'))
@@ -62,7 +63,9 @@ call("Runtime.enable")
 call("Page.enable")
 call("Page.bringToFront")
 call("Emulation.setDeviceMetricsOverride",{"width":args.width,"height":args.height,"deviceScaleFactor":1,"mobile":args.width<800})
-if args.matchday:
+if args.season:
+ result=evaluate("fetch('tests/season-tests.js',{cache:'no-store'}).then(r=>r.text()).then(source=>{(0,eval)(source);return runFCSeasonTests();})")
+elif args.matchday:
  result=evaluate("fetch('tests/matchday-tests.js',{cache:'no-store'}).then(r=>r.text()).then(source=>{(0,eval)(source);return runFCMatchdayTests();})")
 elif args.visual_smoke and not args.prototype_lab:
  result=evaluate("""(async()=>{for(let attempts=0;attempts<50&&(!window.match3D||!window.launchFCStarsMatch);attempts++)await new Promise(resolve=>setTimeout(resolve,100));showQuickLogin();document.querySelector('#primeRonaldoDemoBtn').click();await new Promise(resolve=>setTimeout(resolve,120));window.launchFCStarsMatch('Quick Match');document.querySelector('[data-md-kickoff]').click();await new Promise(resolve=>setTimeout(resolve,900));const info=window.match3D?.inspect();const finiteCamera=info?.camera?.every(Number.isFinite);return {passed:Boolean(info&&info.players.length===22&&finiteCamera&&Number.isFinite(info.drawCalls)&&info.drawCalls>0&&Number.isFinite(info.geometries)&&info.geometries>0&&info.rendering&&matchCanvas.width>0&&matchCanvas.height>0),players:info?.players.length,camera:info?.camera,drawCalls:info?.drawCalls,geometries:info?.geometries,rendering:info?.rendering,canvas:[matchCanvas.width,matchCanvas.height],score:matchScoreLabel.textContent};})()""")
@@ -100,6 +103,6 @@ if args.screenshot:
 errors=[e for e in events if e.get("method")=="Runtime.exceptionThrown"]
 print(json.dumps({"checks":result,"primeDemo":prime_demo,"runtimeErrors":errors},indent=2))
 s.close()
-passed=result.get("passed") if (args.prototype_lab or args.visual_smoke or args.matchday) and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
+passed=result.get("passed") if (args.prototype_lab or args.visual_smoke or args.matchday or args.season) and result else result and result.get("match",{}).get("passed") and result.get("game",{}).get("passed")
 if args.prime_demo: passed=passed and prime_demo and prime_demo.get("passed")
 raise SystemExit(0 if passed and not errors else 1)

@@ -447,6 +447,7 @@ function freshState(inventoryGrant = false) {
   const isDeveloperGrant = inventoryGrant === "dev";
   return {
     ...defaultState,
+    season: FCSeason.normalize(),
     level: inventoryGrant === "dev" || inventoryGrant === "all" ? 50 : 1,
     infiniteCoins: isDeveloperGrant,
     infiniteRankedPoints: isDeveloperGrant,
@@ -637,6 +638,7 @@ function mergeStates(baseState, incomingState) {
   return {
     ...baseState,
     ...incomingState,
+    season: FCSeason.merge(baseState.season, incomingState.season),
     level: Math.max(baseState.level || 1, incomingState.level || 1),
     xp: Math.max(baseState.xp || 0, incomingState.xp || 0),
     adminXp: String(baseState.adminXp || "0").length >= String(incomingState.adminXp || "0").length
@@ -698,6 +700,7 @@ function migrateState(savedState, inventoryGrant = false, accountId = null) {
   savedState.level = Number.isFinite(Number(savedState.level)) && Number(savedState.level) > 0 ? Number(savedState.level) : 1;
   savedState.xp = Number.isFinite(Number(savedState.xp)) && Number(savedState.xp) >= 0 ? Number(savedState.xp) : 0;
   savedState.adminXp = /^\d+$/.test(String(savedState.adminXp || "0")) ? String(savedState.adminXp || "0") : "0";
+  savedState.season = FCSeason.normalize(savedState.season);
   savedState.matchSettings = FCMatchday.settings(savedState.matchSettings);
   savedState.matchHistory = FCMatchday.history(savedState.matchHistory);
   savedState.infiniteLevel = Boolean(savedState.infiniteLevel);
@@ -1615,8 +1618,11 @@ function startMatch(mode = "Quick Match") {
     return;
   }
 
+  const career = mode === "Champions Journey" ? FCSeason.normalize(state.season) : null;
+  const stage = career ? FCSeason.stages[career.stage] : null;
+  if (career && !stage) { selectPrototypeView("Season"); closePrototypeMatch(); return; }
   const featuredPlayer = state.selectedStar || buildTeam().find((player) => player.name && player.image) || cardPool[0];
-  const opponent = opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
+  const opponent = stage ? { name: stage.name, multiplier: 1 + career.stage * .2 } : opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
   const matchTeam = buildTeam();
   let controlledPlayerIndex = matchTeam.findIndex((player) => player.controlled);
   if (controlledPlayerIndex < 0) controlledPlayerIndex = Math.min(5, matchTeam.length - 1);
@@ -1643,6 +1649,8 @@ function startMatch(mode = "Quick Match") {
   }));
   const controlledStart = homeMatchPlayers[controlledPlayerIndex];
   state.activeMatch = {
+    seasonId: career ? FCSeason.id : null,
+    careerStage: career ? career.stage : null,
     mode: cleanText(mode, 32) || "Quick Match",
     settings: FCMatchday.settings(window.FCMatchdayUI?.consumeSettings(mode) || state.matchSettings),
     userPaused: false,
@@ -1686,6 +1694,7 @@ function startMatch(mode = "Quick Match") {
     }))
   };
   if (mode === "Ranked Rush") state.activeMatch.settings.difficulty = "balanced";
+  if (stage) state.activeMatch.settings.difficulty = stage.difficulty;
   state.matchSettings = { ...state.activeMatch.settings };
   normalizeMatchState(state.activeMatch);
   state.inventoryOpen = false;
@@ -1732,7 +1741,13 @@ function endMatch({ abandoned = false } = {}) {
     ? ` Level ${xpResult.leveledUpTo[xpResult.leveledUpTo.length - 1]} reached.`
     : "";
   const result = FCMatchday.result(finishedMatch, { coins: coinReward, xp: winXp, rp: tablePoints });
-  if (!abandoned) state.matchHistory = [result, ...FCMatchday.history(state.matchHistory)].slice(0, 10);
+  if (!abandoned) {
+    const progression = FCSeason.complete(state.season, result, finishedMatch);
+    state.season = progression.season;
+    if (!state.infiniteCoins) state.matchPoints += progression.stageCoins;
+    result.season = { xp: progression.earnedXp, coins: progression.stageCoins, advanced: progression.advanced, trophies: progression.newTrophies };
+    state.matchHistory = [result, ...FCMatchday.history(state.matchHistory)].slice(0, 10);
+  }
   state.activeMatch = null;
   sceneGoalText.textContent = `Final score ${score}`;
   reportTitle.textContent = abandoned ? "Match left" : "Full time";
