@@ -619,8 +619,8 @@ function profileTitles(accountState) {
   const season = window.FCSeason?.normalize(accountState.season);
   return [
     ...(season ? [
-      { name:'Champion 02', unlocked:season.stage >= 7, progress:season.stage, target:7, task:'Champions Journey ke saare 7 stages jeeto' },
-      { name:'Season Legend', unlocked:season.xp >= 1500, progress:season.xp, target:1500, task:'Season 02 mein 1,500 XP kamao' }
+      { name:'Champion 02', unlocked:season.stage >= 7, progress:season.stage, target:7, task:'Win all 7 Champions Journey stages' },
+      { name:'Season Legend', unlocked:season.xp >= 1500, progress:season.xp, target:1500, task:'Earn 1,500 XP in Season 02' }
     ] : []),
     { name:'El Demon', unlocked:hasElDemonProfile(accountState), progress:hasElDemonProfile(accountState) ? 1 : 0, target:1, task:'Gifted by S7ph_Void4 · only three recipients' },
     { name:'Club Founder', unlocked:true, progress:1, target:1, task:'Create your club' },
@@ -683,7 +683,7 @@ function prototypeViewMarkup(view) {
 function selectPrototypeView(view) {
   const isHome = view === 'Home';
   const headings = {
-    Season: ['SEASON 02 · CHAMPIONS RISE', 'Ab banegi<br><em>tumhari legacy.</em>'],
+    Season: ['SEASON 02 · CHAMPIONS RISE', 'Build your<br><em>champion legacy.</em>'],
     Home: ['HOME · FC STARS', 'Ready to build<br>your <em>legacy?</em>'],
     Packs: ['PACK STORE · RISING ICONS', 'Open the next<br><em>superstar.</em>'],
     Squad: ['SQUAD · STARTING XI', 'Build your<br><em>best XI.</em>'],

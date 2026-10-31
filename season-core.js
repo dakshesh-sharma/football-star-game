@@ -2,7 +2,7 @@
 window.FCSeason = (() => {
   const id = 'champions-02';
   const stages = [
-    { name: 'Academy XI', badge: 'AC', round: 'Pehla kadam', difficulty: 'relaxed', coins: 75 },
+    { name: 'Academy XI', badge: 'AC', round: 'First steps', difficulty: 'relaxed', coins: 75 },
     { name: 'Street Kings', badge: 'SK', round: 'Street showdown', difficulty: 'relaxed', coins: 100 },
     { name: 'Coastal United', badge: 'CU', round: 'City qualifier', difficulty: 'balanced', coins: 125 },
     { name: 'Metro Athletic', badge: 'MA', round: 'Round of 16', difficulty: 'balanced', coins: 150 },
@@ -14,14 +14,14 @@ window.FCSeason = (() => {
     level: index + 1, xp: (index + 1) * 150, coins
   }));
   const achievements = [
-    { id: 'debut', name: 'Kickoff Kid', text: 'Ek match poora karo', key: 'matches', target: 1, icon: '⚽' },
-    { id: 'winner', name: 'First Blood', text: 'Pehli jeet haasil karo', key: 'wins', target: 1, icon: '⚑' },
-    { id: 'goals', name: 'Goal Machine', text: 'Season mein 20 goals karo', key: 'goals', target: 20, icon: '◎' },
-    { id: 'wall', name: 'The Wall', text: '3 clean-sheet wins jeeto', key: 'cleanSheets', target: 3, icon: '▱' },
-    { id: 'streak', name: 'On a Roll', text: 'Lagataar 3 matches jeeto', key: 'bestStreak', target: 3, icon: 'ϟ' },
-    { id: 'veteran', name: 'Matchday Regular', text: '15 matches poore karo', key: 'matches', target: 15, icon: '✦' },
-    { id: 'cup', name: 'Champion 02', text: 'Journey ke saare 7 stages jeeto', key: 'stage', target: 7, icon: '♜' },
-    { id: 'pass', name: 'Season Legend', text: '1,500 Season XP kamao', key: 'xp', target: 1500, icon: '♛' }
+    { id: 'debut', name: 'Kickoff Kid', text: 'Complete one match', key: 'matches', target: 1, icon: '⚽' },
+    { id: 'winner', name: 'First Blood', text: 'Win your first match', key: 'wins', target: 1, icon: '⚑' },
+    { id: 'goals', name: 'Goal Machine', text: 'Score 20 goals this season', key: 'goals', target: 20, icon: '◎' },
+    { id: 'wall', name: 'The Wall', text: 'Win 3 matches without conceding', key: 'cleanSheets', target: 3, icon: '▱' },
+    { id: 'streak', name: 'On a Roll', text: 'Win 3 matches in a row', key: 'bestStreak', target: 3, icon: 'ϟ' },
+    { id: 'veteran', name: 'Matchday Regular', text: 'Complete 15 matches', key: 'matches', target: 15, icon: '✦' },
+    { id: 'cup', name: 'Champion 02', text: 'Win all 7 Journey stages', key: 'stage', target: 7, icon: '♜' },
+    { id: 'pass', name: 'Season Legend', text: 'Earn 1,500 Season XP', key: 'xp', target: 1500, icon: '♛' }
   ];
   const count = (value, max = 1000000000) => Number.isFinite(Number(value)) ? Math.min(max, Math.max(0, Math.floor(Number(value)))) : 0;
   function normalize(input) {
